@@ -34,12 +34,15 @@ CHART_OUTPUT_PATH = Path(__file__).parent / "evaluation_report.png"
 def rule_based_forecast(
     day_d: float,
     exercise_hours: float,
+    recent_sleep_7d: float = 7.4,
+    recent_mood_7d: float = 4.2,
     base_sleep: float = 7.4,
     base_mood: float = 4.2
 ) -> Dict[str, float]:
     """
-    Python implementation of Om's rule-based forecast engine (placeholders/forecast.js)
-    built on standard NASA rates.
+    Physiological heuristic baseline (fair comparison, not hardcoded to Day 40).
+    Uses published NASA rates for bone and muscle, and rolling 7-day vitals
+    extrapolation for sleep, mood, and balance.
     """
     adherence_ratio = max(0.0, min(1.0, exercise_hours / 1.5))
     total_months = 6.0
@@ -55,17 +58,18 @@ def rule_based_forecast(
     aerobic_retention = 100.0 - actual_fit_loss
     muscle_retention = 100.0 - (actual_fit_loss * 0.95)
 
-    # 3. Balance (Sensorimotor adaptation)
-    balance_retention = 88.0 - (180.0 - (180.0 - day_d)) * 0.04
+    # 3. Balance (Sensorimotor microgravity adaptation heuristic)
+    balance_retention = 99.0 - ((day_d / 180.0) * 14.0)
 
-    # 4. Sleep
-    sleep_retention = 92.0
-    if day_d >= 40:
-        sleep_retention = 74.0 + (adherence_ratio * 10.0)
+    # 4. Sleep (Dynamic heuristic rule tracking actual recent sleep deficit, not hardcoded Day 40)
+    b_sleep = base_sleep if base_sleep > 0 else 7.4
+    sleep_ratio = max(0.4, min(1.3, recent_sleep_7d / b_sleep))
+    sleep_retention = (sleep_ratio * 92.0) + (adherence_ratio * 8.0)
 
-    # 5. Mood
-    penalty = 12.0 if day_d >= 40 else 3.0
-    mood_retention = 88.0 - penalty + (adherence_ratio * 7.0)
+    # 5. Mood (Dynamic heuristic rule tracking actual recent mood resilience)
+    b_mood = base_mood if base_mood > 0 else 4.2
+    mood_ratio = max(0.3, min(1.2, recent_mood_7d / b_mood))
+    mood_retention = (mood_ratio * 88.0) + (adherence_ratio * 9.0)
 
     return {
         "target_bone": round(float(bone_retention), 2),
@@ -125,6 +129,8 @@ def run_evaluation():
         rp = rule_based_forecast(
             day_d=row["day_d"],
             exercise_hours=row["planned_daily_exercise"],
+            recent_sleep_7d=row["sleep_mean_7d"],
+            recent_mood_7d=row["mood_mean_7d"],
             base_sleep=row["base_sleep"],
             base_mood=row["base_mood"]
         )
