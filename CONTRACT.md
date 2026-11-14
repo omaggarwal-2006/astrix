@@ -1,108 +1,215 @@
-# LANDFALL Team Interface Contract (v3.0)
-**NASA Space Apps Challenge 2026** &bull; *Challenge: Health Monitoring Software*  
-*Team: Om (UI) &bull; Tanishk (Physiological Engine) &bull; Teammate 3 (Pipeline, Queue & Sources)*
+# LANDFALL Team Interface Contract (v4.0)
 
-This document specifies the exact shared shapes and modules wired in the LANDFALL repository.
+**NASA Space Apps Challenge 2026** · Team: Raghav Dua (triage, bundles, queue) · Tanishk (engine) · Om (UI)
+v4.0 · 14 Nov 2026 · Replaces v3.0
 
----
+This file has two parts:
 
-## 1. Module Locations & Responsibilities
+- **Part A, as-built:** the shapes and functions the code uses **today**. Code that calls a shared module must follow Part A until that module is migrated.
+- **Part B, v2 target:** the shapes the team is moving to. They are defined in full in [`docs/18-DATA_MODEL.md`](docs/18-DATA_MODEL.md); this file only summarises them.
 
-- **Teammate 3 (Active in Root):**
-  - `./pipeline.js`: Orchestrates triage and packet dispatch.
-  - `./triage.js`: Core scoring rule engine.
-  - `./packet.js`: FNV-1a checksum telemetry packet builder.
-  - `./queue.js`: DTN store-and-forward queue with simulated propagation latency.
-  - `./sources.js`: Official `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, and `DISCLAIMER`.
-  - `./sample_alert.js`: Reference alert fixture (`A-001`).
-
-- **Om (UI & Adapter Layer):**
-  - `index.html`: 5 restructured tabs (Overview, Monitor, Forecast, Triage & Comms, Sources).
-  - `css/style.css`: Bolted putty panel chassis, projector-ready font sizing, responsive layout.
-  - `adapter.js`: Single integration layer feeding sample data and engine calculations to the UI.
-  - `sample/sample_data.js`: Interim sample dataset adhering strictly to agreed team shapes.
-  - `sw.js`: Service worker for 100% offline flight operation after first load.
-  - `main.js`: Main ES module controller.
-
-- **Tanishk (Physiological Engine - In Development):**
-  - Will deliver production `getAlerts(day)`, `getForecast(day, exerciseHours)`, and `getReadings(day)` to replace `sample/sample_data.js` via `adapter.js`.
+When a module moves from Part A to Part B, update both parts and [`docs/00-STATUS.md`](docs/00-STATUS.md) in the same pull request.
 
 ---
 
-## 2. Agreed Data Shapes
+## Part A · As-built (current code)
 
-### A. Health Alert Shape (`Alert`)
-```typescript
+### A1. Modules and owners
+
+| File | Owner | Exports |
+|---|---|---|
+| `adapter.js` | Om (Tanishk's engine plugs in here) | `getAlerts(day)`, `getForecast(day, exerciseHours = 1.2)`, `getReadings(day)`, `getBaseline()`, `mapSeverity(severity)` |
+| `sample/sample_data.js` | Interim (Om) | `generateAlertsForDay`, `generateForecastForDay`, `generateDayReadings`, `BASELINE_READINGS` |
+| `pipeline.js` | Raghav | `handleAlert(alert, ctx, env)`, `peekNextSeq()` |
+| `triage.js` | Raghav | `triage(alert, ctx)` |
+| `packet.js` | Raghav | `buildPacket(alert, decision, ctx, seq)`, `verifyPacket(packet)` |
+| `queue.js` | Raghav | `enqueue`, `getQueue`, `onChange`, `setLink`, `clearQueue`, `config` |
+| `sources.js` | Raghav | `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, `DISCLAIMER` |
+| `sample_alert.js` | Raghav | `sampleAlert` (fixture `A-001`) |
+| `js/twin-model.js` | Om | `BODY_REGIONS`, `TISSUE_LAYERS`, `getRegionIntegrity`, `getTissueIntegrity`, `calculateCrewReadinessXP`, `ASTRONAUT_PROFILE` |
+
+The UI reads data **only** through `adapter.js`. `js/twin-model.js` has no data imports.
+
+### A2. Readings (`getReadings(day)`)
+
+```ts
+interface Readings {
+  day: number;
+  vitals: { sleep_h: number; hr_bpm: number; bp_sys: number; bp_dia: number; temp_c: number; mood: number; exercise_min: number };
+  symptoms: string[];                         // e.g. "headache", "eye_strain"
+  cabin: { co2: number; temp: number; noise: number };   // ppm, °C, dBA
+  immune: { rash: boolean; coldSore: boolean; fever: boolean; fatigue: boolean; stressScore: number };
+  radiation: { dailyDose: number; cumulativeDose: number };  // mSv
+  logged?: true;                              // set when a crew check-in overrides that day's vitals
+}
+```
+
+Crew check-ins saved under `landfall_custom_checkins` replace that day's `vitals`. They don't change alerts yet.
+
+### A3. Alert (`getAlerts(day)`)
+
+```ts
 interface Alert {
-  id: string;               // e.g. "A-001"
-  metric: string;           // "sleep_h" | "cabin_co2" | "mood" | "exercise_min" | "hr_bpm"
-  baseline: number;         // Astronaut's pre-flight personal baseline (e.g. 7.4)
-  current: number;          // Active measured value (e.g. 4.2)
-  z: number;                // Standard deviations from personal baseline (e.g. -2.8)
-  persisted_days: number;   // Days condition has persisted (e.g. 9)
-  worsening: boolean;       // Trend trajectory
-  severity: number;         // 1 = Low/Mild, 2 = Medium/Caution, 3 = High/Critical
-  reason: string;           // Human-readable clinical rationale
+  id: string;               // "A-001"
+  metric: string;           // "sleep_h" | "cabin_co2" | "mood" | "immune_cold_sore" | "exercise_min"
+  baseline: number;
+  current: number;
+  z: number;                // currently fixed per sample alert, not computed
+  persisted_days: number;
+  worsening: boolean;
+  severity: 1 | 2 | 3;      // 1 mild, 2 caution, 3 alarm
+  reason: string;
 }
 ```
 
-### B. Landing-Day Forecast Shape (`Forecast`)
-```typescript
+### A4. Forecast (`getForecast(day, exerciseHours)`)
+
+```ts
 interface ForecastDimension {
-  dimension: string;        // "Bone mineral density" | "Aerobic & muscle power" | etc.
-  landing: {
-    low: number;            // Lower estimate (illustrative)
-    mid: number;            // Projected landing-day retention %
-    high: number;           // Upper estimate (illustrative)
-  };
+  dimension: string;        // "Bone mineral density" | "Aerobic & muscle power" | "Cardiovascular regulation"
+                            // | "Neurovestibular balance" | "Circadian sleep debt" | "Cognitive vigilance"
+  landing: { low: number; mid: number; high: number };   // % (illustrative)
   status: "nominal" | "caution" | "alarm";
-  confidence: string;       // e.g. "High (NASA HRP published rate 1.0-1.5%/mo)"
-  citationUrl: string;      // Direct link to official NASA reference page
-  assumptions: string[];    // Explicit modelling assumptions
+  confidence: string;
+  citationUrl: string;
+  assumptions: string[];
 }
 ```
 
-> [!IMPORTANT]
-> **Source Verification Status for Tanishk:**
-> - **Bone Loss Rate:** $1.0\text{--}1.5\%$ per month on 4–6 month missions &rarr; **verify on source page** ([NASA Bone Changes](https://www.nasa.gov/reference/risk-of-spaceflight-induced-bone-changes/)).
-> - **Aerobic & Muscle Strength Loss:** $10\text{--}12\%$ average loss &rarr; **verify on source page** ([NASA Reduced Fitness](https://www.nasa.gov/reference/risk-of-reduced-cardiorespiratory-and-musculoskeletal-fitness/)).
+### A5. Severity mapping (`mapSeverity`)
 
-### C. Pipeline & Triage Interfaces
-- `handleAlert(alert, ctx, env)` returns `{ decision, packet }`:
-  - `decision`: `{ path: "SELF_CARE" | "CREW_MEDICAL_OFFICER" | "FLIGHT_SURGEON", delivery: "NONE" | "LIVE_CALL" | "SEND_PACKET" | "QUEUE_OFFLINE", score: number, emergency: boolean, why: string }`
-  - `packet`: Built when `delivery` is `"SEND_PACKET"` or `"QUEUE_OFFLINE"`.
-- `queue.getQueue()` returns array of `{ packet, attempts, ground_reply }`:
-  - `packet.status`: `"QUEUED"` | `"TRANSMITTED"` | `"ACKNOWLEDGED"` | `"FAILED"`
+| Input | `status` | `label` | `shapeClass` | `priority` |
+|---|---|---|---|---|
+| 3, `"alarm"`, `"critical"` | alarm | Alarm | `shape-octagon` | CRITICAL |
+| 2, `"caution"`, `"moderate"` | caution | Caution | `shape-triangle` | HIGH |
+| 1, `"low"` | nominal | Mild drift | `shape-circle` | LOW |
+| anything else | nominal | Nominal | `shape-circle` | NOMINAL |
+
+**Known mismatch:** `buildPacket` sets `priority = ["LOW","MEDIUM","HIGH","CRITICAL"][severity]`, so severity 1 is `MEDIUM` in a packet but `LOW` here. v2 replaces both with priority classes (decision D-04).
+
+### A6. Triage and pipeline
+
+```ts
+triage(alert, ctx) → Decision
+// ctx = { onboardSupport: boolean, link: { available: boolean, delay_s: number } }
+
+interface Decision {
+  path: "SELF_CARE" | "CREW_MEDICAL_OFFICER" | "FLIGHT_SURGEON";
+  delivery: "NONE" | "LIVE_CALL" | "SEND_PACKET" | "QUEUE_OFFLINE";
+  score: number;            // severity + (persisted_days >= 5 ? 1 : 0) + (worsening ? 1 : 0)
+  emergency: boolean;       // severity === 3; not used by the UI yet
+  why: string;
+}
+```
+
+| Rule (as-built) | Result |
+|---|---|
+| `score ≤ 1` | `SELF_CARE`, delivery `NONE` |
+| `score 2–3` | `CREW_MEDICAL_OFFICER` if onboard support, else `FLIGHT_SURGEON` |
+| `score ≥ 4` | `FLIGHT_SURGEON` |
+| Link unavailable | `QUEUE_OFFLINE` |
+| One-way delay < 300 s | `LIVE_CALL` |
+| Otherwise | `SEND_PACKET` |
+
+```ts
+handleAlert(alert, ctx, env) → { decision, packet | null }
+// env = { onboardSupport, link }; ctx = packet context (A7)
+// Builds AND enqueues a packet when delivery is SEND_PACKET or QUEUE_OFFLINE.
+// Call it only on a user action (Send). For previews, call triage() and buildPacket() with peekNextSeq().
+```
+
+### A7. Packet (`buildPacket(alert, decision, ctx, seq)`)
+
+```ts
+// ctx = { missionDay, current, baseline, trend7, trend30, cabin, countermeasure }
+interface Packet {
+  packet_id: string;        // "PKT-0001"
+  mission_ts: number;       // mission day
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  anomaly: string;          // alert.reason
+  readings: object;         // ctx.current
+  baseline: object;
+  trend_7d: number[];
+  trend_30d: number[];
+  cabin: object;
+  countermeasure: string;
+  checksum: string;         // FNV-1a over JSON.stringify of the fields above
+  status: "QUEUED" | "TRANSMITTED" | "ACKNOWLEDGED" | "FAILED";
+}
+```
+
+`verifyPacket(packet)` recomputes the checksum without `checksum` and `status`.
+
+### A8. Queue
+
+| Function | Behaviour |
+|---|---|
+| `enqueue(packet)` | Adds `{ packet, attempts: 0, ground_reply: null }`, saves, tries to send |
+| `getQueue()` | The live array |
+| `onChange(cb)` | Called with the queue after every change |
+| `setLink({ available, delay_s })` | Sets the link; sends QUEUED packets if available |
+| `clearQueue()` | Empties the in-memory queue and storage |
+| `config` | `{ speedup: 100, failRate: 0.1, retryMs: 2000 }` |
+
+Acknowledgement arrives after `2 × delay_s × 1000 / speedup` ms. A checksum failure sets FAILED with no auto-retry; a random failure (`failRate`) sets FAILED and re-queues after `retryMs`. On reload, TRANSMITTED and FAILED packets return to QUEUED.
+
+### A9. Storage keys
+
+| Key | Holds |
+|---|---|
+| `landfall_queue` | Queue entries |
+| `landfall_custom_checkins` | Crew check-ins by day |
+| `landfall_countermeasures` | Countermeasure checklist |
+| `landfall_scene_collapsed` | UI preference |
+
+### A10. Sources (`sources.js`)
+
+`SOURCES` (7 cited pages), `NUMBERS` (bone, fitness, exercise, neutron share), `LINK_PRESETS` (one-way `delay_s`: Moon 1.3, Mars closest 180, average 750, farthest 1,320), `ASSUMPTIONS`, `DISCLAIMER`. Status of each source: [`docs/13-SOURCES.md`](docs/13-SOURCES.md).
 
 ---
 
-## 3. UI Features & Control Contract (Om)
-The frontend implements the "View From The Ship" mission architecture with verified interactive controls:
-1. **Tabs & Hash Routing:** `#overview`, `#monitor`, `#forecast`, `#triage`, `#sources` (browser back/forward functional, with default fallback to `#overview`).
-2. **Day Scrubber:** Day 1 to 180 transit slider (drag, click, keyboard arrow navigation) with milestones.
-3. **Mission Scene & 4-Level Kinematic Visual Engine:**
-   - **Level 0 (Environment approach):** Canvas 3D starfield with 4 environments (`MARS`, `ISS`, `MOON`, `EVA_SUIT`), replay entry zoom, and mechanical EVA suit shell split reveal.
-   - **Level 1 (Full-body digital twin):** 11 anatomical regions in precision SVG (`viewBox="0 0 420 760"`), beating heart x-ray underlay timed to live resting HR, Front/Back rotation toggle, and dual-track baseline comparison bars.
-   - **Level 2 (Region focus & exploded tissue cards):** Exploded 4-layer cards (`BONE`, `MUSCLE`, `SKIN`, `VASCULAR_NERVE`) with spaceflight mechanisms and deep-scan triggers.
-   - **Level 3 (Tissue micro-lab):** Split-view before/after comparison canvas with divider beam, tissue-specific live recalibration controls (ARED load, cycle intensity), +15 XP rewards, discovery badge, and astronaut self-assessment procedure with escalation guidance.
-   - **Hierarchical Breadcrumbs:** Navigational breadcrumb trail (`Ares-VI Transit` > `Full-Body Twin` > `[Region]` > `[Layer]`) and keyboard `Escape` zoom out.
-4. **Sober Gamification XP Engine (`js/twin-model.js`):**
-   - 0–1000 XP point score (60% 6 landing dimensions, 25% countermeasure adherence, 15% completed scans).
-   - Tiers I / II / III with geometric status indicators.
-   - Fictional profile: `Cmdr. A. Vance (fictional synthetic profile)`.
-5. **Automated 30-Second Demo:** Play, Pause, and Stop (restores day to pre-demo state).
-6. **Daily Biomarker Logging:** Validated ranges with inline error reporting, saved to `localStorage`.
-7. **Cross-Tab Routing:** Go/No-Go rows jump directly to Forecast cones; active alerts route directly to Triage.
-8. **What-If Forecast Engine:** 3 scenario buttons (`Adherent 1.5 h/d`, `Nominal 1.2 h/d`, `Zero exercise 0.0 h/d`) and adherence slider reshaping flight cones live.
-9. **Countermeasure Checklist:** Dynamic checklist state saved to `localStorage`.
-10. **Comms & Telemetry Dispatch:** `setLink({ available: true, delay_s, label })` latency selector, `handleAlert()` packet generation, `enqueue()` DTN queue, Copy packet button, Retry failed packet button, and Emergency link bypass modal.
-11. **Scientific Citations & Honesty:** Official NASA human research links with `target="_blank" rel="noopener noreferrer"`. Honesty statement: *"Illustrative model, not a clinical predictor. Synthetic data."* on every tab.
-12. **Demo State Reset:** Confirmation dialog clearing local cache and restoring Day 40 baseline.
-13. **Offline Operation:** Service worker (`sw.js`) caching all local assets and bundled fonts without remote CDN dependencies.
+## Part B · v2 target (summary)
+
+Full definitions: [`docs/18-DATA_MODEL.md`](docs/18-DATA_MODEL.md). Decisions behind them: [`docs/20-DECISIONS.md`](docs/20-DECISIONS.md).
+
+### B1. One entry point
+
+```ts
+runDay(day, env) → DayResult
+// env = { oneWayDelayS, linkUp, onboardSupport }
+// DayResult = { reading, detect, forecast, decision, bundle, explanation, readiness }
+```
+
+The UI renders a `DayResult` and never builds its own decision.
+
+### B2. What changes from Part A
+
+| Part A | Part B |
+|---|---|
+| `getAlerts`, `getForecast`, `getReadings` | Fields of `DayResult` |
+| `Alert` | Same fields plus `detector`, `level`, `confidence`, `improving`, `contributors`, `text`; computed, not scripted |
+| `Forecast.status: nominal/caution/alarm` | `label: GO / CAUTION / NO-GO`, plus `key`, `thresholds`, `source` |
+| Dimensions incl. cardiovascular | `bone`, `muscle`, `aerobic`, `balance`, `sleep`, `mood` (D-06) |
+| `triage(alert, ctx)` score | Decision table with `rules_fired`, `banners`, `what_would_change` ([`docs/07-TRIAGE_SPEC.md`](docs/07-TRIAGE_SPEC.md)) |
+| Live call below 300 s | `liveCallMaxOneWayS = 10` (D-01) |
+| `SEND_PACKET` | `SEND_BUNDLE`; new `EMERGENCY_DIRECT` |
+| `Packet`, `PKT-0001`, `priority` | `Bundle`, `LF-D040-0001`, `priority_class` EXPEDITED / NORMAL / BULK, lifetime, receipt |
+| `TRANSMITTED` | `TRANSMITTING` |
+| Unlimited retries | `maxAttempts` 3, `retryable` flag |
+| Thresholds spread across files | One `core/config.js` |
+| `landfall_queue`, `landfall_custom_checkins` | `landfall_queue_v2`, `landfall_logged_days`, `landfall_audit_log`, `landfall_demo_env` |
+
+### B3. Engine handoff (Tanishk)
+
+The engine on `origin/engine-ml` sets browser globals `DataEngine`, `ForecastEngine`, `LANDFALL_MODEL` and `LandfallML` (`predictLanding`, `whatIf`, `explain`, `modelInfo`). It is loaded as classic scripts before `main.js`. Only `adapter.js` reads these globals, maps them to Part B shapes, and falls back to the rules forecast if they're missing ([`docs/15-FORECAST_SPEC.md`](docs/15-FORECAST_SPEC.md#6-model-forecast-engine-advisory)).
 
 ---
 
-## 4. What Parts Are Currently Sample vs Real
-- **Teammate Modules (Real & Wired):** `pipeline.js`, `queue.js`, `packet.js`, `triage.js`, and `sources.js` are live in root and executed by the UI.
-- **Engine Data (Interim Sample):** 180-day longitudinal readings, alert generation, and forecast dimension calculations are served via `adapter.js` from `sample/sample_data.js`.
-- **Handoff:** When Tanishk delivers the final engine, only `adapter.js` will be updated to point to his module. Zero UI changes required.
+## Change rules
+
+1. A shape or threshold changes in [`docs/18-DATA_MODEL.md`](docs/18-DATA_MODEL.md) first, with a decision in [`docs/20-DECISIONS.md`](docs/20-DECISIONS.md).
+2. The code changes in a pull request that also updates Part A here and [`docs/00-STATUS.md`](docs/00-STATUS.md).
+3. Safety wording is fixed ([`docs/07-TRIAGE_SPEC.md §8`](docs/07-TRIAGE_SPEC.md#8-safety-wording-do-not-change)).
+4. Every number is labelled NASA (with source) or team assumption.
+
+UI features and controls are described in [`docs/19-UI_GUIDE.md`](docs/19-UI_GUIDE.md); they're not part of this contract.

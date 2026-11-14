@@ -1,60 +1,86 @@
 # 05 · Dependencies
 
-## 1. Runtime dependencies (app)
+## 1. Runtime (the app)
+
 | Dependency | Use | Notes |
 |---|---|---|
-| Modern browser (Chrome/Edge/Firefox/Safari) | Runs the app | Needs localStorage |
-| Chart.js (vendored in `lib/`) | Charts | Local file, no CDN |
-| Fonts (vendored) | Typography | Local files, no CDN |
-| Plain HTML/CSS/JS | App code | Global IIFE modules on `window`; no bundler, no framework |
+| Modern browser (Chrome, Edge, Firefox, Safari; last 2 versions) | Runs the app | Needs ES modules, `localStorage`, service workers, canvas |
+| A static HTTP server | Serves the files | ES modules don't load from `file://`. `launch.bat` uses Python's `http.server` |
+| Chart.js (vendored, `lib/chart.umd.min.js`) | Trend charts | Loaded as a classic script; global `Chart` |
+| Fonts (vendored, `fonts/`) | Typography | Only `saira-condensed.woff2` and `hanken-grotesk.woff2` are used; delete the two Barlow files |
+| Engine scripts (after merge, `engine/`) | Forecast model and synthetic history | UMD files that set `window.DataEngine`, `ForecastEngine`, `LANDFALL_MODEL`, `LandfallML` |
 
-No backend, database, API keys or network calls at runtime.
+No backend, database, API key or runtime network call.
 
-## 2. Development dependencies
-| Tool | Use |
-|---|---|
-| Node.js | Run `triage/test_triage.js` and engine tests |
-| Git + GitHub | Collaboration (repo: omaggarwal-2006/astrix) |
-| VS Code | Editing; use integrated terminal |
-| Any static server (optional) | e.g. `npx serve` or VS Code Live Server; opening `index.html` directly also works |
+## 2. Development
 
-## 3. Module dependency graph
-```
-data.js  ─────────────►  forecast.js / engine (Tanishk)
-   │                           │
-   ├──────────────►  triage/triage.js ──► triage/packet.js ──► triage/queue.js
-   │                           │                  │                   │
-   │                           └──────────────────┴───────────────────┘
-   ▼                                      ▼
-js/state.js (LandfallState: day, delay)   js/act-ui.js, js/app.js (Om)
-                                               ▲
-                                       js/sources.js, js/storage.js
-```
-- `triage.js` reads telemetry from `data.js` (via argument) and comm delay from `LandfallState.getCommDelaySeconds(day)`.
-- `packet.js` needs the triage result; `queue.js` needs packets.
-- `act-ui.js` calls `TriageEngine.evaluate`, `PacketEngine.buildPacket`, and either `simulateTransmission` (current) or `QueueEngine.enqueue` (target).
-
-## 4. Script-tag order in `index.html`
-```
-js/sources.js → data.js (engine) → forecast.js → triage/triage.js → triage/queue.js → triage/packet.js → js/storage.js → ... UI scripts
-```
-Remove `placeholders/triage.js` and `placeholders/packet.js` once the real modules are wired. (Keep exact order consistent with CONTRACT.md.)
-
-## 5. Team dependencies (who waits for whom)
-| Blocked person | Needs | From |
+| Tool | Version | Use |
 |---|---|---|
-| Raghav | Telemetry shape and baseline summary fields | Tanishk (`data.js`) |
-| Om | Triage/packet/queue APIs | Raghav (done, in `triage/`) |
-| Om | Alert and forecast objects | Tanishk |
-| Tanishk | Day-40 story requirements | Contract / Raghav |
-| Everyone | Final delay figures and Moon value fix | Raghav (verify NTRS) |
+| Node.js | 18 or newer (team machines run 22) | `node --test`, evaluation harness, quick checks |
+| Python | 3.10 or newer | `launch.bat` server; engine training scripts |
+| Python packages | `engine/ml/requirements.txt` | Only to retrain the model. **The file is saved as UTF-16 with a BOM** (git treats it as binary) and looks like a full `pip freeze` of one machine. Re-save as UTF-8 and trim it to the packages the scripts import: `numpy`, `pandas`, `scikit-learn`, `matplotlib`, with versions (`root_mean_squared_error` needs scikit-learn 1.4 or newer) |
+| Git and GitHub | — | Repo `omaggarwal-2006/astrix` |
+| VS Code (optional) | — | Live Server works as an alternative to `launch.bat` |
 
-## 6. External data and facts
-NASA HRP/NTRS figures (see 13-SOURCES.md). All telemetry is synthetic and generated in-repo.
+`package.json` holds **scripts only**, no dependencies:
 
-## 7. Browser feature requirements
-localStorage (queue persistence key `landfall_packet_queue_v1`), `JSON`, `Date`, ES2015+ syntax. No service workers required.
+```json
+{
+  "name": "landfall",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/",
+    "eval": "node eval/run-eval.mjs --seeds 200",
+    "serve": "python -m http.server 8080"
+  }
+}
+```
 
-## 8. Known integration gaps
-- Act tab currently uses `simulateTransmission`; a queue panel (QueueEngine.getAll/onChange, setLink) still needs to be added by Om.
-- `js/sources.js` has "source pending" delay labels and a Moon round-trip/one-way mix-up.
+## 3. Module dependencies (target)
+
+```
+config.js ◄──────────────────────────── every core module
+delay.js ◄── triage.js, run-day.js, ui/header, ui/visuals/mission-scene
+adapter.js ──► engine globals (optional) │ data/generator.js (fallback) │ localStorage logged days
+detect.js ──► config            forecast.js ──► config, adapter (model)
+radiation.js, wellbeing.js ──► config          (used by detect and triage)
+triage.js ──► config, delay
+bundle.js ──► (pure)            queue.js ──► bundle.js (verify), storage, timers
+explain.js ──► (pure)
+run-day.js ──► adapter, detect, forecast, triage, bundle, explain
+app/state.js ──► run-day, queue
+ui/* ──► app/state.js only
+eval/run-eval.mjs ──► data/generator.js, run-day.js
+```
+
+Rule: `ui/` never imports from `core/` directly except through `app/state.js`. `core/` never imports from `ui/`.
+
+## 4. Team dependencies (who waits for whom)
+
+| Blocked | Needs | From | By |
+|---|---|---|---|
+| Raghav (triage v2) | Alert shape with `level`, `confidence`, `contributors` | Tanishk | Phase 1 |
+| Raghav (triage v2) | Forecast `label` and `LANDING_AT_RISK` | Tanishk | Phase 1 |
+| Raghav (harness) | Seeded generator `generateCrew(seed)` | Tanishk | Phase 2 |
+| Om (Today screen) | `runDay()` returning `DayResult` | Raghav + Tanishk | Phase 2 |
+| Om (demo controls) | `env` fields and queue API (`setFailureMode`) | Raghav | Phase 2 |
+| Om (engine load order) | Merged `engine/` files | Tanishk | Phase 1 |
+| Tanishk (calibration) | Verified sources list | Raghav | Phase 1 |
+| Everyone | `core/config.js` and `core/delay.js` | Raghav | First, before anything else |
+
+Phases are defined in [08-TEAM_AND_PLAN.md](08-TEAM_AND_PLAN.md).
+
+## 5. External facts
+
+All NASA and published figures are listed with status in [13-SOURCES.md](13-SOURCES.md). All telemetry is synthetic and generated in the repo.
+
+## 6. Browser features required
+
+| Feature | Use | Fallback |
+|---|---|---|
+| ES modules | All code | None (required) |
+| `localStorage` | Queue, logs, settings | In-memory (queue already does this in Node) |
+| Service worker | Offline | App works online without it |
+| Canvas 2D | Scene, cones | Text values still shown |
+| Clipboard API | Copy bundle | Select-and-copy text box |

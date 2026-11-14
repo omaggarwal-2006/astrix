@@ -1,84 +1,111 @@
-# astrix
+# LANDFALL: Delay-Aware Astronaut Health Decisions
 
-# LANDFALL 2.0 &bull; Autonomous Health Architecture & Digital Twin
-**NASA Space Apps Challenge 2026** &bull; *Challenge: Health Monitoring Software*  
-**Live Application:** [https://omaggarwal-2006.github.io/astrix/](https://omaggarwal-2006.github.io/astrix/)
+**NASA Space Apps Challenge 2026** · Challenge: *Create Health Monitoring Software for Astronauts on Space Missions*
+**Live build:** <https://omaggarwal-2006.github.io/astrix/> · **Team:** Raghav Dua, Tanishk, Om
 
 > *"The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."*
 
----
-
-## 1. Project Overview
-LANDFALL 2.0 is an offline-capable web application and 4-level kinematic digital twin built for astronauts on a 180-day Mars transit. When communication latencies reach up to 22 minutes one-way (44 minutes round-trip), real-time telemedicine from Earth is physically impossible. 
-
-LANDFALL gives the crew autonomous medical self-sufficiency by:
-1. **Gathering** daily biomarkers and 11-region anatomical digital twin readings evaluated against the astronaut's calibrated personal baseline (not Earth population averages).
-2. **Evaluating** landing-day physiological fitness across 4 levels (Level 0 Environment Approach, Level 1 Full-Body Twin, Level 2 Exploded Tissue Cards, Level 3 Tissue Micro-Lab) using published NASA Human Research Program rates.
-3. **Acting** through delay-aware triage that routes health anomalies to Self-Care, the Crew Medical Officer (CMO), or store-and-forward telemetry packets for ground flight surgeons.
-
-*Disclaimer: Illustrative model, not a clinical predictor. Synthetic data.*
+**Disclaimer:** LANDFALL is decision support, not a medical device or a clinical predictor. All data is synthetic.
 
 ---
 
-## 2. Team Split & Architecture
-- **Om (UI Lead):** Frontend user interface, "The View From The Ship" aesthetic, 4-level Kinematic Camera engine, 11-region anatomical digital twin, exploded tissue micro-lab, gamified readiness XP engine, Chart.js trends, What-If slider, service worker, and adapter integration layer (`index.html`, `css/style.css`, `main.js`, `adapter.js`, `js/*`).
-- **Tanishk (Physiological Engine):** Longitudinal data generator, alert logic, and multi-dimensional landing forecast engine.
-- **Teammate 3 (DTN Queue & Triage):** Telemetry pipeline (`pipeline.js`), triage decision engine (`triage.js`), FNV-1a checksum packet builder (`packet.js`), store-and-forward queue (`queue.js`), and cited research sources (`sources.js`).
+## What it is
 
----
+LANDFALL is an offline astronaut health app that decides who should act on a health signal (the astronaut, the crew medical officer or the flight surgeon) based on how far Earth is, and makes sure the report reaches Earth intact even when the link is down.
 
-## 3. How to Run Locally
+**Delay is the product.** On a Mars transit, Earth is roughly 3 to 22 minutes away one way. The same symptom needs a different response at 3 seconds of delay than at 20 minutes. Every day LANDFALL runs one loop:
 
-Because LANDFALL uses modern ES Modules, browsers require an HTTP server (browser security restricts ES module imports over direct `file://` URLs):
+| Step | What it does |
+|---|---|
+| **Detect** | Compares sleep, mood, heart rate, blood pressure, cabin CO2, symptoms, exercise, radiation and a wellbeing check-in with the astronaut's **own** baseline |
+| **Forecast** | Projects landing-day readiness (bone, muscle, aerobic, balance, sleep, mood) as ranges, using NASA-published loss rates and exercise adherence |
+| **Decide** | Applies a visible, delay-aware triage table: self-care, crew medical officer or flight surgeon, with emergency overrides that never wait on a queue |
+| **Deliver** | Builds a checksum-verified report and queues it until contact returns |
+| **Explain** | Says what changed, why it matters, who should act, and what would change the decision |
 
-1. **Option A (VS Code Live Server - Recommended):**
-   - Open the project folder in VS Code.
-   - Install the **Live Server** extension (by Ritwick Dey).
-   - Right-click `index.html` &rarr; click **"Open with Live Server"**.
-2. **Option B (Python Localhost Server):**
-   - In terminal/PowerShell, run:
-     ```bash
-     python -m http.server 8080
-     ```
-   - Open **[http://localhost:8080](http://localhost:8080)** in your browser.
+## Project status
 
----
+The repo is moving from the v1 build to the **v2 design** in [`docs/`](docs/README.md).
 
-## 4. 100% Offline Capability (Service Worker)
-LANDFALL includes a built-in Service Worker (`sw.js`). After the first visit over HTTP/HTTPS, all assets, local fonts, and Chart.js bundles are cached locally. You can turn off Wi-Fi or disconnect from the internet and the application will remain fully functional.
+| | Today (v1 build) | v2 target |
+|---|---|---|
+| Alerts | Scripted sample alerts | Computed personal baseline, EWMA drift, signal fusion, missing-data alerts |
+| Forecast | Sample formulas | Ranges with go/no-go; feeds triage; ML engine (on `origin/engine-ml`) advisory |
+| Triage | Hidden score | Visible decision table with emergency, SANS and CO2 rules |
+| Queue | FIFO with retries | Priority, lifetime, retry limit, receipts |
+| Radiation and isolation | Cumulative dose; mood | Dose limit, solar-particle-event alert, 3-question check-in |
+| Evidence | — | Evaluation harness against fixed thresholds |
 
----
+Requirement-by-requirement status: [`docs/00-STATUS.md`](docs/00-STATUS.md).
 
-## 5. Team Contract & Handoff
-All data exchange interfaces and shapes are documented in [`CONTRACT.md`](CONTRACT.md).
-- Teammate logic modules live in the root (`pipeline.js`, `queue.js`, `packet.js`, `triage.js`, `sources.js`).
-- Tanishk's engine outputs are wired cleanly through `adapter.js`.
+## Run it
 
----
+**Windows, one click:** double-click **`launch.bat`**. It finds a free port (8080–8090), starts a local server with Python (or `npx http-server` if Python is missing) and opens your browser.
 
-## 3. How to Run Locally
+**Any OS:**
 
-Because LANDFALL uses modern ES Modules, browsers require an HTTP server (browser security restricts ES module imports over direct `file://` URLs):
+```bash
+python -m http.server 8080
+```
 
-1. **Option A (VS Code Live Server - Recommended):**
-   - Open the project folder in VS Code.
-   - Install the **Live Server** extension (by Ritwick Dey).
-   - Right-click `index.html` &rarr; click **"Open with Live Server"**.
-2. **Option B (Python Localhost Server):**
-   - In terminal/PowerShell, run:
-     ```bash
-     python -m http.server 8080
-     ```
-   - Open **[http://localhost:8080](http://localhost:8080)** in your browser.
+Then open <http://localhost:8080>.
 
----
+You need a server because LANDFALL uses ES modules, and browsers block those from `file://`. VS Code's Live Server extension also works.
 
-## 4. 100% Offline Capability (Service Worker)
-LANDFALL includes a built-in Service Worker (`sw.js`). After the first visit over HTTP/HTTPS, all assets, local Barlow fonts, and Chart.js bundles are cached locally. You can turn off Wi-Fi or disconnect from the internet and the application will remain fully functional.
+**Offline:** after the first visit, the service worker (`sw.js`) keeps a copy of every file. Turn off Wi-Fi and the app still works. If you see old code after an edit, hard-refresh (Ctrl+Shift+R).
 
----
+**Reset:** use the Reset button in the app, or run `localStorage.clear()` in the browser console.
 
-## 5. Team Contract & Handoff
-All data exchange interfaces and shapes are documented in [`CONTRACT.md`](CONTRACT.md).
-- Teammate logic modules live in the root (`pipeline.js`, `queue.js`, `packet.js`, `triage.js`, `sources.js`).
-- Tanishk's engine outputs are wired cleanly through `adapter.js`.
+More: [`docs/21-DEV_SETUP.md`](docs/21-DEV_SETUP.md).
+
+## Test it
+
+```bash
+node tests/ui-check.mjs
+```
+
+```bash
+node test5.mjs
+```
+
+`tests/ui-check.mjs` checks that features exist in the source, not that they behave correctly. Behaviour tests with Node's built-in runner (`node --test tests/`) are planned: [`docs/09-TEST_PLAN.md`](docs/09-TEST_PLAN.md).
+
+## Repo layout (today)
+
+| Path | What |
+|---|---|
+| `index.html`, `main.js`, `css/`, `js/` | UI: tabs, mission scene, digital twin, charts, demo runner |
+| `adapter.js` | The single place the UI gets data from; the real engine plugs in here |
+| `sample/sample_data.js` | Interim synthetic dataset, alerts and forecast |
+| `triage.js`, `packet.js`, `queue.js`, `pipeline.js` | Triage, checksum packets and the store-and-forward queue |
+| `sources.js` | NASA sources, numbers, link presets, assumptions, disclaimer |
+| `sw.js` | Service worker for offline use |
+| `launch.bat` | One-click local launch on Windows |
+| `docs/` | v2 product and engineering docs |
+| `lib/`, `fonts/` | Vendored Chart.js and fonts (no CDN) |
+
+Not used by the app (to be deleted, decision D-12): `js/app.js`, `js/today.js`, `js/act-ui.js`, `js/demo.js`, `js/trends.js`, `js/forecast-ui.js`, `js/sources-ui.js`, `js/storage.js`, `js/nasa-catalog.js`, `placeholders/`, `src/LandfallApp.jsx`, `engine/` and `triage/` (empty).
+
+The target layout is in [`docs/06-ARCHITECTURE.md`](docs/06-ARCHITECTURE.md#target-file-tree).
+
+## Team
+
+| Person | Owns |
+|---|---|
+| **Raghav Dua** | Triage, bundles and queue, integration, evaluation, sources, docs, demo and submission |
+| **Tanishk** | Detection, forecast, the ML engine (`origin/engine-ml`), synthetic data |
+| **Om** | UI: mission scene, tabs, digital twin, demo runner, service worker |
+
+Work plan and git workflow: [`docs/08-TEAM_AND_PLAN.md`](docs/08-TEAM_AND_PLAN.md).
+
+## Contract and docs
+
+- **Module contract:** [`CONTRACT.md`](CONTRACT.md) (v4.0). It lists the shapes the code uses today and points to the v2 shapes in [`docs/18-DATA_MODEL.md`](docs/18-DATA_MODEL.md).
+- **Full documentation:** [`docs/README.md`](docs/README.md). Start with the idea ([`01-IDEA.md`](docs/01-IDEA.md)) and the status page ([`00-STATUS.md`](docs/00-STATUS.md)).
+
+## Honesty
+
+- Synthetic data, labelled as such on every screen.
+- NASA figures carry sources ([`docs/13-SOURCES.md`](docs/13-SOURCES.md)); every threshold we chose is labelled a team assumption.
+- The checksum is an integrity check for the simulation, not security.
+- Forecasts are illustrative, not clinical predictions.
