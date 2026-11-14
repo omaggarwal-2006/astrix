@@ -3,19 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LANDFALL - Autonomous Health Architecture | NASA Space Apps 2026</title>
+  <title>LANDFALL - View From The Ship | NASA Space Apps 2026</title>
   <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
 
-  <!-- Title Screen Modal (Judges First Impression) -->
+  <!-- Title Screen Plaque (First Load) -->
   <div id="title-screen-modal" class="title-screen-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="title-plate-box">
-      <span class="plate-rivet top-left" aria-hidden="true"></span>
-      <span class="plate-rivet top-right" aria-hidden="true"></span>
-      <span class="plate-rivet bottom-left" aria-hidden="true"></span>
-      <span class="plate-rivet bottom-right" aria-hidden="true"></span>
-
       <div class="title-header-tag">NASA Space Apps Challenge 2026 &bull; Health Monitoring Software</div>
       <h1 id="modal-title" class="title-main-name">LANDFALL</h1>
 
@@ -26,15 +21,15 @@
       <div class="title-verbs-strip">
         <div class="verb-card">
           <span class="verb-word">1. Gather</span>
-          <p class="verb-desc">Daily check-in and body map evaluated against the astronaut's calibrated personal baseline, not Earth population averages.</p>
+          <p class="verb-desc">Health constellation and daily check-in evaluated against your personal baseline.</p>
         </div>
         <div class="verb-card">
           <span class="verb-word">2. Evaluate</span>
-          <p class="verb-desc">Projects landing-day functional readiness (bone, muscle, cardio) using published NASA Human Research Program rates.</p>
+          <p class="verb-desc">Landing-day flight cones for bone, muscle, and cardio based on NASA published rates.</p>
         </div>
         <div class="verb-card">
           <span class="verb-word">3. Act</span>
-          <p class="verb-desc">Delay-aware autonomous triage transfers authority to Self-Treat, Crew Medical Officer, or Flight Surgeon store-and-forward packet.</p>
+          <p class="verb-desc">Autonomous triage routing health issues across interplanetary comm delay.</p>
         </div>
       </div>
 
@@ -44,7 +39,7 @@
     </div>
   </div>
 
-  <!-- Top Hardware Disclaimer Strip -->
+  <!-- Thin Operational Advisory Banner -->
   <header class="disclaimer-strip" role="banner">
     <div class="disclaimer-left">
       <span class="disclaimer-badge">
@@ -63,465 +58,363 @@
     </div>
   </header>
 
-  <!-- Main Chassis Frame -->
-  <div class="instrument-chassis">
+  <!-- Main Viewport Shell -->
+  <div class="app-container">
 
-    <!-- Header Panel Plate -->
-    <section class="header-plate" aria-labelledby="app-heading">
-      <span class="plate-rivet top-left" aria-hidden="true"></span>
-      <span class="plate-rivet top-right" aria-hidden="true"></span>
-      <span class="plate-rivet bottom-left" aria-hidden="true"></span>
-      <span class="plate-rivet bottom-right" aria-hidden="true"></span>
-
-      <div class="header-main">
-        <div class="app-title-group">
-          <h1 id="app-heading" class="app-title">LANDFALL</h1>
-          <span class="app-subtitle">Mars Transit Autonomous Health &amp; Readiness</span>
-        </div>
-
-        <div class="mission-telemetry-pill" aria-label="Flight telemetry summary">
-          <div class="telemetry-item">
-            <span class="telemetry-label">MISSION:</span>
-            <span class="telemetry-value">ARES-VI TRANSIT</span>
-          </div>
-          <div class="telemetry-item">
-            <span class="telemetry-label">ACTIVE DAY:</span>
-            <span id="telemetry-day" class="telemetry-value num">Day 40 / 180</span>
-          </div>
-          <div class="telemetry-item">
-            <span class="telemetry-label">EARTH DISTANCE:</span>
-            <span id="telemetry-distance" class="telemetry-value num">38.4 M km</span>
-          </div>
-          <div class="telemetry-item">
-            <span class="telemetry-label">COMM DELAY:</span>
-            <span id="telemetry-delay" class="telemetry-value num">02m 08s</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="pitch-strip">
-        <p class="pitch-quote">
-          "The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."
-        </p>
-        <span class="pitch-verbs">Gather &bull; Evaluate &bull; Act</span>
-      </div>
+    <!-- =========================================================
+         STEP 1: THE MISSION SCENE (Top Canvas & Scrubber)
+    ========================================================== -->
+    <section class="mission-scene-wrapper" aria-label="Interplanetary Flight Scene">
+      <canvas id="mission-scene-canvas" class="mission-scene-canvas" aria-label="Earth to Mars transit starfield and trajectory arc"></canvas>
     </section>
 
-    <!-- Tab Navigation Bar (The 5 Tabs Restructured) -->
-    <nav class="tab-selector-bar" role="tablist" aria-label="Mission Views">
-      <button class="tab-btn active" role="tab" id="tab-btn-overview" aria-selected="true" aria-controls="panel-overview" data-tab="overview">
-        <span>Overview</span>
-        <span class="tab-badge">Gather</span>
+    <!-- Slim Scrubber Bar directly under Mission Scene -->
+    <div class="mission-scrubber-bar">
+      <label for="mission-scrubber-slider" class="scrubber-label">Mission transit scrubber:</label>
+      <input type="range" id="mission-scrubber-slider" class="mission-scrubber-slider" min="1" max="180" value="40" aria-label="Transit day slider 1 to 180" step="1">
+      <div class="scrubber-telemetry">
+        <strong id="telemetry-day" class="num">Day 40 / 180</strong>
+        <span style="color: var(--hull-line);">&bull;</span>
+        <span id="telemetry-distance" class="num">38.4 M km</span>
+        <span style="color: var(--hull-line);">&bull;</span>
+        <span id="telemetry-remaining" class="num">140 days to landing</span>
+      </div>
+    </div>
+
+    <!-- Pitch Line Banner -->
+    <div class="mission-pitch-row">
+      <p class="pitch-text">
+        "The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."
+      </p>
+      <span class="pitch-verbs">Gather &bull; Evaluate &bull; Act</span>
+    </div>
+
+    <!-- Slim Top Navigation (No Badges) -->
+    <nav class="slim-nav-bar" role="tablist" aria-label="Mission Views">
+      <button class="nav-tab-btn active" role="tab" id="nav-btn-overview" aria-selected="true" data-tab="overview">
+        Overview
       </button>
-      <button class="tab-btn" role="tab" id="tab-btn-monitor" aria-selected="false" aria-controls="panel-monitor" data-tab="monitor">
-        <span>Monitor</span>
-        <span class="tab-badge">Gather</span>
+      <button class="nav-tab-btn" role="tab" id="nav-btn-monitor" aria-selected="false" data-tab="monitor">
+        Monitor
       </button>
-      <button class="tab-btn" role="tab" id="tab-btn-forecast" aria-selected="false" aria-controls="panel-forecast" data-tab="forecast">
-        <span>Forecast</span>
-        <span class="tab-badge">Evaluate</span>
+      <button class="nav-tab-btn" role="tab" id="nav-btn-forecast" aria-selected="false" data-tab="forecast">
+        Forecast
       </button>
-      <button class="tab-btn" role="tab" id="tab-btn-triage" aria-selected="false" aria-controls="panel-triage" data-tab="triage">
-        <span>Triage &amp; Comms</span>
-        <span class="tab-badge">Act</span>
+      <button class="nav-tab-btn" role="tab" id="nav-btn-triage" aria-selected="false" data-tab="triage">
+        Triage &amp; Comms
       </button>
-      <button class="tab-btn" role="tab" id="tab-btn-sources" aria-selected="false" aria-controls="panel-sources" data-tab="sources">
-        <span>Sources</span>
-        <span class="tab-badge">Honesty</span>
+      <button class="nav-tab-btn" role="tab" id="nav-btn-sources" aria-selected="false" data-tab="sources">
+        Sources
       </button>
     </nav>
 
-    <!-- Screen Housing (Recessed Dark Screen) -->
-    <main class="screen-housing">
-      <div class="screen-glass">
+    <!-- Main Screens Content -->
+    <main>
 
-        <!-- =========================================================
-             TAB 1: OVERVIEW (GATHER)
-             6-Dimension Radar Chart (landing.mid vs 1.0 flat ring) + Alerts
-        ========================================================== -->
-        <section id="panel-overview" class="tab-panel active" role="tabpanel" aria-labelledby="tab-btn-overview">
+      <!-- =========================================================
+           TAB 1: OVERVIEW (HEALTH CONSTELLATION & READINESS)
+      ========================================================== -->
+      <section id="panel-overview" class="tab-panel active" role="tabpanel">
+        <div class="panel-row">
           
-          <div class="panel-row">
-            <!-- Hero Gauge Plate (Col 5) -->
-            <div class="col-5">
-              <div class="instrument-card" style="height: 100%;">
-                <div class="card-header">
-                  <h2 class="card-title">Overall Landing Readiness</h2>
-                  <span id="overview-status-word" class="status-badge status-nominal">Nominal</span>
+          <!-- Left: Constellation & Mars Glyph (5 cols) -->
+          <div class="col-5">
+            <div class="hull-plate" style="height: 100%;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Landing Readiness &amp; Constellation</h2>
+                <span class="plate-sub">Personal baseline ring (1.0)</span>
+              </div>
+
+              <div class="readiness-hero-display">
+                <!-- Mars Progress Ring Glyph -->
+                <div style="position: relative; width: 88px; height: 88px; flex-shrink: 0;">
+                  <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#243044" stroke-width="8"></circle>
+                    <circle id="mars-progress-ring" cx="50" cy="50" r="45" fill="none" stroke="#3FB59A" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="40"></circle>
+                  </svg>
+                  <!-- Mars silhouette glyph in center -->
+                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; background: #C4623A; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);"></div>
                 </div>
 
-                <div class="readiness-dial-card" style="margin-bottom: 14px; background: transparent; border: none; padding: 0;">
-                  <div class="dial-visual-wrap" style="width: 120px; height: 120px;">
-                    <svg class="dial-svg" viewBox="0 0 100 100">
-                      <circle class="dial-circle-bg" cx="50" cy="50" r="45"></circle>
-                      <circle id="overview-meter-bar" class="dial-circle-meter" cx="50" cy="50" r="45"></circle>
-                    </svg>
-                    <div class="dial-center-text">
-                      <div id="overview-dial-score" class="dial-score-num num">84%</div>
-                      <div class="dial-score-label">Readiness</div>
-                    </div>
-                  </div>
-
-                  <div class="dial-info-pane">
-                    <p style="font-size: 13px; color: #CAD5D4; line-height: 1.4;">
-                      Synthesizes all 6 physiological dimensions projected to Mars landing day. Plotted as ratio against flat reference ring at 1.0.
-                    </p>
-                  </div>
-                </div>
-
-                <div class="radar-box" style="height: 250px;">
-                  <canvas id="radar-overview-chart" role="img" aria-label="6-dimension radar chart of landing day projections"></canvas>
+                <div>
+                  <div id="readiness-number" class="readiness-big-num num">84%</div>
+                  <div id="readiness-sentence" style="font-size: 16px; font-weight: 600; margin-top: 4px;">Fit for landing operations on Mars.</div>
                 </div>
               </div>
-            </div>
 
-            <!-- Active Alerts List (Col 7) -->
-            <div class="col-7">
-              <div class="instrument-card" style="height: 100%;">
-                <div class="card-header">
-                  <h2 class="card-title">Active Health &amp; Telemetry Alerts</h2>
-                  <span class="card-status status-nominal">Real-Time Anomaly Engine</span>
-                </div>
-                <div id="overview-alerts-list">
-                  <!-- Rendered dynamically -->
-                </div>
+              <!-- Health Constellation Canvas -->
+              <div class="constellation-wrapper">
+                <canvas id="health-constellation-canvas" class="constellation-canvas" aria-label="Health constellation showing drift of 6 dimensions from baseline ring"></canvas>
               </div>
             </div>
           </div>
 
-        </section>
+          <!-- Right: Active Alerts List (7 cols) -->
+          <div class="col-7">
+            <div class="hull-plate" style="height: 100%;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Active Health &amp; Telemetry Alerts</h2>
+                <span class="plate-sub">Real-time physiological alerts</span>
+              </div>
+              <div id="active-alerts-container">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
 
-        <!-- =========================================================
-             TAB 2: MONITOR (GATHER)
-             Daily Check-In, Trends Charts, Clickable Body Map, Cabin & Immune
-        ========================================================== -->
-        <section id="panel-monitor" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-monitor" hidden>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           TAB 2: MONITOR (SUITED BODY MAP, FORM, QUIET PANELS)
+      ========================================================== -->
+      <section id="panel-monitor" class="tab-panel" role="tabpanel" hidden>
+        <div class="panel-row">
           
-          <div class="panel-row">
-            
-            <!-- Check-in Form (Col 6) -->
-            <div class="col-6">
-              <div class="instrument-card">
-                <div class="card-header">
-                  <h2 class="card-title">Daily Biomarker Check-In</h2>
-                  <span class="card-status status-nominal">Personal Baseline Logging</span>
-                </div>
-
-                <form id="monitor-checkin-form">
-                  <div class="checkin-form-grid">
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-hr">Heart Rate (bpm)</label>
-                      <input type="number" id="monitor-checkin-hr" class="instrument-input" value="64">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-sys">Systolic BP</label>
-                      <input type="number" id="monitor-checkin-sys" class="instrument-input" value="116">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-dia">Diastolic BP</label>
-                      <input type="number" id="monitor-checkin-dia" class="instrument-input" value="76">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-temp">Core Temp (°C)</label>
-                      <input type="number" id="monitor-checkin-temp" class="instrument-input" value="36.6" step="0.1">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-sleep">Sleep Hours</label>
-                      <input type="number" id="monitor-checkin-sleep" class="instrument-input" value="7.4" step="0.1">
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="monitor-checkin-mood">Mood (1-5)</label>
-                      <input type="number" id="monitor-checkin-mood" class="instrument-input" value="4.2" step="0.1">
-                    </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                      <label class="form-label" for="monitor-checkin-exercise">Daily Exercise (min)</label>
-                      <input type="number" id="monitor-checkin-exercise" class="instrument-input" value="90">
-                    </div>
-                  </div>
-                  <div class="form-actions-row">
-                    <button type="button" class="btn-submit-checkin" onclick="alert('Check-in saved to local cache.')">
-                      Log today's check-in
-                    </button>
-                  </div>
-                </form>
+          <!-- Left: Check-in form & Quiet Cabin/Immune/Radiation (6 cols) -->
+          <div class="col-6">
+            <div class="hull-plate">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Daily Biomarker Check-In</h2>
+                <span class="plate-sub">Personal baseline logging</span>
               </div>
 
-              <!-- Cabin Panel, Immune & Radiation -->
-              <div class="instrument-card" style="margin-top: 16px;">
-                <div class="card-header">
-                  <h2 class="card-title">Cabin Environment &amp; Subclinical Immune Checks</h2>
-                  <span class="card-status status-nominal">Hostile/Closed Environment</span>
-                </div>
-
-                <div id="scrubber-alert-box" class="scrubber-alert" role="alert"></div>
-
-                <div class="cabin-metrics-grid">
-                  <div class="cabin-meter-card">
-                    <span class="cabin-meter-label">Cabin CO2</span>
-                    <div id="cabin-co2-val" class="cabin-meter-val num"><span class="cabin-co2-row"><strong>2800</strong>&nbsp;ppm</span></div>
-                    <span style="font-size: 11px; color: var(--screen-dim);">Ceiling: 4500 ppm</span>
+              <form id="monitor-checkin-form">
+                <div class="monitor-form-grid">
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-hr">Heart rate (bpm)</label>
+                    <input type="number" id="monitor-hr" class="hull-input" value="64">
                   </div>
-                  <div class="cabin-meter-card">
-                    <span class="cabin-meter-label">Temperature</span>
-                    <div id="cabin-temp-val" class="cabin-meter-val num">21.5 °C</div>
-                    <span style="font-size: 11px; color: var(--screen-dim);">Range: 18-24 °C</span>
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-sys">Systolic BP (mmHg)</label>
+                    <input type="number" id="monitor-sys" class="hull-input" value="116">
                   </div>
-                  <div class="cabin-meter-card">
-                    <span class="cabin-meter-label">Noise</span>
-                    <div id="cabin-noise-val" class="cabin-meter-val num">58 dBA</div>
-                    <span style="font-size: 11px; color: var(--screen-dim);">Acoustic load</span>
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-dia">Diastolic BP (mmHg)</label>
+                    <input type="number" id="monitor-dia" class="hull-input" value="76">
                   </div>
-                </div>
-
-                <span class="form-label" style="margin: 8px 0 6px 0; display: block;">Immune Dysregulation (Stress Awakens Dormant Viruses):</span>
-                <div class="immune-grid">
-                  <div id="immune-rash" class="immune-item nominal"><span>Erythema / Rash</span><span class="shape-circle"></span></div>
-                  <div id="immune-cold-sore" class="immune-item nominal"><span>HSV-1 Viral Reactivation</span><span class="shape-circle"></span></div>
-                  <div id="immune-fever" class="immune-item nominal"><span>Pyrexia / Fever</span><span class="shape-circle"></span></div>
-                  <div id="immune-fatigue" class="immune-item nominal"><span>Clinical Fatigue</span><span class="shape-circle"></span></div>
-                </div>
-
-                <div class="radiation-summary-row" style="margin-top: 10px;">
-                  <div>
-                    <span class="cabin-meter-label">Accumulated Radiation</span>
-                    <div class="rad-big num"><span id="rad-cum-val">59.2 mSv</span> <span class="rad-sub">(Tracked, not forecast)</span></div>
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-temp">Core temp (°C)</label>
+                    <input type="number" id="monitor-temp" class="hull-input" value="36.6" step="0.1">
                   </div>
-                  <div style="text-align: right;">
-                    <span class="cabin-meter-label">Daily Flux</span>
-                    <div id="rad-daily-val" class="telemetry-value num">1.48 mSv/d</div>
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-sleep">Sleep hours</label>
+                    <input type="number" id="monitor-sleep" class="hull-input" value="7.4" step="0.1">
+                  </div>
+                  <div class="form-group-hull">
+                    <label class="hull-label" for="monitor-mood">Mood (1 to 5)</label>
+                    <input type="number" id="monitor-mood" class="hull-input" value="4.2" step="0.1">
+                  </div>
+                  <div class="form-group-hull" style="grid-column: span 2;">
+                    <label class="hull-label" for="monitor-exercise">Daily exercise (minutes)</label>
+                    <input type="number" id="monitor-exercise" class="hull-input" value="90">
                   </div>
                 </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="button" class="chassis-btn primary" onclick="alert('Check-in logged to local telemetry cache.')">
+                    Log today's check-in
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Quiet Cabin, Immune, and Radiation Plates -->
+            <div class="hull-plate" style="margin-top: 16px;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Cabin Environment &amp; Immune Checks</h2>
+                <span class="plate-sub">Hostile/closed environment hazard</span>
+              </div>
+
+              <!-- Scrubber alert callout -->
+              <div id="scrubber-alert-callout" class="scrubber-alert" role="alert"></div>
+
+              <div class="quiet-metrics-row">
+                <div class="quiet-metric-card">
+                  <span class="quiet-label">Cabin CO2</span>
+                  <div id="quiet-co2" class="quiet-val num">2800 ppm</div>
+                  <span style="font-size: 13px; color: var(--starlight-dim);">Ceiling 4500 ppm</span>
+                </div>
+                <div class="quiet-metric-card">
+                  <span class="quiet-label">Temperature</span>
+                  <div id="quiet-temp" class="quiet-val num">21.5 °C</div>
+                  <span style="font-size: 13px; color: var(--starlight-dim);">Range 18-24 °C</span>
+                </div>
+                <div class="quiet-metric-card">
+                  <span class="quiet-label">Noise</span>
+                  <div id="quiet-noise" class="quiet-val num">58 dBA</div>
+                  <span style="font-size: 13px; color: var(--starlight-dim);">Acoustic load</span>
+                </div>
+              </div>
+
+              <span class="hull-label" style="display: block; margin-bottom: 8px;">Subclinical immune checks (spaceflight stress awakens dormant viruses):</span>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+                <span id="immune-status-cold-sore" class="status-badge status-nominal"><span class="shape-circle"></span> Cold sore (HSV-1)</span>
+                <span id="immune-status-rash" class="status-badge status-nominal"><span class="shape-circle"></span> Rash / Erythema</span>
+                <span id="immune-status-fatigue" class="status-badge status-nominal"><span class="shape-circle"></span> Fatigue</span>
+              </div>
+
+              <div style="display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--hull-line); padding-top: 10px;">
+                <div>
+                  <span class="quiet-label">Accumulated space radiation:</span>
+                  <strong id="quiet-rad" class="num" style="font-size: 18px; color: var(--starlight); margin-left: 6px;">59.2 mSv</strong>
+                </div>
+                <span style="font-size: 13px; color: var(--starlight-dim);">(Tracked, not forecast)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Suited Body Map & 180-Day Trend Charts (6 cols) -->
+          <div class="col-6">
+            <div class="hull-plate" style="margin-bottom: 16px;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Suited Astronaut Body Map</h2>
+                <span class="plate-sub">Click suit part for alert detail</span>
+              </div>
+
+              <div class="suited-body-container">
+                <div class="body-svg-housing">
+                  <svg viewBox="0 0 100 200" style="width: 100%; height: 100%; cursor: pointer;" aria-label="Suited astronaut outline">
+                    <!-- Suited Helmet -->
+                    <path id="suit-helmet" class="suit-part" d="M 50,12 C 38,12 36,24 36,32 C 36,40 40,44 50,44 C 60,44 64,40 64,32 C 64,24 62,12 50,12 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <!-- Suited Chest Plate -->
+                    <path id="suit-chest" class="suit-part" d="M 34,48 L 66,48 L 70,82 L 30,82 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <!-- Suited Torso Core -->
+                    <path id="suit-torso" class="suit-part" d="M 30,84 L 70,84 L 66,112 L 34,112 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <!-- Suited Arms & Gloves -->
+                    <path id="suit-arms" class="suit-part" d="M 28,49 L 18,88 L 12,122 L 20,124 L 26,92 L 32,72 Z M 72,49 L 82,88 L 88,122 L 80,124 L 74,92 L 68,72 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <!-- Suited Legs & Boots -->
+                    <path id="suit-legs" class="suit-part" d="M 34,114 L 46,114 L 44,162 L 40,192 L 30,192 L 32,156 Z M 54,114 L 66,114 L 68,156 L 70,192 L 60,192 L 56,162 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                  </svg>
+                </div>
+                <div id="suited-body-readout" class="body-readout-box"></div>
               </div>
             </div>
 
-            <!-- Body Map & 180-Day Charts (Col 6) -->
-            <div class="col-6">
-              <div class="instrument-card" style="margin-bottom: 16px;">
-                <div class="card-header">
-                  <h2 class="card-title">Anatomical Drift Map</h2>
-                  <span style="font-size: 12px; color: var(--screen-dim);">Color + Shape Status</span>
-                </div>
-
-                <div class="body-map-container">
-                  <div class="body-svg-wrap">
-                    <svg class="body-svg" viewBox="0 0 100 200" role="img" aria-label="Interactive body map">
-                      <path id="body-head" class="body-part selected" data-part="head" d="M 50,10 C 40,10 38,22 38,30 C 38,38 42,42 50,42 C 58,42 62,38 62,30 C 62,22 60,10 50,10 Z" />
-                      <path id="body-chest" class="body-part" data-part="chest" d="M 36,45 L 64,45 L 67,80 L 33,80 Z" />
-                      <path id="body-torso" class="body-part" data-part="torso" d="M 33,82 L 67,82 L 63,110 L 37,110 Z" />
-                      <path id="body-arms" class="body-part" data-part="arms" d="M 32,46 L 20,85 L 14,120 L 22,122 L 28,90 L 34,70 Z M 68,46 L 80,85 L 86,120 L 78,122 L 72,90 L 66,70 Z" />
-                      <path id="body-legs" class="body-part" data-part="legs" d="M 36,113 L 47,113 L 45,160 L 42,192 L 32,192 L 34,155 Z M 53,113 L 64,113 L 66,155 L 68,192 L 58,192 L 55,160 Z" />
-                    </svg>
-                  </div>
-                  <div id="body-part-readout" class="body-readout-pane"></div>
-                </div>
+            <!-- Trend Chart: Sleep Duration -->
+            <div class="hull-plate">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Sleep Duration &bull; 180-Day Longitudinal Timeline</h2>
+                <span class="plate-sub">Day 40 sleep collapse</span>
               </div>
-
-              <!-- 180-Day Chart.js Trend Lines -->
-              <div class="instrument-card">
-                <div class="card-header">
-                  <h2 class="card-title">Circadian Sleep &bull; 180-Day Timeline</h2>
-                  <span class="card-status status-nominal">Day 40 Inflection</span>
-                </div>
-                <div class="trends-canvas-box" style="height: 180px;">
-                  <canvas id="chart-monitor-sleep"></canvas>
-                </div>
-                <div id="trend-summary-sleep" class="plain-summary nominal">Sleep 7.4 h vs baseline 7.4 h, nominal.</div>
+              <div style="height: 180px; width: 100%;">
+                <canvas id="trend-sleep-chart"></canvas>
               </div>
+              <div id="plain-sleep-summary" style="font-size: 15px; margin-top: 10px; font-weight: 600;"></div>
             </div>
+          </div>
 
-          </div><!-- /panel-row -->
+        </div>
+      </section>
 
-        </section>
-
-        <!-- =========================================================
-             TAB 3: FORECAST (EVALUATE)
-             Projections, 3 Scenario Buttons, Live What-If Slider
-        ========================================================== -->
-        <section id="panel-forecast" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-forecast" hidden>
-          
-          <div class="forecast-hero-row">
+      <!-- =========================================================
+           TAB 3: FORECAST (FLIGHT-PATH CONES)
+      ========================================================== -->
+      <section id="panel-forecast" class="tab-panel" role="tabpanel" hidden>
+        
+        <div class="hull-plate" style="margin-bottom: 20px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
             <div>
-              <span style="font-family: var(--font-heading); font-size: 12px; color: var(--screen-dim); text-transform: uppercase;">
-                Interactive Countermeasure Scenarios
-              </span>
+              <span class="hull-label">Interactive countermeasure scenarios:</span>
               <div style="display: flex; gap: 8px; margin-top: 6px;">
-                <button id="btn-scenario-adherent" class="chassis-btn">Adherent (1.5 h/d)</button>
-                <button id="btn-scenario-nominal" class="chassis-btn">Nominal (1.2 h/d)</button>
-                <button id="btn-scenario-zero" class="chassis-btn">Zero Exercise (0.0 h/d)</button>
+                <button id="btn-scenario-15" class="chassis-btn">Adherent (1.5 h/d)</button>
+                <button id="btn-scenario-12" class="chassis-btn">Nominal (1.2 h/d)</button>
+                <button id="btn-scenario-00" class="chassis-btn">Zero exercise (0.0 h/d)</button>
               </div>
             </div>
 
-            <!-- What-if slider -->
-            <div class="forecast-slider-group">
-              <label for="forecast-adherence-slider" style="font-family: var(--font-heading); font-size: 13.5px; font-weight: 600;">
-                Daily Exercise Adherence Slider:
-              </label>
-              <input type="range" id="forecast-adherence-slider" min="0.0" max="1.5" step="0.1" value="1.2" style="width: 140px; accent-color: var(--scrubber-teal);">
-              <span id="forecast-adherence-val" class="slider-val-readout num">1.2 hrs/day</span>
+            <div>
+              <span class="hull-label">Daily exercise adherence slider:</span>
+              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
+                <input type="range" id="adherence-slider-input" min="0.0" max="1.5" step="0.1" value="1.2" style="width: 160px; accent-color: var(--nominal-teal); cursor: pointer;">
+                <strong id="adherence-slider-val" class="num" style="font-size: 18px; color: var(--nominal-teal); min-width: 90px;">1.2 hrs/day</strong>
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Forecast Dimension Cards Grid -->
-          <div id="forecast-cards-grid" class="forecast-grid">
-            <!-- Populated dynamically via main.js -->
-          </div>
+        <!-- Trajectory Cones Container -->
+        <div id="cones-grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 18px;">
+          <!-- Rendered dynamically -->
+        </div>
 
-        </section>
+      </section>
 
-        <!-- =========================================================
-             TAB 4: TRIAGE & COMMS (ACT)
-             Wired to pipeline.js, queue.js, and sources.js LINK_PRESETS
-        ========================================================== -->
-        <section id="panel-triage" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-triage" hidden>
+      <!-- =========================================================
+           TAB 4: TRIAGE & COMMS (ACT)
+      ========================================================== -->
+      <section id="panel-triage" class="tab-panel" role="tabpanel" hidden>
+        <div class="panel-row">
           
-          <div class="panel-row">
-            
-            <!-- Triage Decision Output (Col 6) -->
-            <div class="col-6">
-              <div class="instrument-card">
-                <div class="card-header">
-                  <h2 class="card-title">Autonomous Triage Evaluation (pipeline.js)</h2>
-                  <span id="triage-score-val" class="status-badge status-nominal">Score: 2</span>
-                </div>
+          <!-- Left: Triage Decision & Link Selector (6 cols) -->
+          <div class="col-6">
+            <div class="hull-plate">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Autonomous Triage Evaluation</h2>
+                <span class="plate-sub">pipeline.js decision</span>
+              </div>
 
-                <div class="triage-decision-box" style="margin-bottom: 12px;">
-                  <div class="triage-header-row">
-                    <div>
-                      <span style="font-size: 11px; color: var(--screen-dim); text-transform: uppercase;">Designated Treatment Authority:</span>
-                      <div id="triage-path-val" class="triage-role-title">CREW MEDICAL OFFICER</div>
-                    </div>
-                    <div>
-                      <span style="font-size: 11px; color: var(--screen-dim); text-transform: uppercase;">Delivery Channel:</span>
-                      <div id="triage-delivery-val" style="font-weight: 700; color: var(--scrubber-teal);">SEND_PACKET</div>
-                    </div>
-                  </div>
+              <div style="background: #080E17; border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 18px;">
+                <span class="hull-label">Designated treatment authority:</span>
+                <div id="triage-path-display" style="font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: var(--starlight); margin: 4px 0 8px 0;">
+                  CREW MEDICAL OFFICER
+                </div>
+                <div id="triage-why-display" style="font-size: 15.5px; color: #CAD5D4; margin-bottom: 8px;"></div>
+                <div id="triage-delivery-display" style="font-size: 14.5px; color: var(--nominal-teal); font-weight: 600;"></div>
+              </div>
 
-                  <div class="triage-rationale">
-                    <strong style="color: var(--screen-text); display: block; margin-bottom: 2px;">Decision Rationale (decision.why):</strong>
-                    <span id="triage-why-val">Score 2: severity 2, 9 days, worsening</span>
-                  </div>
-                </div>
-
-                <!-- Link Presets Selector from sources.js -->
-                <div class="card-header" style="margin-top: 10px;">
-                  <h2 class="card-title">Interplanetary Communication Link Preset (setLink)</h2>
-                </div>
-                <div style="margin-bottom: 10px;">
-                  <label for="comms-preset-select" class="form-label" style="margin-bottom: 4px;">Choose Distance &amp; Delay Preset:</label>
-                  <select id="comms-preset-select" class="instrument-input" style="width: 100%; cursor: pointer;">
-                    <!-- Options populated from LINK_PRESETS -->
-                  </select>
-                </div>
-                <div id="queue-speedup-note" style="font-size: 12px; color: var(--caution-amber); font-family: var(--font-mono);">
-                  Demo speed-up active: 1s in real-time = 100s simulated latency.
-                </div>
+              <!-- Link Presets Dropdown -->
+              <div class="hull-plate-header" style="margin-top: 14px;">
+                <h2 class="plate-title">Communication Distance Preset (setLink)</h2>
+              </div>
+              <div style="margin-bottom: 10px;">
+                <label for="link-preset-select" class="hull-label" style="display: block; margin-bottom: 6px;">Choose Earth distance &amp; latency:</label>
+                <select id="link-preset-select" class="hull-input" style="width: 100%; cursor: pointer;">
+                  <!-- Options fed by LINK_PRESETS -->
+                </select>
+              </div>
+              <div id="queue-clock-speedup" style="font-size: 13.5px; color: var(--signal-amber); font-family: var(--font-mono);">
+                demo clock: 1 s = 1.6 min
               </div>
             </div>
-
-            <!-- DTN Queue Table (Col 6) -->
-            <div class="col-6">
-              <div class="instrument-card">
-                <div class="card-header">
-                  <h2 class="card-title">Store-and-Forward Telemetry Queue (queue.js)</h2>
-                  <span class="card-status status-nominal">DTN Asynchronous Link</span>
-                </div>
-
-                <table class="queue-table">
-                  <thead>
-                    <tr>
-                      <th>Packet ID</th>
-                      <th>Status</th>
-                      <th>Attempts</th>
-                      <th>Ground Response</th>
-                      <th>Priority</th>
-                    </tr>
-                  </thead>
-                  <tbody id="queue-table-tbody">
-                    <!-- Populated dynamically via queue.js -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div><!-- /panel-row -->
-
-        </section>
-
-        <!-- =========================================================
-             TAB 5: SOURCES & HONESTY
-             SOURCES, ASSUMPTIONS, and DISCLAIMER from teammate's sources.js
-        ========================================================== -->
-        <section id="panel-sources" class="tab-panel" role="tabpanel" aria-labelledby="tab-btn-sources" hidden>
-          
-          <div id="sources-content-container">
-            <!-- Populated dynamically via main.js from sources.js -->
           </div>
 
-        </section>
+          <!-- Right: DTN Queue List (6 cols) -->
+          <div class="col-6">
+            <div class="hull-plate">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Store-and-Forward Telemetry Queue</h2>
+                <span class="plate-sub">queue.js status</span>
+              </div>
 
-      </div>
+              <div id="queue-items-container">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- =========================================================
+           TAB 5: SOURCES & HONESTY
+      ========================================================== -->
+      <section id="panel-sources" class="tab-panel" role="tabpanel" hidden>
+        <div id="sources-content-view">
+          <!-- Rendered dynamically from sources.js -->
+        </div>
+      </section>
+
     </main>
 
-  </div><!-- /instrument-chassis -->
+  </div><!-- /app-container -->
 
-  <!-- Demo Caption Toast (Visible during 30s Demo) -->
-  <aside id="demo-caption" class="demo-caption-toast" role="status" aria-live="polite">
+  <!-- Demo Toast Notification -->
+  <aside id="demo-caption-toast" class="demo-caption-toast" role="status" aria-live="polite">
     <span class="disclaimer-badge">DEMO WALKTHROUGH</span>
     <span id="demo-caption-text">Initializing Ares-VI transit simulation...</span>
   </aside>
 
-  <!-- =========================================================
-       THE MISSION RIBBON (The One Memorable Element)
-       Persistent along the bottom of every tab
-  ========================================================== -->
-  <footer class="mission-ribbon-container" aria-label="Mission Transit Ribbon">
-    <div class="ribbon-meta-row">
-      <div class="ribbon-left-meta">
-        <span class="ribbon-title">
-          <span class="ribbon-badge">TRANSIT TRACK</span>
-          180-Day Earth &rarr; Mars Hohmann Transfer
-        </span>
-        <span class="ribbon-day-display">
-          Active Day: <span id="ribbon-day-number" class="num">40</span> of 180
-          (<span id="ribbon-days-remaining" class="num">140</span> days to landing)
-        </span>
-      </div>
-      <div class="ribbon-comm-delay" title="One-way light travel time for radio signals to Earth">
-        <span class="comm-pulse" aria-hidden="true"></span>
-        <span>One-Way Delay:</span>
-        <strong id="ribbon-comm-delay-val" class="num">02m 08s</strong>
-        <span style="color: #65706E; font-size: 11.5px;">&bull; Store &amp; Forward</span>
-      </div>
-    </div>
-
-    <!-- Interactive Track & Scrubber -->
-    <div class="transit-track-wrap">
-      <div class="transit-track-line">
-        <div id="transit-progress" class="transit-progress-fill"></div>
-        
-        <!-- Day 40 Milestone: Sleep Collapse -->
-        <div class="event-marker-40" title="Day 40: Mission fatigue & sleep collapse marker">
-          <span class="event-marker-tag">Day 40: Sleep collapse</span>
-          <div class="event-marker-pin"></div>
-        </div>
-
-        <span class="waypoint earth">Earth Departure (Day 1)</span>
-        <span class="waypoint mars">Mars Landing (Day 180)</span>
-      </div>
-
-      <!-- Native Range Slider for smooth keyboard & touch interaction -->
-      <input type="range" id="mission-day-slider" class="mission-slider" min="1" max="180" value="40" aria-label="Mission day scrubber (1 to 180)" step="1">
-
-      <!-- Visual Ship Marker -->
-      <div id="ship-marker" class="ship-marker" style="left: 22.22%;" aria-hidden="true">
-        <svg class="ship-icon" viewBox="0 0 24 24">
-          <path d="M12 2L4 20l8-4 8 4z"/>
-        </svg>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts: Offline Library first, then ES Module Main Controller -->
+  <!-- Scripts: Offline Library first, then ES Module Controller -->
   <script src="./lib/chart.umd.min.js"></script>
   <script type="module" src="./main.js"></script>
 </body>

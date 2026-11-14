@@ -3,14 +3,14 @@
  * Enables 100% offline functionality after first load over HTTP/HTTPS.
  */
 
-const CACHE_NAME = 'landfall-cache-v1';
+const CACHE_NAME = 'landfall-redesign-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/style.css',
   './lib/chart.umd.min.js',
-  './fonts/barlow-regular.woff2',
-  './fonts/barlow-condensed.woff2',
+  './fonts/saira-condensed.woff2',
+  './fonts/hanken-grotesk.woff2',
   './adapter.js',
   './pipeline.js',
   './queue.js',
@@ -19,9 +19,10 @@ const ASSETS_TO_CACHE = [
   './sources.js',
   './sample_alert.js',
   './sample/sample_data.js',
-  './js/app.js',
-  './js/storage.js',
-  './js/nasa-catalog.js'
+  './js/mission-scene.js',
+  './js/constellation.js',
+  './js/cone-renderer.js',
+  './main.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -49,7 +50,6 @@ self.addEventListener('fetch', (e) => {
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
       return fetch(e.request).catch(() => {
-        // Offline fallback
         if (e.request.destination === 'document') {
           return caches.match('./index.html');
         }

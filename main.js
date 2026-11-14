@@ -1,16 +1,23 @@
 /**
- * LANDFALL - Main Architecture Controller (main.js)
- * ES Module wiring Teammates' logic (pipeline.js, queue.js, sources.js)
- * with the UI tabs and the adapter layer (adapter.js).
+ * LANDFALL - "The View From The Ship" Main Controller (main.js)
+ * Implements:
+ * 1. The Mission Scene (Top Starfield, Hohmann Arc, Earth & Mars scaling, Packet flight)
+ * 2. Overview: Health Constellation (replacing radar) + Mars Readiness Glyph
+ * 3. Monitor: Suited Astronaut Outline Map + Restyled Chart.js Lines
+ * 4. Forecast: Flight-Path Cones reshaping with slider
+ * 5. Triage & Comms: Triage decision + DTN queue list
+ * 6. Sources: Dynamically rendered from teammate's sources.js
  */
 
 import { getAlerts, getForecast, getReadings, getBaseline, mapSeverity } from "./adapter.js";
 import { handleAlert } from "./pipeline.js";
 import { getQueue, onChange as onQueueChange, setLink as setQueueLink, config as queueConfig } from "./queue.js";
-import { SOURCES, NUMBERS, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./sources.js";
+import { SOURCES, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./sources.js";
 import { sampleAlert } from "./sample_alert.js";
+import { MissionScene } from "./js/mission-scene.js";
+import { HealthConstellation } from "./js/constellation.js";
+import { renderTrajectoryCone } from "./js/cone-renderer.js";
 
-// Global Shared Mission State
 export const AppState = {
   currentDay: 40,
   maxDays: 180,
@@ -18,54 +25,38 @@ export const AppState = {
   exerciseHours: 1.2,
   activePresetKey: 'MARS_MID',
   activeBodyPart: 'head',
-  radarChartInstance: null,
+  missionScene: null,
+  constellation: null,
   trendCharts: {},
   demoInterval: null,
   isDemoRunning: false,
 
   setDay(day, notify = true) {
     this.currentDay = Math.max(1, Math.min(this.maxDays, parseInt(day, 10)));
-    this.updateMissionRibbon();
+    if (this.missionScene) {
+      this.missionScene.setDay(this.currentDay, false);
+    }
+    this.updateTelemetryText();
     if (notify) {
-      this.renderActiveTab();
+      this.renderCurrentTab();
     }
   },
 
-  updateMissionRibbon() {
+  updateTelemetryText() {
     const day = this.currentDay;
-    const percent = ((day - 1) / (this.maxDays - 1)) * 100;
-    const daysRemaining = this.maxDays - day;
-
-    // Comm delay calculation based on Hohmann orbital distance
-    const delaySec = Math.round(1.5 + (day / 180) * 750);
-    const mins = Math.floor(delaySec / 60);
-    const secs = delaySec % 60;
-    const delayStr = `${String(mins).padStart(2, '0')}m ${String(secs).padStart(2, '0')}s`;
-    const distStr = `${(0.38 + (day / 180) * 224.62).toFixed(1)} M km`;
+    const remaining = this.maxDays - day;
+    const dist = (0.38 + (day / 180) * 224.62).toFixed(1);
 
     const elDay = document.getElementById('telemetry-day');
     const elDist = document.getElementById('telemetry-distance');
-    const elDelay = document.getElementById('telemetry-delay');
+    const elRemaining = document.getElementById('telemetry-remaining');
+
     if (elDay) elDay.textContent = `Day ${day} / ${this.maxDays}`;
-    if (elDist) elDist.textContent = distStr;
-    if (elDelay) elDelay.textContent = delayStr;
-
-    const ribDay = document.getElementById('ribbon-day-number');
-    const ribRemaining = document.getElementById('ribbon-days-remaining');
-    const ribDelay = document.getElementById('ribbon-comm-delay-val');
-    const ribProgress = document.getElementById('transit-progress');
-    const shipMarker = document.getElementById('ship-marker');
-    const slider = document.getElementById('mission-day-slider');
-
-    if (ribDay) ribDay.textContent = day;
-    if (ribRemaining) ribRemaining.textContent = daysRemaining;
-    if (ribDelay) ribDelay.textContent = delayStr;
-    if (ribProgress) ribProgress.style.width = `${percent}%`;
-    if (shipMarker) shipMarker.style.left = `${percent}%`;
-    if (slider && parseInt(slider.value, 10) !== day) slider.value = day;
+    if (elDist) elDist.textContent = `${dist} M km`;
+    if (elRemaining) elRemaining.textContent = `${remaining} days to landing`;
   },
 
-  renderActiveTab() {
+  renderCurrentTab() {
     renderOverviewTab();
     renderMonitorTab();
     renderForecastTab();
@@ -74,187 +65,122 @@ export const AppState = {
   }
 };
 
-// Initialize Application on DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
-  // Register Service Worker for 100% offline support
+  // Service Worker Registration for offline use
   if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
-      console.warn('Service Worker registration note:', err);
-    });
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  initTabNavigation();
-  initMissionRibbon();
-  initDemoRunner();
-  initTitleScreen();
-  initScenarioButtons();
-
-  // Subscribe to queue changes
-  onQueueChange((queue) => {
-    renderQueueTable(queue);
+  // 1. Initialize Mission Scene Canvas
+  AppState.missionScene = new MissionScene('mission-scene-canvas', 'mission-scrubber-slider', (newDay) => {
+    AppState.setDay(newDay, true);
   });
 
-  // Set initial link preset from teammate's sources.js
-  const initialPreset = LINK_PRESETS.MARS_MID;
-  setQueueLink({ available: true, delay_s: initialPreset.delay_s });
+  // 2. Initialize Health Constellation Canvas
+  AppState.constellation = new HealthConstellation('health-constellation-canvas');
 
-  AppState.setDay(40);
+  initNavigation();
+  initScenarioButtons();
+  initDemoRunner();
+  initTitleScreen();
+
+  // Subscribe to queue changes
+  onQueueChange(() => {
+    renderQueueTable(getQueue());
+    if (AppState.missionScene) AppState.missionScene.draw();
+  });
+
+  // Initial link preset
+  const preset = LINK_PRESETS[AppState.activePresetKey] || LINK_PRESETS.MARS_MID;
+  setQueueLink({ available: true, delay_s: preset.delay_s });
+
+  // Initial load sweep
+  orchestrateInitialLoad();
 });
 
-// Tab Navigation
-function initTabNavigation() {
-  const tabs = document.querySelectorAll('.tab-btn');
+function orchestrateInitialLoad() {
+  AppState.setDay(40);
+  const ring = document.getElementById('mars-progress-ring');
+  if (ring) {
+    ring.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(0.2, 0.9, 0.3, 1)';
+  }
+}
+
+// Slim Top Navigation
+function initNavigation() {
+  const tabs = document.querySelectorAll('.nav-tab-btn');
   tabs.forEach(btn => {
     btn.addEventListener('click', () => {
-      const target = btn.getAttribute('data-tab');
-      activateTab(target);
+      const tabId = btn.getAttribute('data-tab');
+      activateTab(tabId);
     });
   });
 }
 
 export function activateTab(tabId) {
   AppState.activeTab = tabId;
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    const isTarget = b.getAttribute('data-tab') === tabId;
-    b.classList.toggle('active', isTarget);
-    b.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+  document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+    const isTarget = btn.getAttribute('data-tab') === tabId;
+    btn.classList.toggle('active', isTarget);
+    btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
   });
 
-  document.querySelectorAll('.tab-panel').forEach(p => {
-    const isTarget = p.id === `panel-${tabId}`;
-    p.classList.toggle('active', isTarget);
-    p.hidden = !isTarget;
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    const isTarget = panel.id === `panel-${tabId}`;
+    panel.classList.toggle('active', isTarget);
+    panel.hidden = !isTarget;
   });
 
-  AppState.renderActiveTab();
-}
-
-// Mission Ribbon Controller
-function initMissionRibbon() {
-  const slider = document.getElementById('mission-day-slider');
-  if (slider) {
-    slider.addEventListener('input', (e) => {
-      AppState.setDay(e.target.value);
-    });
-  }
+  AppState.renderCurrentTab();
 }
 
 // -------------------------------------------------------------
-// TAB 1: OVERVIEW (GATHER)
-// 6-Dimension Radar Chart (landing.mid vs 1.0 flat ring) + Alerts
+// STEP 2: OVERVIEW TAB (HEALTH CONSTELLATION & MARS GLYPH)
 // -------------------------------------------------------------
 function renderOverviewTab() {
   const day = AppState.currentDay;
   const forecast = getForecast(day, AppState.exerciseHours);
   const alerts = getAlerts(day);
 
-  renderOverviewRadar(forecast);
-  renderActiveAlertsList(alerts);
-  updateReadinessDial(forecast);
-}
+  // Update Constellation
+  if (AppState.constellation) {
+    AppState.constellation.setData(forecast);
+  }
 
-function updateReadinessDial(forecast) {
+  // Update Landing Readiness Mars-glyph ring
   const midValues = forecast.map(f => f.landing.mid);
   const avg = Math.round(midValues.reduce((a, b) => a + b, 0) / midValues.length);
   const status = avg >= 90 ? 'nominal' : (avg >= 82 ? 'caution' : 'alarm');
 
-  const dialScore = document.getElementById('overview-dial-score');
-  const dialStatusWord = document.getElementById('overview-status-word');
-  const dialMeterBar = document.getElementById('overview-meter-bar');
+  const numEl = document.getElementById('readiness-number');
+  const sentenceEl = document.getElementById('readiness-sentence');
+  const ring = document.getElementById('mars-progress-ring');
 
-  if (dialScore) dialScore.textContent = `${avg}%`;
-  if (dialStatusWord) {
-    const map = mapSeverity(status);
-    dialStatusWord.textContent = map.label;
-    dialStatusWord.className = `status-badge status-${map.status}`;
+  if (numEl) numEl.textContent = `${avg}%`;
+  if (sentenceEl) {
+    sentenceEl.textContent = status === 'nominal'
+      ? 'Fit for landing operations on Mars.'
+      : (status === 'caution' ? 'Caution: Elevated physiological drift detected.' : 'At risk on landing day: urgent countermeasures required.');
+    sentenceEl.style.color = status === 'nominal' ? '#3FB59A' : (status === 'caution' ? '#E8A93A' : '#E5594F');
   }
-  if (dialMeterBar) {
+  if (ring) {
     const offset = 283 - (283 * (avg / 100));
-    dialMeterBar.style.strokeDashoffset = offset;
-    dialMeterBar.setAttribute('stroke', status === 'nominal' ? 'var(--scrubber-teal)' : (status === 'caution' ? 'var(--caution-amber)' : 'var(--alarm-red)'));
-  }
-}
-
-function renderOverviewRadar(forecast) {
-  const canvas = document.getElementById('radar-overview-chart');
-  if (!canvas || !window.Chart) return;
-
-  const labels = forecast.map(f => f.dimension);
-  // Each axis uses landing.mid as ratio relative to 100% nominal baseline (1.0)
-  const ratios = forecast.map(f => +(f.landing.mid / 100).toFixed(2));
-  const referenceRing = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
-
-  if (AppState.radarChartInstance) {
-    AppState.radarChartInstance.data.datasets[0].data = ratios;
-    AppState.radarChartInstance.update('none');
-    return;
+    ring.style.strokeDashoffset = offset;
+    ring.setAttribute('stroke', status === 'nominal' ? '#3FB59A' : (status === 'caution' ? '#E8A93A' : '#E5594F'));
   }
 
-  const ctx = canvas.getContext('2d');
-  AppState.radarChartInstance = new window.Chart(ctx, {
-    type: 'radar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Landing Day Forecast Ratio (landing.mid)',
-          data: ratios,
-          backgroundColor: 'rgba(47, 143, 131, 0.28)',
-          borderColor: '#2F8F83',
-          borderWidth: 2,
-          pointBackgroundColor: '#2F8F83',
-          pointRadius: 4
-        },
-        {
-          label: 'Nominal Baseline Ring (1.0)',
-          data: referenceRing,
-          borderColor: 'rgba(230, 235, 234, 0.65)',
-          borderWidth: 1.5,
-          borderDash: [5, 5],
-          pointRadius: 0,
-          fill: false
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        r: {
-          min: 0.5,
-          max: 1.3,
-          ticks: {
-            stepSize: 0.2,
-            color: '#98A8A6',
-            backdropColor: 'transparent',
-            font: { size: 10, family: 'Barlow' }
-          },
-          grid: { color: 'rgba(255, 255, 255, 0.12)' },
-          angleLines: { color: 'rgba(255, 255, 255, 0.12)' },
-          pointLabels: {
-            color: '#E6EBEA',
-            font: { size: 11.5, family: 'Barlow Semi Condensed', weight: 600 }
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#E6EBEA', font: { size: 11, family: 'Barlow' } }
-        }
-      }
-    }
-  });
+  // Active alerts list
+  renderAlertsList(alerts);
 }
 
-function renderActiveAlertsList(alerts) {
-  const container = document.getElementById('overview-alerts-list');
+function renderAlertsList(alerts) {
+  const container = document.getElementById('active-alerts-container');
   if (!container) return;
 
   if (alerts.length === 0) {
     container.innerHTML = `
-      <div style="padding: 12px; background: #07121B; border: 1px solid #162B3D; border-radius: 2px; font-size: 13px; color: #98A8A6;">
-        <span class="shape-circle"></span> No active alerts. All biomarkers align with personal baseline.
+      <div style="padding: 16px; background: #090F18; border: 1px solid var(--hull-line); border-radius: 4px; font-size: 15px; color: var(--starlight-dim);">
+        <span class="shape-circle"></span> No active alerts. All systems nominal relative to personal baseline.
       </div>
     `;
     return;
@@ -264,14 +190,18 @@ function renderActiveAlertsList(alerts) {
   alerts.forEach(a => {
     const map = mapSeverity(a.severity);
     html += `
-      <div class="flag-item flag-${map.status}" style="margin-bottom: 8px;">
-        <span class="${map.shapeClass}" title="${map.label}"></span>
-        <div class="flag-content">
-          <strong>${a.id} &bull; ${a.metric.toUpperCase()} (${a.current} vs baseline ${a.baseline})</strong>
-          <p>${a.reason}</p>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: #090E17; border: 1px solid var(--hull-line); border-radius: 4px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="${map.shapeClass}" title="${map.label}"></span>
+          <div>
+            <div style="font-family: var(--font-heading); font-size: 16px; color: var(--starlight); font-weight: 600;">
+              ${a.id} &bull; ${a.metric} (${a.current} vs baseline ${a.baseline})
+            </div>
+            <div style="font-size: 14.5px; color: #B0BCBA; margin-top: 2px;">${a.reason}</div>
+          </div>
         </div>
         <span class="status-badge status-${map.status}">
-          <span class="${map.shapeClass}"></span> ${map.label.toUpperCase()}
+          <span class="${map.shapeClass}"></span> ${map.label}
         </span>
       </div>
     `;
@@ -280,114 +210,107 @@ function renderActiveAlertsList(alerts) {
 }
 
 // -------------------------------------------------------------
-// TAB 2: MONITOR (GATHER)
-// Check-In Form, Chart.js Lines, Clickable Body Map, Cabin & Immune
+// STEP 3: MONITOR TAB (SUITED BODY MAP & TRENDS)
 // -------------------------------------------------------------
 function renderMonitorTab() {
   const day = AppState.currentDay;
   const readings = getReadings(day);
   const alerts = getAlerts(day);
 
-  populateCheckInForm(readings);
-  renderBodyMap(alerts, readings);
-  renderCabinPanel(readings, alerts);
-  renderImmunePanel(readings);
-  renderRadiationPanel(readings);
-  renderTrendsCharts(day);
+  renderSuitedBodyMap(alerts, readings);
+  renderQuietPanels(readings, alerts);
+  renderTrendLines(day);
 }
 
-function populateCheckInForm(readings) {
-  const v = readings.vitals;
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.value = val !== undefined ? val : '';
-  };
-
-  setVal('monitor-checkin-hr', v.hr_bpm);
-  setVal('monitor-checkin-sys', v.bp_sys);
-  setVal('monitor-checkin-dia', v.bp_dia);
-  setVal('monitor-checkin-temp', v.temp_c);
-  setVal('monitor-checkin-sleep', v.sleep_h);
-  setVal('monitor-checkin-mood', v.mood);
-  setVal('monitor-checkin-exercise', v.exercise_min);
-}
-
-function renderBodyMap(alerts, readings) {
-  // Map alerts to body zones
+function renderSuitedBodyMap(alerts, readings) {
   const hasHead = alerts.some(a => a.metric === 'sleep_h' || a.metric === 'cabin_co2');
-  const hasChest = alerts.some(a => a.metric === 'hr_bpm' || a.metric === 'bp_sys');
+  const hasChest = alerts.some(a => a.metric === 'hr_bpm');
   const hasLegs = alerts.some(a => a.metric === 'exercise_min');
 
-  const setPartStatus = (partId, isAlert, severityNum) => {
-    const el = document.getElementById(`body-${partId}`);
-    if (el) {
-      if (isAlert) {
-        el.style.fill = severityNum >= 3 ? '#C8322B' : '#E3A21A';
-      } else {
-        el.style.fill = '#2F8F83';
-      }
+  const setPart = (id, hasAlert, severity) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (hasAlert) {
+      el.style.stroke = severity >= 3 ? '#E5594F' : '#E8A93A';
+      el.style.fill = severity >= 3 ? 'rgba(229, 89, 79, 0.25)' : 'rgba(232, 169, 58, 0.25)';
+    } else {
+      el.style.stroke = '#3FB59A';
+      el.style.fill = 'rgba(63, 181, 154, 0.15)';
     }
   };
 
-  const maxSeverity = alerts.length > 0 ? Math.max(...alerts.map(a => a.severity)) : 1;
-  setPartStatus('head', hasHead, maxSeverity);
-  setPartStatus('chest', hasChest, 2);
-  setPartStatus('torso', false, 1);
-  setPartStatus('arms', false, 1);
-  setPartStatus('legs', hasLegs, 2);
+  setPart('suit-helmet', hasHead, 3);
+  setPart('suit-chest', hasChest, 2);
+  setPart('suit-torso', false, 1);
+  setPart('suit-arms', false, 1);
+  setPart('suit-legs', hasLegs, 2);
 
-  renderBodyPartDetail(AppState.activeBodyPart, readings, alerts);
+  renderBodyReadout(AppState.activeBodyPart, readings, alerts);
+
+  // Bind clicks
+  ['helmet', 'chest', 'torso', 'arms', 'legs'].forEach(part => {
+    const el = document.getElementById(`suit-${part}`);
+    if (el && !el.dataset.bound) {
+      el.dataset.bound = "true";
+      el.addEventListener('click', () => {
+        AppState.activeBodyPart = part;
+        renderBodyReadout(part, getReadings(AppState.currentDay), getAlerts(AppState.currentDay));
+      });
+    }
+  });
 }
 
-function renderBodyPartDetail(partId, readings, alerts) {
-  const pane = document.getElementById('body-part-readout');
-  if (!pane) return;
+function renderBodyReadout(part, readings, alerts) {
+  const box = document.getElementById('suited-body-readout');
+  if (!box) return;
 
   const v = readings.vitals;
-  const titles = {
-    head: 'Head & Neurosensory (Sleep & CO2)',
-    chest: 'Chest, Pulmonary & Autonomic Tone',
-    torso: 'Torso & Visceral Microgravity Shift',
-    arms: 'Upper Limbs & Grip Retention',
-    legs: 'Lower Limbs & Calcaneus Bone Load'
+  const names = {
+    helmet: 'Helmet & Neurosensory (Circadian Sleep & Cabin CO2)',
+    chest: 'Chest & Life Support (Cardiovascular Autonomic Tone)',
+    torso: 'Torso Core (Visceral Microgravity Fluid Shift)',
+    arms: 'Upper Limbs & Suit Dexterity (Grip Strength)',
+    legs: 'Lower Limbs & Calcaneus (Bone Density & Soleus Tone)'
   };
 
-  let detail = '';
-  if (partId === 'head') {
-    const sleepAlert = alerts.find(a => a.metric === 'sleep_h');
-    detail = sleepAlert 
-      ? `Alert active: ${sleepAlert.reason}. Headache reported secondary to hypercapnia.` 
-      : `Sleep: ${v.sleep_h} h (nominal). Pupillary reflex normal.`;
-  } else if (partId === 'chest') {
-    detail = `Heart rate: ${v.hr_bpm} bpm. Blood pressure: ${v.bp_sys}/${v.bp_dia} mmHg. Stable autonomic tone.`;
-  } else if (partId === 'torso') {
-    detail = `Core temperature: ${v.temp_c}°C. Visceral circulation nominal.`;
-  } else if (partId === 'arms') {
-    detail = `Grip strength retention: 94%. Skin integrity intact.`;
-  } else if (partId === 'legs') {
-    detail = `Daily exercise: ${v.exercise_min} mins. Soleus tone retention: 88%.`;
+  let desc = '';
+  if (part === 'helmet') {
+    const alert = alerts.find(a => a.metric === 'sleep_h');
+    desc = alert ? `Alert: ${alert.reason}. Spaceflight stress & CO2 accumulation present.` : `Sleep ${v.sleep_h} h (within baseline). Pupillary reflex nominal.`;
+  } else if (part === 'chest') {
+    desc = `Heart rate: ${v.hr_bpm} bpm. BP: ${v.bp_sys}/${v.bp_dia} mmHg. Stable autonomic tone.`;
+  } else if (part === 'torso') {
+    desc = `Core temp: ${v.temp_c}°C. Visceral circulatory adaptation stable.`;
+  } else if (part === 'arms') {
+    desc = `Grip strength retention: 94%. Upper extremity joint mobility nominal.`;
+  } else if (part === 'legs') {
+    desc = `Daily exercise: ${v.exercise_min} mins. Heel calcaneus bone load monitored against microgravity resorption.`;
   }
 
-  pane.innerHTML = `
-    <div class="body-detail-header">
-      <strong>${titles[partId]}</strong>
-      <span class="status-badge status-nominal">MONITORED</span>
+  box.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--hull-line); padding-bottom: 8px; margin-bottom: 10px;">
+      <strong style="font-family: var(--font-heading); font-size: 17px; color: var(--starlight);">${names[part] || part}</strong>
+      <span class="status-badge status-nominal">Telemetry monitored</span>
     </div>
-    <p class="body-detail-text">${detail}</p>
+    <p style="font-size: 15px; color: #CAD5D4; line-height: 1.5;">${desc}</p>
   `;
 }
 
-function renderCabinPanel(readings, alerts) {
+function renderQuietPanels(readings, alerts) {
   const c = readings.cabin;
-  const co2El = document.getElementById('cabin-co2-val');
-  const tempEl = document.getElementById('cabin-temp-val');
-  const noiseEl = document.getElementById('cabin-noise-val');
-  const alertBox = document.getElementById('scrubber-alert-box');
+  const im = readings.immune;
+  const rad = readings.radiation;
 
-  // Single-line CO2 value
-  if (co2El) co2El.innerHTML = `<span class="cabin-co2-row"><strong>${c.co2}</strong>&nbsp;ppm</span>`;
+  const co2El = document.getElementById('quiet-co2');
+  const tempEl = document.getElementById('quiet-temp');
+  const noiseEl = document.getElementById('quiet-noise');
+  const radEl = document.getElementById('quiet-rad');
+  const alertBox = document.getElementById('scrubber-alert-callout');
+
+  if (co2El) co2El.textContent = `${c.co2} ppm`;
   if (tempEl) tempEl.textContent = `${c.temp} °C`;
   if (noiseEl) noiseEl.textContent = `${c.noise} dBA`;
+  if (radEl) radEl.textContent = `${rad.cumulativeDose} mSv`;
 
   // Headache plus high CO2 (4500 ppm ceiling) rule
   const hasHeadache = readings.symptoms.includes('headache') || alerts.some(a => a.metric === 'cabin_co2');
@@ -397,11 +320,11 @@ function renderCabinPanel(readings, alerts) {
     if (hasHeadache && highCO2) {
       alertBox.style.display = 'flex';
       alertBox.innerHTML = `
-        <span class="shape-triangle" aria-hidden="true"></span>
+        <span class="shape-triangle"></span>
         <div>
-          <strong>Headache plus high CO2: check the scrubber first.</strong>
-          <div style="font-size: 12.5px; margin-top: 2px;">
-            Hypercapnia suspected (${c.co2} ppm vs 4500 ppm limit). Inspect Amine Bed canister before administering analgesics.
+          <strong style="color: var(--starlight); font-size: 15.5px;">Headache plus high CO2: check the scrubber first.</strong>
+          <div style="font-size: 14px; color: #CAD5D4; margin-top: 2px;">
+            Hypercapnia suspected (${c.co2} ppm vs 4500 ppm ceiling). Inspect Amine Bed canister before administering analgesics.
           </div>
         </div>
       `;
@@ -409,63 +332,52 @@ function renderCabinPanel(readings, alerts) {
       alertBox.style.display = 'none';
     }
   }
-}
 
-function renderImmunePanel(readings) {
-  const im = readings.immune;
-  const setIndicator = (id, active) => {
+  // Immune indicators
+  const setIm = (id, active) => {
     const el = document.getElementById(id);
     if (el) {
-      el.className = `immune-item ${active ? 'active-warning' : 'nominal'}`;
+      el.className = `status-badge ${active ? 'status-caution' : 'status-nominal'}`;
+      el.innerHTML = `<span class="${active ? 'shape-triangle' : 'shape-circle'}"></span> ${active ? 'Active' : 'Nominal'}`;
     }
   };
 
-  setIndicator('immune-rash', im.rash);
-  setIndicator('immune-cold-sore', im.coldSore);
-  setIndicator('immune-fever', im.fever);
-  setIndicator('immune-fatigue', im.fatigue);
+  setIm('immune-status-cold-sore', im.coldSore);
+  setIm('immune-status-rash', im.rash);
+  setIm('immune-status-fatigue', im.fatigue);
 }
 
-function renderRadiationPanel(readings) {
-  const rad = readings.radiation;
-  const cumEl = document.getElementById('rad-cum-val');
-  const dailyEl = document.getElementById('rad-daily-val');
-
-  if (cumEl) cumEl.textContent = `${rad.cumulativeDose} mSv`;
-  if (dailyEl) dailyEl.textContent = `${rad.dailyDose} mSv/d`;
-}
-
-function renderTrendsCharts(day) {
+function renderTrendLines(activeDay) {
   if (!window.Chart) return;
-  // Chart.js 180-day lines are rendered smoothly
-  renderTrendLineChart('chart-monitor-sleep', 'sleep_h', 7.4, 3.0, 9.0, 'Hours', day);
-  renderTrendLineChart('chart-monitor-mood', 'mood', 4.2, 1.0, 5.0, 'Score 1-5', day);
-  renderTrendLineChart('chart-monitor-hr', 'hr_bpm', 64, 50, 95, 'BPM', day);
+  drawRestyledTrend('trend-sleep-chart', 'sleep_h', 7.4, 3.0, 9.0, 'Hours', activeDay);
+  drawRestyledTrend('trend-mood-chart', 'mood', 4.2, 1.0, 5.0, 'Score (1-5)', activeDay);
+  drawRestyledTrend('trend-hr-chart', 'hr_bpm', 64, 50, 95, 'BPM', activeDay);
 
-  const sleepSummary = document.getElementById('trend-summary-sleep');
-  if (sleepSummary) {
-    if (day >= 40 && day <= 50) {
-      sleepSummary.textContent = `Sleep 4.2 h vs baseline 7.4 h, ${day - 39} days running. Acute circadian collapse.`;
-      sleepSummary.className = 'plain-summary alarm';
+  const sumSleep = document.getElementById('plain-sleep-summary');
+  if (sumSleep) {
+    const d = getReadings(activeDay).vitals.sleep_h;
+    if (activeDay >= 40 && activeDay <= 52) {
+      sumSleep.textContent = `Sleep ${d} h vs baseline 7.4 h, ${activeDay - 39} days running. Acute circadian collapse window.`;
+      sumSleep.style.color = '#FFAAA3';
     } else {
-      sleepSummary.textContent = `Sleep 7.4 h vs baseline 7.4 h, nominal physiological continuity.`;
-      sleepSummary.className = 'plain-summary nominal';
+      sumSleep.textContent = `Sleep ${d} h vs baseline 7.4 h, steady physiological continuity.`;
+      sumSleep.style.color = '#9FAAA8';
     }
   }
 }
 
-function renderTrendLineChart(canvasId, metricKey, baseVal, yMin, yMax, yUnit, activeDay) {
+function drawRestyledTrend(canvasId, key, baseVal, yMin, yMax, yUnit, activeDay) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
 
   const days = Array.from({ length: 180 }, (_, i) => i + 1);
-  const values = days.map(d => getReadings(d).vitals[metricKey]);
-  const baselineValues = new Array(180).fill(baseVal);
-  const activeCursor = new Array(180).fill(null);
-  activeCursor[activeDay - 1] = values[activeDay - 1];
+  const values = days.map(d => getReadings(d).vitals[key]);
+  const baseline = new Array(180).fill(baseVal);
+  const activePoint = new Array(180).fill(null);
+  activePoint[activeDay - 1] = values[activeDay - 1];
 
   if (AppState.trendCharts[canvasId]) {
-    AppState.trendCharts[canvasId].data.datasets[2].data = activeCursor;
+    AppState.trendCharts[canvasId].data.datasets[2].data = activePoint;
     AppState.trendCharts[canvasId].update('none');
     return;
   }
@@ -479,25 +391,25 @@ function renderTrendLineChart(canvasId, metricKey, baseVal, yMin, yMax, yUnit, a
         {
           label: 'Recorded Value',
           data: values,
-          borderColor: '#2F8F83',
-          borderWidth: 2,
+          borderColor: '#3FB59A',
+          borderWidth: 1.5,
           pointRadius: 0,
-          tension: 0.2
+          tension: 0.15
         },
         {
-          label: 'Personal Baseline',
-          data: baselineValues,
-          borderColor: 'rgba(230, 235, 234, 0.55)',
+          label: 'Baseline (Ring color)',
+          data: baseline,
+          borderColor: '#243044',
           borderWidth: 1.5,
-          borderDash: [5, 5],
+          borderDash: [4, 4],
           pointRadius: 0
         },
         {
           label: 'Active Mission Day',
-          data: activeCursor,
-          borderColor: '#E3A21A',
-          backgroundColor: '#E3A21A',
-          pointRadius: 6,
+          data: activePoint,
+          borderColor: '#E8A93A',
+          backgroundColor: '#E8A93A',
+          pointRadius: 5,
           showLine: false
         }
       ]
@@ -508,68 +420,63 @@ function renderTrendLineChart(canvasId, metricKey, baseVal, yMin, yMax, yUnit, a
       animation: false,
       scales: {
         x: {
-          grid: { color: 'rgba(255, 255, 255, 0.06)' },
-          ticks: { color: '#98A8A6', maxTicksLimit: 12, font: { size: 10 } }
+          grid: { color: 'rgba(36, 48, 68, 0.4)' },
+          ticks: { color: '#9FAAA8', maxTicksLimit: 12, font: { size: 12 } }
         },
         y: {
           min: yMin,
           max: yMax,
-          grid: { color: 'rgba(255, 255, 255, 0.08)' },
-          ticks: { color: '#98A8A6', font: { size: 10 } },
-          title: { display: true, text: yUnit, color: '#98A8A6' }
+          grid: { color: 'rgba(36, 48, 68, 0.4)' },
+          ticks: { color: '#9FAAA8', font: { size: 12 } },
+          title: { display: true, text: yUnit, color: '#9FAAA8', font: { size: 13 } }
         }
       },
       plugins: {
-        legend: { labels: { color: '#E6EBEA', font: { size: 11 } } }
+        legend: { labels: { color: '#E8E4D8', font: { size: 13 } } }
       }
     }
   });
 }
 
 // -------------------------------------------------------------
-// TAB 3: FORECAST (EVALUATE)
-// Low/Mid/High Ranges, 3 Scenario Buttons, Exercise Slider
+// STEP 4: FORECAST TAB (FLIGHT-PATH CONE)
 // -------------------------------------------------------------
 function renderForecastTab() {
   const day = AppState.currentDay;
   const forecast = getForecast(day, AppState.exerciseHours);
-
-  const container = document.getElementById('forecast-cards-grid');
+  const container = document.getElementById('cones-grid-container');
   if (!container) return;
 
-  const sliderDisplay = document.getElementById('forecast-adherence-val');
-  if (sliderDisplay) sliderDisplay.textContent = `${AppState.exerciseHours.toFixed(1)} hrs/day`;
+  const sliderVal = document.getElementById('adherence-slider-val');
+  if (sliderVal) sliderVal.textContent = `${AppState.exerciseHours.toFixed(1)} hrs/day`;
 
   let html = '';
-  forecast.forEach(f => {
+  forecast.forEach((f, idx) => {
     const map = mapSeverity(f.status);
     const verifyNote = (f.dimension.includes('Bone') || f.dimension.includes('Aerobic')) ? ' (verify on source page)' : '';
 
     html += `
-      <div class="forecast-plate" data-status="${map.status}">
-        <div class="forecast-plate-top">
-          <span class="forecast-metric-title">${f.dimension}</span>
+      <div class="cone-card">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
+          <strong style="font-family: var(--font-heading); font-size: 18px; color: var(--starlight);">${f.dimension}</strong>
           <span class="status-badge status-${map.status}">
-            <span class="${map.shapeClass}"></span> ${map.label.toUpperCase()}
+            <span class="${map.shapeClass}"></span> ${map.label}
           </span>
         </div>
 
-        <div class="forecast-value-row">
-          <span class="forecast-big-num num">${f.landing.mid}%</span>
-          <div class="forecast-range-box">
-            <span class="range-label">Estimated range (illustrative):</span>
-            <span class="range-val num">${f.landing.low}% &ndash; ${f.landing.high}%</span>
-          </div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <span style="font-size: 14px; color: var(--starlight-dim);">Departure Baseline (100%) &rarr;</span>
+          <span style="font-size: 14px; color: var(--starlight-dim);">Landing Day Arrival (${f.landing.low}% &ndash; ${f.landing.high}%)</span>
         </div>
 
-        <div class="forecast-rate-desc">
-          ${f.assumptions[0]}
+        <div class="cone-canvas-box">
+          <canvas id="cone-canvas-${idx}" class="cone-canvas"></canvas>
         </div>
 
-        <div class="forecast-citation-box">
-          <span class="cite-label">NASA SOURCE:</span>
-          <a href="${f.citationUrl}" target="_blank" rel="noopener noreferrer" class="cite-text" style="color: #9BB0AF; text-decoration: none;">
-            NASA Reference Page &nearr;${verifyNote}
+        <div style="display: flex; align-items: baseline; justify-content: space-between; font-size: 14px; margin-top: 4px;">
+          <span style="color: var(--starlight-dim);">Estimated range (illustrative): <strong>${f.landing.low}% &ndash; ${f.landing.high}%</strong></span>
+          <a href="${f.citationUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--earthlight); text-decoration: none;">
+            NASA Reference &nearr;${verifyNote}
           </a>
         </div>
       </div>
@@ -577,24 +484,30 @@ function renderForecastTab() {
   });
 
   container.innerHTML = html;
+
+  // Render canvas cones
+  forecast.forEach((f, idx) => {
+    const canvas = document.getElementById(`cone-canvas-${idx}`);
+    renderTrajectoryCone(canvas, f.landing.low, f.landing.mid, f.landing.high, f.status);
+  });
 }
 
 function initScenarioButtons() {
-  const btnAdherent = document.getElementById('btn-scenario-adherent');
-  const btnNominal = document.getElementById('btn-scenario-nominal');
-  const btnZero = document.getElementById('btn-scenario-zero');
-  const slider = document.getElementById('forecast-adherence-slider');
+  const btn15 = document.getElementById('btn-scenario-15');
+  const btn12 = document.getElementById('btn-scenario-12');
+  const btn00 = document.getElementById('btn-scenario-00');
+  const slider = document.getElementById('adherence-slider-input');
 
-  const setScenario = (hrs) => {
+  const update = (hrs) => {
     AppState.exerciseHours = hrs;
     if (slider) slider.value = hrs;
     renderForecastTab();
     renderOverviewTab();
   };
 
-  if (btnAdherent) btnAdherent.addEventListener('click', () => setScenario(1.5));
-  if (btnNominal) btnNominal.addEventListener('click', () => setScenario(1.2));
-  if (btnZero) btnZero.addEventListener('click', () => setScenario(0.0));
+  if (btn15) btn15.addEventListener('click', () => update(1.5));
+  if (btn12) btn12.addEventListener('click', () => update(1.2));
+  if (btn00) btn00.addEventListener('click', () => update(0.0));
 
   if (slider) {
     slider.addEventListener('input', (e) => {
@@ -606,18 +519,14 @@ function initScenarioButtons() {
 }
 
 // -------------------------------------------------------------
-// TAB 4: TRIAGE & COMMS (ACT)
-// Wired to pipeline.js, queue.js, and sources.js LINK_PRESETS
+// STEP 5: TRIAGE & COMMS AND SOURCES
 // -------------------------------------------------------------
 function renderTriageTab() {
   const day = AppState.currentDay;
   const readings = getReadings(day);
   const alerts = getAlerts(day);
+  const alert = alerts.length > 0 ? alerts[0] : sampleAlert;
 
-  // Select primary active alert
-  const primaryAlert = alerts.length > 0 ? alerts[0] : sampleAlert;
-
-  // Selected link preset from sources.js
   const preset = LINK_PRESETS[AppState.activePresetKey] || LINK_PRESETS.MARS_MID;
   const env = {
     onboardSupport: true,
@@ -631,42 +540,43 @@ function renderTriageTab() {
     trend7: [6.8, 6.5, 6.0, 5.8, 5.5, 5.3, 5.1],
     trend30: [7.4, 7.3, 7.4, 7.2, 6.9, 6.1, 5.1],
     cabin: readings.cabin,
-    countermeasure: "Inspect Amine Bed scrubber canister. Enforce circadian sleep hygiene."
+    countermeasure: "Enforce circadian sleep hygiene protocol."
   };
 
-  // Execute pipeline
-  const result = handleAlert(primaryAlert, ctx, env);
+  const result = handleAlert(alert, ctx, env);
   const decision = result.decision;
 
-  // Render Decision Box
-  const pathEl = document.getElementById('triage-path-val');
-  const deliveryEl = document.getElementById('triage-delivery-val');
-  const whyEl = document.getElementById('triage-why-val');
-  const scoreEl = document.getElementById('triage-score-val');
+  const pathEl = document.getElementById('triage-path-display');
+  const whyEl = document.getElementById('triage-why-display');
+  const deliveryEl = document.getElementById('triage-delivery-display');
 
-  if (pathEl) pathEl.textContent = decision.path.replace(/_/g, ' ');
-  if (deliveryEl) deliveryEl.textContent = decision.delivery.replace(/_/g, ' ');
+  if (pathEl) {
+    const titles = {
+      SELF_CARE: 'Self-Treat',
+      CREW_MEDICAL_OFFICER: 'Crew Medical Officer',
+      FLIGHT_SURGEON: 'Flight Surgeon'
+    };
+    pathEl.textContent = titles[decision.path] || decision.path;
+  }
   if (whyEl) whyEl.textContent = decision.why;
-  if (scoreEl) scoreEl.textContent = `Triage Score: ${decision.score} (Severity ${primaryAlert.severity})`;
+  if (deliveryEl) deliveryEl.textContent = `Delivery: ${decision.delivery}`;
 
-  // Render Link Selector Dropdown from LINK_PRESETS
-  renderLinkDropdown();
-
-  // Render Queue Table
+  // Link selector
+  initLinkSelector();
   renderQueueTable(getQueue());
 }
 
-function renderLinkDropdown() {
-  const select = document.getElementById('comms-preset-select');
+function initLinkSelector() {
+  const select = document.getElementById('link-preset-select');
   if (!select) return;
 
   if (select.children.length === 0) {
-    Object.keys(LINK_PRESETS).forEach(key => {
-      const p = LINK_PRESETS[key];
+    Object.keys(LINK_PRESETS).forEach(k => {
+      const p = LINK_PRESETS[k];
       const opt = document.createElement('option');
-      opt.value = key;
-      opt.textContent = `${p.label} (1-way: ${p.delay_s}s) - ${p.note}`;
-      if (key === AppState.activePresetKey) opt.selected = true;
+      opt.value = k;
+      opt.textContent = `${p.label} (${p.delay_s}s 1-way) - ${p.note}`;
+      if (k === AppState.activePresetKey) opt.selected = true;
       select.appendChild(opt);
     });
 
@@ -678,176 +588,158 @@ function renderLinkDropdown() {
     });
   }
 
-  const speedupNote = document.getElementById('queue-speedup-note');
+  const speedupNote = document.getElementById('queue-clock-speedup');
   if (speedupNote) {
-    speedupNote.textContent = `Demo speed-up active: 1s in real-time = ${queueConfig.speedup}s simulated flight latency.`;
+    const speedRatio = queueConfig.speedup;
+    const minsSim = (speedRatio / 60).toFixed(1);
+    speedupNote.textContent = `demo clock: 1 s = ${minsSim} min`;
   }
 }
 
 function renderQueueTable(queue) {
-  const tbody = document.getElementById('queue-table-tbody');
-  if (!tbody) return;
+  const container = document.getElementById('queue-items-container');
+  if (!container) return;
 
   if (queue.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #98A8A6;">No telemetry packets queued.</td></tr>`;
+    container.innerHTML = `<div style="padding: 16px; color: var(--starlight-dim); font-size: 15px;">No packets currently queued.</div>`;
     return;
   }
 
   let html = '';
-  queue.forEach((entry, idx) => {
+  queue.forEach(entry => {
     const p = entry.packet;
-    const statusClass = `status-${p.status}`;
-    const replyText = entry.ground_reply || (p.status === 'TRANSMITTING' ? 'Signal traveling across interplanetary path...' : 'Pending flight surgeon review.');
+    const statusMap = {
+      QUEUED: { label: 'Queued', shape: 'shape-circle', status: 'caution' },
+      TRANSMITTED: { label: 'Transmitted', shape: 'shape-triangle', status: 'caution' },
+      ACKNOWLEDGED: { label: 'Acknowledged', shape: 'shape-circle', status: 'nominal' },
+      FAILED: { label: 'Failed (retrying)', shape: 'shape-diamond', status: 'alarm' }
+    };
+    const s = statusMap[p.status] || statusMap.QUEUED;
 
     html += `
-      <tr class="queue-row ${statusClass}">
-        <td><strong>${p.packet_id}</strong></td>
-        <td><span class="status-badge status-${p.status === 'ACKNOWLEDGED' ? 'nominal' : (p.status === 'FAILED' ? 'alarm' : 'caution')}">${p.status}</span></td>
-        <td>${entry.attempts}</td>
-        <td style="font-size: 12px; font-family: var(--font-mono);">${replyText}</td>
-        <td><span class="num">${p.priority}</span></td>
-      </tr>
+      <div style="background: #080D16; border: 1px solid var(--hull-line); border-radius: 4px; padding: 14px 18px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <strong style="font-family: var(--font-heading); font-size: 16px; color: var(--starlight);">${p.packet_id} (${p.priority})</strong>
+          <span class="status-badge status-${s.status}">
+            <span class="${s.shape}"></span> ${s.label}
+          </span>
+        </div>
+        <div style="font-size: 14.5px; color: #CAD5D4; margin-bottom: 4px; word-break: normal; overflow-wrap: break-word;">
+          ${p.anomaly}
+        </div>
+        <div style="font-size: 13.5px; color: var(--starlight-dim);">
+          Attempts: <strong>${entry.attempts}</strong> &bull; Ground Reply: <span style="font-family: var(--font-mono); color: #B5C5C4;">${entry.ground_reply || 'Awaiting transmission acknowledgement...'}</span>
+        </div>
+      </div>
     `;
   });
 
-  tbody.innerHTML = html;
+  container.innerHTML = html;
 }
 
-// -------------------------------------------------------------
-// TAB 5: SOURCES & HONESTY
-// SOURCES, ASSUMPTIONS, and DISCLAIMER read from teammate's sources.js
-// -------------------------------------------------------------
 function renderSourcesTab() {
-  const container = document.getElementById('sources-content-container');
+  const container = document.getElementById('sources-content-view');
   if (!container) return;
 
   let html = `
-    <!-- Disclaimer -->
-    <div class="gap-statement-callout" style="border-left: 3px solid var(--scrubber-teal); margin-bottom: 20px;">
-      <h4 style="margin-bottom: 4px;">Operational Honesty &amp; Model Statement</h4>
-      <p style="font-size: 14px; color: #E6EBEA;">${DISCLAIMER}</p>
+    <div style="background: var(--hull); border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--nominal-teal); margin-bottom: 6px;">Operational Disclaimer</h3>
+      <p style="font-size: 16px; color: var(--starlight); line-height: 1.5;">${DISCLAIMER}</p>
     </div>
 
-    <!-- NASA Hazard Principle (Fixed: separate sentences, no quotes) -->
-    <div class="hazard-overview-banner" style="margin-bottom: 20px;">
-      <p>
+    <!-- NASA Hazard Principle: Separate sentences, no quotes -->
+    <div style="background: #090E17; border-left: 3px solid var(--nominal-teal); padding: 16px 20px; margin-bottom: 24px; border-radius: 2px;">
+      <p style="font-size: 15.5px; color: var(--starlight); line-height: 1.5;">
         NASA human research identifies that microgravity hazards can feed off one another.
         In LANDFALL, our design links environmental cabin sensor readings directly to crew physiological symptoms.
       </p>
     </div>
 
-    <!-- Official Sources from teammate sources.js -->
-    <h3 class="sources-heading">Peer-Reviewed Literature &amp; Official References (SOURCES)</h3>
-    <table class="queue-table" style="margin-bottom: 24px;">
-      <thead>
-        <tr>
-          <th>Source ID</th>
-          <th>Title &amp; Reference</th>
-          <th>Operational Mapping</th>
-        </tr>
-      </thead>
-      <tbody>
+    <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 12px;">Official NASA Sources &amp; Literature</h3>
+    <div style="margin-bottom: 28px;">
   `;
 
   SOURCES.forEach(s => {
     html += `
-      <tr>
-        <td><span class="feature-tag">${s.id}</span></td>
-        <td>
-          <a href="${s.url}" target="_blank" rel="noopener noreferrer" class="nasa-cite-link" style="color: #38BDF8; font-weight: 600;">
-            ${s.title} &nearr;
+      <div style="background: var(--hull); border: 1px solid var(--hull-line); border-radius: 4px; padding: 14px 18px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px;">
+          <strong style="font-family: var(--font-heading); font-size: 16.5px; color: var(--starlight);">${s.title}</strong>
+          <a href="${s.url}" target="_blank" rel="noopener noreferrer" style="color: var(--earthlight); font-size: 14px; text-decoration: none;">
+            NASA Link &nearr;
           </a>
-        </td>
-        <td style="font-size: 12.5px;">${s.supports}</td>
-      </tr>
+        </div>
+        <p style="font-size: 14.5px; color: var(--starlight-dim);">${s.supports}</p>
+      </div>
     `;
   });
 
   html += `
-      </tbody>
-    </table>
+    </div>
 
-    <!-- Engineering Assumptions -->
-    <h3 class="sources-heading">Operational &amp; Modelling Assumptions (ASSUMPTIONS)</h3>
-    <ul style="padding-left: 20px; line-height: 1.6; font-size: 13.5px; color: #CAD5D4; margin-bottom: 24px;">
+    <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 12px;">Modelling Assumptions (ASSUMPTIONS)</h3>
+    <ul style="padding-left: 24px; font-size: 15.5px; color: #CAD5D4; line-height: 1.6;">
   `;
 
   ASSUMPTIONS.forEach(a => {
-    html += `<li style="margin-bottom: 6px;">${a}</li>`;
+    html += `<li style="margin-bottom: 8px;">${a}</li>`;
   });
 
-  html += `
-    </ul>
-  `;
-
+  html += `</ul>`;
   container.innerHTML = html;
 }
 
 // -------------------------------------------------------------
-// JUDGE DEMO RUNNER (Days 35 to 60)
+// STEP 7: DEMO RUNNER (Days 35 to 60)
 // -------------------------------------------------------------
 function initDemoRunner() {
-  const btnPlay = document.getElementById('btn-play-demo');
-  const btnReset = document.getElementById('btn-reset-demo');
+  const btn = document.getElementById('btn-play-demo');
+  if (!btn) return;
 
-  if (btnPlay) {
-    btnPlay.addEventListener('click', () => {
-      if (AppState.isDemoRunning) {
-        stopDemo();
-      } else {
-        startDemo();
-      }
-    });
-  }
-
-  if (btnReset) {
-    btnReset.addEventListener('click', () => {
-      if (confirm('Reset simulation to Day 40 baseline?')) {
-        localStorage.removeItem('landfall_queue');
-        AppState.setDay(40);
-        activateTab('overview');
-      }
-    });
-  }
+  btn.addEventListener('click', () => {
+    if (AppState.isDemoRunning) {
+      stopDemo();
+    } else {
+      startDemo();
+    }
+  });
 }
 
 function startDemo() {
   AppState.isDemoRunning = true;
-  const btnPlay = document.getElementById('btn-play-demo');
-  if (btnPlay) {
-    btnPlay.textContent = 'Stop demo';
-    btnPlay.classList.add('active');
+  const btn = document.getElementById('btn-play-demo');
+  if (btn) {
+    btn.textContent = 'Stop demo';
+    btn.classList.add('active');
   }
 
   AppState.setDay(35);
   activateTab('overview');
-  showDemoCaption("Day 35: Nominal baseline cruise. 7.4h sleep, calm vitals, full 1.5h exercise adherence.");
+  showCaption("Day 35: Nominal cruise. Healthy sleep (7.4h), calm vitals, 1.5h exercise adherence.");
 
-  let stepDay = 35;
+  let step = 35;
   AppState.demoInterval = setInterval(() => {
-    stepDay += 1;
-    AppState.setDay(stepDay);
+    step += 1;
+    AppState.setDay(step);
 
-    if (stepDay === 40) {
+    if (step === 40) {
       activateTab('monitor');
-      showDemoCaption("Day 40: Acute sleep collapse (4.2h)! Headache reported. Cabin CO2 spikes to 5200 ppm. 'Check scrubber first' rule triggers.");
-    } else if (stepDay === 44) {
+      showCaption("Day 40: Acute sleep collapse (4.2h)! Headache reported. Cabin CO2 spikes to 5200 ppm. 'Check scrubber first' rule triggers.");
+    } else if (step === 44) {
       activateTab('forecast');
-      showDemoCaption("Day 44 (Evaluate): Landing-day forecast projections degrade to caution/alarm based on published NASA rates.");
-    } else if (stepDay === 48) {
-      // Demonstrate What-If slider recovery
+      showCaption("Day 44 (Evaluate): Trajectory cones widen and turn red as cumulative sleep debt impacts landing readiness.");
+    } else if (step === 48) {
       AppState.exerciseHours = 1.5;
-      const slider = document.getElementById('forecast-adherence-slider');
+      const slider = document.getElementById('adherence-slider-input');
       if (slider) slider.value = 1.5;
       renderForecastTab();
-      showDemoCaption("Day 48: Countermeasures engaged. Raising What-If exercise slider to 1.5 hrs/day restores landing-day bone and aerobic capacity.");
-    } else if (stepDay === 54) {
+      showCaption("Day 48: Raising What-If exercise adherence to 1.5 hrs/day restores landing-day bone and aerobic flight cones.");
+    } else if (step === 54) {
       activateTab('triage');
-      showDemoCaption("Day 54 (Act): Interplanetary delay is 12m+ round-trip. Autonomous triage transfers resolution to Crew Medical Officer via store-and-forward packet.");
-    } else if (stepDay >= 60) {
+      showCaption("Day 54 (Act): Comm delay is 12m+ round-trip. Autonomous triage assigns resolution to Crew Medical Officer via store-and-forward packet.");
+    } else if (step >= 60) {
       stopDemo();
-      showDemoCaption("Demo complete: Gathered baseline drift, evaluated landing-day risk, acted autonomously across the delay.");
-      setTimeout(hideDemoCaption, 5000);
+      showCaption("Demo complete: Gathered personal baseline drift, evaluated landing-day risk, acted autonomously across the delay.");
+      setTimeout(hideCaption, 5000);
     }
   }, 1000);
 }
@@ -855,15 +747,15 @@ function startDemo() {
 function stopDemo() {
   AppState.isDemoRunning = false;
   if (AppState.demoInterval) clearInterval(AppState.demoInterval);
-  const btnPlay = document.getElementById('btn-play-demo');
-  if (btnPlay) {
-    btnPlay.textContent = 'Play 30-second demo';
-    btnPlay.classList.remove('active');
+  const btn = document.getElementById('btn-play-demo');
+  if (btn) {
+    btn.textContent = 'Play 30-second demo';
+    btn.classList.remove('active');
   }
 }
 
-function showDemoCaption(text) {
-  const toast = document.getElementById('demo-caption');
+function showCaption(text) {
+  const toast = document.getElementById('demo-caption-toast');
   const textEl = document.getElementById('demo-caption-text');
   if (toast && textEl) {
     textEl.textContent = text;
@@ -871,17 +763,17 @@ function showDemoCaption(text) {
   }
 }
 
-function hideDemoCaption() {
-  const toast = document.getElementById('demo-caption');
+function hideCaption() {
+  const toast = document.getElementById('demo-caption-toast');
   if (toast) toast.classList.remove('visible');
 }
 
 function initTitleScreen() {
   const modal = document.getElementById('title-screen-modal');
-  const btnStart = document.getElementById('btn-start-mission');
-  if (!modal || !btnStart) return;
-
-  btnStart.addEventListener('click', () => {
-    modal.style.display = 'none';
-  });
+  const btn = document.getElementById('btn-start-mission');
+  if (btn && modal) {
+    btn.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
 }
