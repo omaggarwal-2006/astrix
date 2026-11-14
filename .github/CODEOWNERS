@@ -1,0 +1,13 @@
+# Reviewers requested automatically for changes in each area (docs/08-TEAM_AND_PLAN.md).
+# Replace the placeholder with Tanishk's GitHub username, then uncomment the engine line.
+
+/src/core/        @raghavdua2006
+/src/data/        @raghavdua2006
+/tests/           @raghavdua2006
+/docs/            @raghavdua2006
+/src/ui/          @omaggarwal-2006
+/src/app/         @omaggarwal-2006
+/assets/          @omaggarwal-2006
+/index.html       @omaggarwal-2006
+/sw.js            @omaggarwal-2006
+# /engine/        @TANISHK_GITHUB_USERNAME

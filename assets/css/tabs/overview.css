@@ -1,0 +1,206 @@
+/* LANDFALL · Overview tab: readiness hero, Go/No-Go poll, alert rows, health constellation */
+
+/* Big Readiness Gauge Display & Hero */
+.readiness-hero-plate {
+  background: var(--hull);
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 20px 28px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.readiness-hero-left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.readiness-hero-val {
+  font-family: var(--font-heading);
+  font-size: 72px; /* Projector floor specification */
+  font-weight: 700;
+  line-height: 1;
+  color: var(--starlight);
+  font-variant-numeric: tabular-nums;
+}
+
+.readiness-hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.readiness-hero-sentence {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.readiness-hero-sub {
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--starlight-dim);
+}
+
+/* =========================================================
+   STEP 2: THE GO / NO-GO POLL
+========================================================= */
+.gonogo-poll-card {
+  background: #090E17;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gonogo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.gonogo-table th {
+  background: #060A10;
+  color: var(--starlight-dim);
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--hull-line);
+}
+
+.gonogo-row {
+  border-bottom: 1px solid var(--hull-line);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.gonogo-row:last-child {
+  border-bottom: none;
+}
+.gonogo-row:hover {
+  background: #111A29;
+}
+.gonogo-row:focus-visible {
+  outline: 2px solid var(--earthlight);
+  outline-offset: -2px;
+}
+
+.gonogo-cell-name {
+  padding: 14px 16px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--starlight);
+}
+
+.gonogo-cell-status {
+  padding: 14px 16px;
+  white-space: nowrap;
+}
+
+.gonogo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+.gonogo-badge.go {
+  color: var(--nominal-teal);
+  background: rgba(63, 181, 154, 0.12);
+  border: 1px solid rgba(63, 181, 154, 0.35);
+}
+.gonogo-badge.watch {
+  color: var(--signal-amber);
+  background: rgba(232, 169, 58, 0.12);
+  border: 1px solid rgba(232, 169, 58, 0.35);
+}
+.gonogo-badge.nogo {
+  color: var(--alarm-coral);
+  background: rgba(229, 89, 79, 0.15);
+  border: 1px solid rgba(229, 89, 79, 0.45);
+}
+
+.gonogo-cell-value {
+  padding: 14px 16px;
+}
+.gonogo-val-mid {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--starlight);
+  font-variant-numeric: tabular-nums;
+}
+.gonogo-val-range {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--starlight-dim);
+}
+
+.gonogo-cell-jump {
+  padding: 14px 16px;
+  text-align: right;
+  font-size: 14px;
+  color: var(--earthlight);
+  white-space: nowrap;
+}
+
+/* Alert item interactive styling */
+.alert-row-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: #090E17;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.alert-row-card:hover {
+  background: #111A29;
+  border-color: var(--earthlight);
+}
+.alert-row-card:focus-visible {
+  outline: 2px solid var(--earthlight);
+  outline-offset: 2px;
+}
+
+.alerts-empty-state {
+  padding: 20px 24px;
+  background: #090E17;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  font-size: 16px;
+  color: var(--starlight-dim);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* =========================================================
+   STEP 2: OVERVIEW HEALTH CONSTELLATION
+========================================================= */
+.constellation-wrapper {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.constellation-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

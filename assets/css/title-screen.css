@@ -1,0 +1,103 @@
+/* LANDFALL · First-load title screen */
+
+/* First-Load Title Splash Screen Modal */
+.title-screen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 13, 0.92);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.title-plate-box {
+  background: var(--hull);
+  border: 1px solid var(--hull-line);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  max-width: 720px;
+  width: 100%;
+  padding: 32px;
+  text-align: left;
+}
+
+.title-header-tag {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--nominal-teal);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.title-main-name {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  color: var(--starlight);
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.title-pitch-box {
+  background: #080D16;
+  border-left: 3px solid var(--earthlight);
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  font-size: 16px;
+  color: var(--starlight);
+  line-height: 1.5;
+}
+
+.title-verbs-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.verb-card {
+  background: #090E17;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 14px;
+}
+
+.verb-word {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  color: var(--earthlight);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.verb-desc {
+  font-size: 13.5px;
+  color: var(--starlight-dim);
+  line-height: 1.4;
+}
+
+.btn-start-console {
+  display: block;
+  width: 100%;
+  background: #172B40;
+  color: #FFFFFF;
+  border: 1px solid var(--earthlight);
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 20px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+.btn-start-console:hover {
+  background: #233D5B;
+  box-shadow: 0 0 12px rgba(95, 168, 211, 0.4);
+}

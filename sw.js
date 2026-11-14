@@ -1,71 +1,58 @@
 /**
  * LANDFALL - Service Worker (sw.js)
- * Network-first caching strategy for real-time development and 100% offline fallback.
+ *
+ * Network-first for same-origin GET requests, with an offline cache fallback.
+ * The list of files to pre-cache is generated into src/sw-manifest.js by
+ * scripts/build-sw-manifest.mjs (run `npm run build:sw` after adding or moving files).
+ * This file must stay at the repo root so it controls the whole site.
  */
 
-const CACHE_NAME = 'landfall-v5-network-first';
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './css/style.css',
-  './lib/chart.umd.min.js',
-  './fonts/saira-condensed.woff2',
-  './fonts/hanken-grotesk.woff2',
-  './adapter.js',
-  './pipeline.js',
-  './queue.js',
-  './packet.js',
-  './triage.js',
-  './sources.js',
-  './sample_alert.js',
-  './sample/sample_data.js',
-  './js/mission-scene.js',
-  './js/constellation.js',
-  './js/cone-renderer.js',
-  './js/twin-model.js',
-  './main.js'
-];
+importScripts('./src/sw-manifest.js');   // defines self.LANDFALL_ASSETS
+
+const CACHE_NAME = 'landfall-v6-src-layout';
+const ASSETS_TO_CACHE = self.LANDFALL_ASSETS || ['./', './index.html'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME)
+      // Cache files one by one: a single missing file must not break offline mode
+      .then((cache) => Promise.allSettled(ASSETS_TO_CACHE.map((url) => cache.add(url))))
+      .then((results) => {
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        if (failed) console.warn(`[sw] ${failed} of ${ASSETS_TO_CACHE.length} files could not be cached`);
+      })
+      .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((k) => {
-          if (k !== CACHE_NAME) return caches.delete(k);
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (e) => {
-  // Network first: always fetch fresh from server, fall back to offline cache
+  const url = new URL(e.request.url);
+  // Only handle same-origin GET requests; let everything else go straight to the network
+  if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
+
   e.respondWith(
     fetch(e.request)
       .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseToCache);
-          });
+        if (networkResponse && networkResponse.status === 200) {
+          const copy = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, copy));
         }
         return networkResponse;
       })
-      .catch(() => {
-        return caches.match(e.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (e.request.destination === 'document') {
-            return caches.match('./index.html');
-          }
-        });
-      })
+      .catch(() =>
+        caches.match(e.request).then((cached) => {
+          if (cached) return cached;
+          if (e.request.destination === 'document') return caches.match('./index.html');
+          return Response.error();
+        })
+      )
   );
 });

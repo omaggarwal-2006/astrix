@@ -1,0 +1,59 @@
+/* LANDFALL · App shell, panel grid, hull plates */
+
+/* Main App Shell */
+.app-container {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 0 24px 60px 24px;
+}
+
+.panel-row {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+}
+
+.col-12 { grid-column: span 12; }
+.col-8  { grid-column: span 8; }
+.col-7  { grid-column: span 7; }
+.col-6  { grid-column: span 6; }
+.col-5  { grid-column: span 5; }
+.col-4  { grid-column: span 4; }
+
+@media (max-width: 960px) {
+  .panel-row {
+    grid-template-columns: 1fr;
+  }
+  .col-12, .col-8, .col-7, .col-6, .col-5, .col-4 {
+    grid-column: span 1;
+  }
+}
+
+.hull-plate {
+  background: var(--hull);
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 24px;
+  position: relative;
+}
+
+.hull-plate-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--hull-line);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.plate-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--starlight);
+}
+
+.plate-sub {
+  font-size: 15px;
+  color: var(--starlight-dim);
+}

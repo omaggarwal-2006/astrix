@@ -1,0 +1,18 @@
+{
+  "name": "landfall",
+  "version": "2.0.0",
+  "private": true,
+  "description": "LANDFALL: delay-aware astronaut health decisions (NASA Space Apps 2026). Static ES-module app, no build step.",
+  "type": "module",
+  "scripts": {
+    "serve": "python -m http.server 8080",
+    "test": "node --test \"tests/unit/**/*.test.mjs\" \"tests/integration/**/*.test.mjs\"",
+    "test:smoke": "node tests/smoke/ui-check.mjs",
+    "build:sw": "node scripts/build-sw-manifest.mjs",
+    "check": "node scripts/build-sw-manifest.mjs --check && node scripts/check-links.mjs",
+    "check:links": "node scripts/check-links.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

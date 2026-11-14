@@ -1,0 +1,68 @@
+/* LANDFALL · Design tokens
+   Mission-control palette on deep space navy. Status always pairs colour with a shape and a word. */
+
+:root {
+  /* Surfaces */
+  --bg: #060911;
+  --bg-raised: #0B111D;
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --surface-solid: #0E1522;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --text: #ECE9E1;
+  --text-2: #B4BDC9;
+  --text-3: #7E8898;
+
+  /* Brand and status */
+  --accent: #6CB4E4;          /* Earthlight */
+  --accent-soft: rgba(108, 180, 228, 0.14);
+  --mars: #D0703F;            /* Mars rust */
+  --ok: #45C2A2;              /* Nominal teal */
+  --ok-soft: rgba(69, 194, 162, 0.14);
+  --warn: #EDB14A;            /* Signal amber */
+  --warn-soft: rgba(237, 177, 74, 0.14);
+  --bad: #EE6458;             /* Alarm coral */
+  --bad-soft: rgba(238, 100, 88, 0.15);
+
+  /* Type */
+  --font-heading: 'Saira Semi Condensed', 'DIN Alternate', 'Bahnschrift', 'Trebuchet MS', sans-serif;
+  --font-body: 'Hanken Grotesk', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --fs-xs: 12px;
+  --fs-sm: 13.5px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 24px;
+  --fs-2xl: 34px;
+  --fs-hero: 64px;
+
+  /* Shape, depth, motion */
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.8);
+  --shadow-pop: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 280ms;
+  --gap: 16px;
+  --page: 1280px;
+
+  /* Legacy names (still used by the digital twin styles and some canvas code) */
+  --void: var(--bg);
+  --hull: var(--surface-solid);
+  --hull-line: #233044;
+  --hull-card: #0F1623;
+  --starlight: var(--text);
+  --starlight-dim: var(--text-3);
+  --earthlight: var(--accent);
+  --mars-rust: var(--mars);
+  --signal-amber: var(--warn);
+  --alarm-coral: var(--bad);
+  --nominal-teal: var(--ok);
+  --alarm-red: var(--bad);
+  --caution-amber: var(--warn);
+  --scrubber-teal: var(--ok);
+}

@@ -5,7 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LANDFALL - View From The Ship | NASA Space Apps 2026</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23C4623A'/><circle cx='50' cy='50' r='20' fill='%233FB59A'/></svg>">
-  <link rel="stylesheet" href="./css/style.css">
+  <!-- Styles: load order matters (responsive.css last). See assets/css/ -->
+  <link rel="stylesheet" href="./assets/css/tokens.css">
+  <link rel="stylesheet" href="./assets/css/base.css">
+  <link rel="stylesheet" href="./assets/css/layout.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/header.css">
+  <link rel="stylesheet" href="./assets/css/title-screen.css">
+  <link rel="stylesheet" href="./assets/css/tabs/overview.css">
+  <link rel="stylesheet" href="./assets/css/tabs/monitor.css">
+  <link rel="stylesheet" href="./assets/css/tabs/forecast.css">
+  <link rel="stylesheet" href="./assets/css/extras.css">
+  <link rel="stylesheet" href="./assets/css/responsive.css">
 </head>
 <body>
 
@@ -34,13 +45,14 @@
         </div>
       </div>
 
-      <button id="btn-start-mission" class="btn-start-console" onclick="var m=document.getElementById('title-screen-modal');if(m){m.style.display='none';try{m.remove();}catch(err){}}">
+      <button id="btn-start-mission" class="btn-start-console">
         Enter Mission Console (Ares-VI Transit) &rarr;
       </button>
     </div>
   </div>
 
   <script>
+    // Title screen dismissal. Kept inline (not in a module) so the button works even if a module fails to load.
     (function() {
       function dismissTitleModal() {
         var m = document.getElementById('title-screen-modal');
@@ -832,7 +844,7 @@
   </aside>
 
   <!-- Scripts: Offline Library first, then ES Module Controller -->
-  <script src="./lib/chart.umd.min.js"></script>
-  <script type="module" src="./main.js"></script>
+  <script src="./assets/vendor/chart.umd.min.js"></script>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

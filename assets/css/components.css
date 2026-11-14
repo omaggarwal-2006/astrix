@@ -1,0 +1,116 @@
+/* LANDFALL · Status shapes and badges, buttons, demo caption toast */
+
+/* Shapes for Status (Never Color Alone) */
+.shape-circle {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--nominal-teal);
+  vertical-align: middle;
+}
+
+.shape-triangle {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 11px solid var(--signal-amber);
+  vertical-align: middle;
+}
+
+.shape-diamond {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  background: var(--alarm-coral);
+  transform: rotate(45deg);
+  vertical-align: middle;
+}
+
+.shape-octagon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background: var(--alarm-coral);
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  vertical-align: middle;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 15px; /* Size floor */
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.status-badge.status-nominal {
+  background: rgba(63, 181, 154, 0.12);
+  color: var(--nominal-teal);
+  border: 1px solid rgba(63, 181, 154, 0.35);
+}
+.status-badge.status-caution {
+  background: rgba(232, 169, 58, 0.12);
+  color: var(--signal-amber);
+  border: 1px solid rgba(232, 169, 58, 0.35);
+}
+.status-badge.status-alarm {
+  background: rgba(229, 89, 79, 0.15);
+  color: #FFAAA3;
+  border: 1px solid rgba(229, 89, 79, 0.45);
+}
+
+/* Tactile Buttons */
+.chassis-btn {
+  background: var(--hull);
+  color: var(--starlight);
+  border: 1px solid var(--hull-line);
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.chassis-btn:hover { background: #131B2A; border-color: var(--earthlight); }
+.chassis-btn.primary {
+  background: #1B2B3E;
+  color: var(--earthlight);
+  border-color: var(--earthlight);
+}
+.chassis-btn.primary:hover { background: #23374F; color: #FFFFFF; }
+.chassis-btn.primary.active { background: var(--alarm-coral); color: #FFFFFF; border-color: var(--alarm-coral); }
+
+/* Demo Toast Notification */
+.demo-caption-toast {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--hull);
+  color: var(--starlight);
+  border: 1px solid var(--earthlight);
+  border-radius: 4px;
+  padding: 12px 24px;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  z-index: 1200;
+  max-width: 780px;
+  text-align: center;
+}
+
+.demo-caption-toast.visible {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}

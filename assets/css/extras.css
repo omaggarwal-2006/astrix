@@ -1,0 +1,267 @@
+/* LANDFALL · Digital twin (levels 1-3), tissue cards, micro-lab */
+
+/* Twin Breadcrumbs & Profile */
+.twin-breadcrumb-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #090e18;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-family: var(--font-heading);
+  font-size: 13.5px;
+}
+.twin-crumb-btn {
+  background: none;
+  border: none;
+  color: var(--earthlight);
+  cursor: pointer;
+  padding: 0;
+  font-size: 13.5px;
+  font-family: var(--font-heading);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.twin-crumb-btn:hover {
+  color: var(--starlight);
+}
+.twin-crumb-btn.active {
+  color: var(--starlight);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: default;
+}
+.twin-crumb-sep {
+  color: var(--starlight-dim);
+}
+
+.twin-profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #070c14;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.twin-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.twin-profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #142033;
+  border: 1px solid var(--earthlight);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--earthlight);
+  font-weight: 700;
+  font-size: 15px;
+}
+.twin-profile-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  color: var(--starlight);
+}
+.twin-profile-tag {
+  font-size: 12.5px;
+  color: var(--starlight-dim);
+  font-weight: normal;
+  margin-left: 6px;
+}
+.twin-profile-meta {
+  font-size: 13px;
+  color: #9cb0c9;
+  margin-top: 2px;
+}
+
+/* Level 1: Anatomical SVG & Beating Heart */
+.twin-body-housing {
+  position: relative;
+  background: #060910;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.twin-body-svg {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  filter: drop-shadow(0 0 12px rgba(63, 181, 154, 0.08));
+}
+.twin-region-btn {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.twin-region-btn:hover, .twin-region-btn:focus {
+  filter: brightness(1.4) drop-shadow(0 0 6px rgba(95, 168, 211, 0.6));
+}
+.twin-region-btn.selected {
+  stroke-width: 2.4 !important;
+  stroke: var(--earthlight) !important;
+  filter: drop-shadow(0 0 8px rgba(95, 168, 211, 0.8));
+}
+
+@keyframes twinHeartPulse {
+  0% { transform: scale(1.0); opacity: 0.9; }
+  15% { transform: scale(1.22); opacity: 1.0; }
+  30% { transform: scale(1.0); opacity: 0.9; }
+  45% { transform: scale(1.15); opacity: 0.95; }
+  60% { transform: scale(1.0); opacity: 0.9; }
+  100% { transform: scale(1.0); opacity: 0.9; }
+}
+.twin-heart-pulse {
+  transform-origin: 210px 245px;
+  animation: twinHeartPulse 0.93s infinite ease-in-out;
+}
+
+/* Region Detail & Dual Track Bars */
+.twin-region-detail-card {
+  background: #080d16;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 14px;
+  margin-top: 12px;
+}
+.twin-dual-bar-wrap {
+  margin: 10px 0;
+}
+.twin-dual-bar-track {
+  position: relative;
+  height: 10px;
+  background: #111a29;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.twin-dual-bar-fill {
+  height: 100%;
+  background: var(--nominal-teal);
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+.twin-dual-bar-fill.caution { background: var(--signal-amber); }
+.twin-dual-bar-fill.alarm { background: var(--alarm-coral); }
+.twin-dual-bar-target {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: #FFFFFF;
+}
+
+/* Level 2: Exploded Tissue Cards */
+.twin-tissue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.twin-tissue-card {
+  background: #080d17;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.2s ease;
+}
+.twin-tissue-card:hover {
+  border-color: var(--earthlight);
+}
+.twin-tissue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.twin-tissue-name {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  color: var(--starlight);
+  font-weight: 700;
+}
+.twin-tissue-metric {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+.twin-tissue-mech {
+  font-size: 13px;
+  color: #9cb0c9;
+  line-height: 1.4;
+  margin: 8px 0 12px 0;
+  flex-grow: 1;
+}
+
+/* Level 3: Micro-Lab */
+.micro-lab-panel {
+  background: #060911;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 16px;
+}
+.micro-lab-canvas-box {
+  position: relative;
+  background: #030509;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  margin: 12px 0;
+  overflow: hidden;
+}
+.micro-lab-canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
+.micro-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  background: #090e18;
+  border: 1px solid var(--hull-line);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 14px 0;
+}
+.micro-reward-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(63, 181, 154, 0.15);
+  border: 1px solid #3FB59A;
+  color: #3FB59A;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+.micro-discovery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(232, 169, 58, 0.15);
+  border: 1px solid #E8A93A;
+  color: #E8A93A;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
