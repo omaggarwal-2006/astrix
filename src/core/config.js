@@ -21,6 +21,9 @@ export const CONFIG = Object.freeze({
   // Cabin
   co2HintPpm: 4500,            // "Headache plus high CO2: check the scrubber first"
 
+  // Radiation
+  doseLimitMSv: 600,           // career effective-dose limit, NASA-STD-3001 (source S-13, to be verified)
+
   // Delay model (src/core/delay.js) - D-05: one function for the whole app
   delayModel: Object.freeze({
     startOneWayS: 1.3,         // Moon-like light time at departure

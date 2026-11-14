@@ -1,136 +1,138 @@
 /**
- * LANDFALL - Forecast tab: flight-path cones, scenarios, adherence slider, countermeasures (src/ui/tabs/forecast.js)
- * Moved from main.js unchanged during the repo restructure (docs/22-MIGRATION.md).
+ * LANDFALL - Forecast (step 2): landing-day readiness per dimension, the exercise what-if,
+ * and the countermeasure checklist (src/ui/tabs/forecast.js)
  */
 
 import { AppState } from "../../app/state.js";
-import { getForecast, mapSeverity } from "../../core/adapter.js";
-import { renderTwin } from "../extras/twin.js";
-import { renderOverviewTab } from "./overview.js";
+import { $, esc, forecastPill, pill, countUp } from "../dom.js";
 import { renderTrajectoryCone } from "../visuals/cone-renderer.js";
 
-// -------------------------------------------------------------
-// STEP 4: FORECAST TAB (FLIGHT-PATH CONES & COUNTERMEASURES)
-// -------------------------------------------------------------
-export function renderForecastTab() {
-  const day = AppState.currentDay;
-  const forecast = getForecast(day, AppState.exerciseHours);
-  const container = document.getElementById('cones-grid-container');
-  if (!container) return;
-
-  const sliderVal = document.getElementById('adherence-slider-val');
-  if (sliderVal) sliderVal.textContent = `${AppState.exerciseHours.toFixed(1)} hrs/day`;
-
-  let html = '';
-  forecast.forEach((f, idx) => {
-    const map = mapSeverity(f.status);
-    const verifyNote = (f.dimension.includes('Bone') || f.dimension.includes('Aerobic')) ? ' (verify on source page)' : '';
-
-    html += `
-      <div class="cone-card">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px;">
-          <strong style="font-family: var(--font-heading); font-size: 18px; color: var(--starlight);">${f.dimension}</strong>
-          <span class="status-badge status-${map.status}">
-            <span class="${map.shapeClass}"></span> ${map.label}
-          </span>
-        </div>
-
-        <div style="display: flex; align-items: baseline; justify-content: space-between;">
-          <span style="font-size: 14px; color: var(--starlight-dim);">Departure Baseline (100%) &rarr;</span>
-          <span style="font-size: 14px; color: var(--starlight-dim);">Landing Day Arrival (${f.landing.low}% &ndash; ${f.landing.high}%)</span>
-        </div>
-
-        <div class="cone-canvas-box">
-          <canvas id="cone-canvas-${idx}" class="cone-canvas"></canvas>
-        </div>
-
-        <div style="display: flex; align-items: baseline; justify-content: space-between; font-size: 14px; margin-top: 4px;">
-          <span style="color: var(--starlight-dim);">Estimated range (illustrative): <strong>${f.landing.low}% &ndash; ${f.landing.high}%</strong></span>
-          <a href="${f.citationUrl}" target="_blank" rel="noopener noreferrer" style="color: var(--earthlight); text-decoration: none;">
-            NASA Reference &nearr;${verifyNote}
-          </a>
-        </div>
-      </div>
-    `;
-  });
-
-  container.innerHTML = html;
-
-  // Render canvas cones
-  forecast.forEach((f, idx) => {
-    const canvas = document.getElementById(`cone-canvas-${idx}`);
-    renderTrajectoryCone(canvas, f.landing.low, f.landing.mid, f.landing.high, f.status);
-  });
-
-  renderCountermeasuresChecklist();
-}
-
 export const COUNTERMEASURES_LIST = [
-  { id: 'cm_ared', label: 'Resistive vibration exercise load protocol (ARED-II) \u2022 1.5 hrs/day' },
-  { id: 'cm_light', label: 'Dynamic blue-enriched (460 nm) circadian phase-shifting entrainment' },
-  { id: 'cm_amine', label: 'Cabin LiOH / Solid Amine scrubber canister exchange & hypercapnia purge' },
-  { id: 'cm_antiviral', label: 'Low-dose Valacyclovir antiviral prophylaxis for dormant HSV-1 suppression' },
-  { id: 'cm_sleep_hygiene', label: 'Dark-cabin acoustic attenuation and scheduled sleep hygiene window' }
+  { id: 'cm_ared', label: 'Resistive exercise on ARED, 1.5 h/day' },
+  { id: 'cm_light', label: 'Blue-enriched (460 nm) lighting to shift the circadian rhythm' },
+  { id: 'cm_amine', label: 'Swap the CO2 scrubber canister and purge the cabin' },
+  { id: 'cm_antiviral', label: 'Antiviral for cold-sore reactivation, only as directed by the CMO' },
+  { id: 'cm_sleep_hygiene', label: 'Dark, quiet cabin and a protected sleep window' }
 ];
 
-export function renderCountermeasuresChecklist() {
-  const container = document.getElementById('countermeasures-checklist');
-  if (!container) return;
+const SCENARIOS = [
+  { h: 1.5, label: 'Adherent · 1.5 h' },
+  { h: 1.2, label: 'Nominal · 1.2 h' },
+  { h: 0.0, label: 'No exercise · 0 h' },
+];
 
-  const saved = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
-  let html = '';
-
-  COUNTERMEASURES_LIST.forEach(cm => {
-    const checked = saved[cm.id] !== undefined ? saved[cm.id] : true;
-    html += `
-      <div class="countermeasure-item">
-        <input type="checkbox" id="${cm.id}" ${checked ? 'checked' : ''} data-cm="${cm.id}">
-        <label for="${cm.id}">${cm.label}</label>
+export function mountForecast() {
+  const panel = document.getElementById('panel-forecast');
+  panel.innerHTML = `
+    <div class="view-head">
+      <div>
+        <span class="eyebrow"><span class="step-no">2</span>Forecast</span>
+        <h1>Will this astronaut be ready on landing day?</h1>
+        <p>Projections to day 180 built on NASA-published loss rates, shown as ranges. Move the exercise slider to see what effort changes. The response curve is our assumption.</p>
       </div>
-    `;
+    </div>
+
+    <article class="card reveal" style="--i:0">
+      <div class="whatif">
+        <div>
+          <label class="field-label" for="adherence-slider-input">What if: daily exercise</label>
+          <div class="row" style="justify-content: space-between; align-items: flex-end;">
+            <div class="whatif-value"><span id="adherence-slider-val">1.2</span><small>h / day</small></div>
+            <div class="segmented" role="group" aria-label="Exercise scenarios" id="scenario-buttons">
+              ${SCENARIOS.map(s => `<button data-h="${s.h}" id="btn-scenario-${String(s.h).replace('.', '')}${s.h === 0 ? '0' : ''}" aria-pressed="false">${s.label}</button>`).join('')}
+            </div>
+          </div>
+          <input type="range" id="adherence-slider-input" min="0" max="1.5" step="0.1" value="1.2" style="margin-top:14px" aria-describedby="whatif-scale">
+          <div class="whatif-scale" id="whatif-scale"><span>0 h</span><span>NASA reference 1.5 h/day</span></div>
+        </div>
+        <div style="text-align:right">
+          <span class="eyebrow">Landing readiness</span>
+          <div class="whatif-value" style="margin:6px 0 10px"><span id="forecast-score">0%</span></div>
+          <div class="poll-summary" id="poll-summary" style="justify-content:flex-end"></div>
+        </div>
+      </div>
+    </article>
+
+    <div class="dims mt" id="cones-grid-container"></div>
+
+    <div class="grid g-12 mt">
+      <article class="card span-7 reveal" style="--i:7">
+        <div class="card-head"><div><h3 class="card-title">Countermeasure checklist</h3><p class="card-sub">Saved on this device</p></div></div>
+        <div class="countermeasure-list" id="countermeasures-checklist"></div>
+      </article>
+      <article class="card span-5 reveal" style="--i:8">
+        <div class="card-head"><div><h3 class="card-title">How to read this</h3></div></div>
+        <ul class="why-list">
+          <li><span>Each cone starts at <b>100 %</b> of this astronaut's baseline on departure and opens toward landing day.</span></li>
+          <li><span><b>GO</b> clears 90 %, <b>NO-GO</b> falls below 80 %. Both levels are team assumptions.</span></li>
+          <li><span>Bone and fitness rates come from NASA's Human Research Program pages; balance, sleep and mood are lower confidence.</span></li>
+          <li><span>Illustrative model on synthetic data, not a clinical predictor.</span></li>
+        </ul>
+      </article>
+    </div>`;
+
+  const slider = $('#adherence-slider-input');
+  slider.addEventListener('input', () => AppState.setExerciseHours(parseFloat(slider.value)));
+  $('#scenario-buttons').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-h]');
+    if (b) AppState.setExerciseHours(parseFloat(b.dataset.h));
   });
-
-  container.innerHTML = html;
-
-  container.querySelectorAll('input[type="checkbox"]').forEach(input => {
-    input.addEventListener('change', (e) => {
-      const id = e.target.getAttribute('data-cm');
-      const cur = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
-      cur[id] = e.target.checked;
-      localStorage.setItem('landfall_countermeasures', JSON.stringify(cur));
-    });
+  $('#countermeasures-checklist').addEventListener('change', (e) => {
+    const id = e.target.getAttribute('data-cm');
+    if (!id) return;
+    const cur = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
+    cur[id] = e.target.checked;
+    localStorage.setItem('landfall_countermeasures', JSON.stringify(cur));
   });
 }
 
-export function initScenarioButtons() {
-  const btn15 = document.getElementById('btn-scenario-15');
-  const btn12 = document.getElementById('btn-scenario-12');
-  const btn00 = document.getElementById('btn-scenario-00');
-  const slider = document.getElementById('adherence-slider-input');
+export function renderForecastTab() {
+  const v = AppState.view;
+  if (!v) return;
+  const h = AppState.exerciseHours;
+  $('#adherence-slider-val').textContent = h.toFixed(1);
+  const slider = $('#adherence-slider-input');
+  if (document.activeElement !== slider) slider.value = h;
+  document.querySelectorAll('#scenario-buttons button').forEach(b => b.setAttribute('aria-pressed', parseFloat(b.dataset.h) === h ? 'true' : 'false'));
 
-  const update = (hrs) => {
-    AppState.setExerciseHours(hrs);
-    if (slider) slider.value = hrs;
+  countUp($('#forecast-score'), v.readiness.score, { suffix: '%' });
+  const counts = { nominal: 0, caution: 0, alarm: 0 };
+  v.forecast.forEach(f => counts[f.status]++);
+  $('#poll-summary').innerHTML = [
+    pill('ok', 'shape-circle', `${counts.nominal} GO`),
+    pill('warn', 'shape-triangle', `${counts.caution} WATCH`),
+    pill('bad', 'shape-diamond', `${counts.alarm} NO-GO`),
+  ].join('');
 
-    [btn15, btn12, btn00].forEach(b => {
-      if (b) b.classList.remove('active');
-    });
-
-    if (hrs === 1.5 && btn15) btn15.classList.add('active');
-    if (hrs === 1.2 && btn12) btn12.classList.add('active');
-    if (hrs === 0.0 && btn00) btn00.classList.add('active');
-
-    renderForecastTab();
-    renderOverviewTab();
-    renderTwin();
-    AppState.updateTelemetryText();
-  };
-
-  if (btn15) btn15.addEventListener('click', () => update(1.5));
-  if (btn12) btn12.addEventListener('click', () => update(1.2));
-  if (btn00) btn00.addEventListener('click', () => update(0.0));
-
-  if (slider) {
-    slider.addEventListener('input', (e) => update(parseFloat(e.target.value)));
+  const grid = $('#cones-grid-container');
+  // Build the cards once, then update in place so the canvases don't flicker
+  if (grid.children.length !== v.forecast.length) {
+    grid.innerHTML = v.forecast.map((f, i) => `
+      <article class="card dim reveal" style="--i:${i + 1}" data-dim="${i}">
+        <div class="dim-head"><span class="dim-name">${esc(f.dimension)}</span><span class="dim-pill"></span></div>
+        <div class="dim-value"><span class="dim-mid">0</span><small>% at landing</small></div>
+        <div class="cone-canvas-box"><canvas id="cone-canvas-${i}" class="cone-canvas" aria-label="Projection cone for ${esc(f.dimension)}"></canvas></div>
+        <div class="dim-foot"><span class="dim-range"></span><a href="${esc(f.citationUrl)}" target="_blank" rel="noopener noreferrer">NASA source ↗</a></div>
+      </article>`).join('');
   }
+  v.forecast.forEach((f, i) => {
+    const card = grid.querySelector(`[data-dim="${i}"]`);
+    card.className = `card dim status-${f.status}${card.classList.contains('reveal') ? ' reveal' : ''}`;
+    card.style.setProperty('--i', i + 1);
+    card.querySelector('.dim-pill').innerHTML = forecastPill(f.status);
+    countUp(card.querySelector('.dim-mid'), f.landing.mid, { decimals: 1 });
+    card.querySelector('.dim-range').textContent = `Range ${f.landing.low}–${f.landing.high} % · ${f.confidence.split(' (')[0]} confidence`;
+    renderTrajectoryCone(document.getElementById(`cone-canvas-${i}`), f.landing.low, f.landing.mid, f.landing.high, f.status);
+  });
+
+  const saved = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
+  const list = $('#countermeasures-checklist');
+  if (!list.children.length) {
+    list.innerHTML = COUNTERMEASURES_LIST.map(cm => `
+      <label class="countermeasure-item" for="${cm.id}">
+        <input type="checkbox" id="${cm.id}" data-cm="${cm.id}">
+        <span>${esc(cm.label)}</span>
+      </label>`).join('');
+  }
+  COUNTERMEASURES_LIST.forEach(cm => { const el = document.getElementById(cm.id); if (el) el.checked = saved[cm.id] !== undefined ? saved[cm.id] : true; });
 }

@@ -18,8 +18,8 @@ test('triage reads its thresholds from config, not literals', () => {
   assert.doesNotMatch(src, />= 5\b/);
 });
 
-test('the header and the mission scene use the one delay function', () => {
-  for (const rel of ['../../src/ui/header.js', '../../src/ui/visuals/mission-scene.js']) {
+test('the decision loop and the mission scene use the one delay function', () => {
+  for (const rel of ['../../src/core/run-day.js', '../../src/ui/visuals/mission-scene.js']) {
     const src = read(rel);
     assert.doesNotMatch(src, /1\.3 \+ \(day \/ 180\) \* 750/, rel);
     assert.match(src, /oneWayDelayS/, rel);

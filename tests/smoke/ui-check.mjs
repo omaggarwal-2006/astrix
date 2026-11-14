@@ -24,6 +24,8 @@ const htmlContent = fs.readFileSync(path.join(rootDir, 'index.html'), 'utf-8');
 const cssContent = readTree('assets/css', ['.css']);
 // All app code (was a single main.js before the restructure)
 const mainJsContent = readTree('src', ['.js']);
+// The views build their own markup (src/ui/tabs/*), so markup checks look at both
+const uiContent = htmlContent + '\n' + mainJsContent;
 const contractContent = fs.readFileSync(path.join(rootDir, 'CONTRACT.md'), 'utf-8');
 const swContent = fs.readFileSync(path.join(rootDir, 'sw.js'), 'utf-8');
 
@@ -49,50 +51,50 @@ console.log('LANDFALL 2.0 - AUTOMATED VERIFICATION SUITE (ALL 16 ITEMS)');
 console.log('===============================================================\n');
 
 // 1. Tabs, back/forward, direct links (Hash router & fallback)
-const hasTabs = ['overview', 'monitor', 'forecast', 'triage', 'sources'].every(tab =>
-  htmlContent.includes(`data-tab="${tab}"`) && htmlContent.includes(`id="panel-${tab}"`)
+const hasTabs = ['today', 'signals', 'forecast', 'comms', 'twin', 'evidence'].every(tab =>
+  uiContent.includes(`data-tab="${tab}"`) && uiContent.includes(`id="panel-${tab}"`)
 );
 const hasHashRouter = mainJsContent.includes('activateTab') &&
   mainJsContent.includes("window.addEventListener('hashchange'") &&
-  mainJsContent.includes("activateTab('overview')");
-check(1, 'Tabs, back/forward, direct links & fallback', hasTabs && hasHashRouter, '5 tabs + fallback to overview');
+  mainJsContent.includes(": 'today'");
+check(1, 'Tabs, back/forward, direct links & fallback', hasTabs && hasHashRouter, '6 tabs + fallback to Today');
 
 // 2. Day scrubber (drag, click, arrows) updates everything
-const hasScrubber = htmlContent.includes('id="mission-scrubber-slider"') &&
-  htmlContent.includes('min="1"') && htmlContent.includes('max="180"') &&
+const hasScrubber = uiContent.includes('id="mission-scrubber-slider"') &&
+  uiContent.includes('min="1"') && uiContent.includes('max="180"') &&
   mainJsContent.includes('AppState.setDay(') &&
   mainJsContent.includes('updateTelemetryText');
 check(2, 'Day scrubber (1 to 180) updates telemetry', hasScrubber, '180 days, milestones, live telemetry');
 
 // 3. Scene collapse toggle (remembered in localStorage)
-const hasSceneToggle = htmlContent.includes('id="btn-toggle-scene"') &&
+const hasSceneToggle = uiContent.includes('id="btn-toggle-scene"') &&
   mainJsContent.includes('landfall_scene_collapsed') &&
   mainJsContent.includes('localStorage.getItem');
 check(3, 'Mission scene collapse toggle & storage', hasSceneToggle, 'Persists in localStorage');
 
 // 4. Environment selector (all four: MARS, ISS, MOON, EVA_SUIT)
 const hasEnvSelect = ['MARS', 'ISS', 'MOON', 'EVA_SUIT'].every(env =>
-  htmlContent.includes(`value="${env}"`)
+  uiContent.includes(`value="${env}"`)
 ) && mainJsContent.includes('setEnvironment');
 check(4, 'Environment selector (MARS, ISS, MOON, EVA)', hasEnvSelect, 'All 4 environments supported');
 
 // 5. "Play 30-second demo", Pause, Stop
-const hasDemoControls = htmlContent.includes('id="btn-play-demo"') &&
-  htmlContent.includes('id="btn-pause-demo"') &&
-  htmlContent.includes('id="btn-stop-demo"') &&
+const hasDemoControls = uiContent.includes('id="btn-play-demo"') &&
+  uiContent.includes('id="btn-pause-demo"') &&
+  uiContent.includes('id="btn-stop-demo"') &&
   mainJsContent.includes('startDemo') &&
   mainJsContent.includes('stopDemo');
 check(5, 'Play, Pause, Stop automated demo', hasDemoControls, 'Day 35 to 60 with pre-demo state restore');
 
 // 6. Replay entry zoom; EVA close/re-open suit split toggle
-const hasReplayAndSuit = htmlContent.includes('id="btn-replay-entry-zoom"') &&
-  htmlContent.includes('id="btn-toggle-eva-suit"') &&
+const hasReplayAndSuit = uiContent.includes('id="btn-replay-entry-zoom"') &&
+  uiContent.includes('id="btn-toggle-eva-suit"') &&
   mainJsContent.includes('replayEntryZoom') &&
   mainJsContent.includes('toggleEvaSuit');
 check(6, 'Replay entry zoom & EVA suit shell split', hasReplayAndSuit, '3-phase split reveal & replay zoom');
 
 // 7. Check-in form validation, save, confirmation, updates
-const hasFormValidation = htmlContent.includes('id="monitor-checkin-form"') &&
+const hasFormValidation = uiContent.includes('id="monitor-checkin-form"') &&
   mainJsContent.includes('landfall_custom_checkins') &&
   mainJsContent.includes('Heart rate must be between 35 and 220') &&
   mainJsContent.includes('Core temperature must be between 34.0 and 42.0');
@@ -104,65 +106,66 @@ const all11Regions = [
   'left_arm', 'right_arm', 'left_hand', 'right_hand',
   'left_leg', 'right_leg', 'left_foot', 'right_foot'
 ];
-const hasAll11Regions = all11Regions.every(r => htmlContent.includes(`id="reg-${r}"`)) &&
-  htmlContent.includes('id="btn-toggle-orientation"') &&
-  htmlContent.includes('id="twin-breadcrumb-bar"') &&
-  htmlContent.includes('id="btn-twin-zoom-out"') &&
-  mainJsContent.includes("e.key === 'Escape'");
+const hasAll11Regions = all11Regions.every(r => uiContent.includes(`id="reg-${r}"`)) &&
+  uiContent.includes('id="btn-toggle-orientation"') &&
+  uiContent.includes('id="twin-breadcrumb-bar"') &&
+  uiContent.includes('id="btn-twin-zoom-out"') &&
+  mainJsContent.includes("'Escape'");
 check(8, '11 anatomical SVG regions, Escape & breadcrumbs', hasAll11Regions, '11 regions, Front/Back, Escape zoom-out');
 
 // 9. Four tissue cards open micro-lab, controls change projection and XP
-const hasTissueGridAndLab = htmlContent.includes('id="twin-tissue-grid"') &&
-  htmlContent.includes('id="micro-lab-canvas"') &&
-  htmlContent.includes('id="micro-ctrl-1-input"') &&
-  htmlContent.includes('id="micro-ctrl-2-input"') &&
+const hasTissueGridAndLab = uiContent.includes('id="twin-tissue-grid"') &&
+  uiContent.includes('id="micro-lab-canvas"') &&
+  uiContent.includes('id="micro-ctrl-1-input"') &&
+  uiContent.includes('id="micro-ctrl-2-input"') &&
   twinModel.TISSUE_LAYERS.length === 4;
 check(9, '4 exploded tissue cards & micro-lab canvas', hasTissueGridAndLab, 'Bone, Muscle, Skin, Vascular + XP gain');
 
 // 10. Go/No-Go rows and alert rows jump to right tab
-const hasGoNoGoAndAlertJumps = htmlContent.includes('id="gonogo-poll-container"') &&
-  htmlContent.includes('id="active-alerts-container"') &&
-  mainJsContent.includes("activateTab('forecast')") &&
-  mainJsContent.includes("activateTab('triage')");
+const hasGoNoGoAndAlertJumps = uiContent.includes('id="poll-summary"') &&
+  uiContent.includes('id="today-alerts"') &&
+  mainJsContent.includes("goto: 'forecast'") &&
+  mainJsContent.includes("goto: 'comms'");
 check(10, 'Go/No-Go and Alert routing across tabs', hasGoNoGoAndAlertJumps, 'Jump to Forecast & Triage tabs');
 
 // 11. Scenario buttons and exercise slider
-const hasScenarios = htmlContent.includes('id="btn-scenario-15"') &&
-  htmlContent.includes('id="btn-scenario-12"') &&
-  htmlContent.includes('id="btn-scenario-00"') &&
-  htmlContent.includes('id="adherence-slider-input"');
+const hasScenarios = ['h: 1.5', 'h: 1.2', 'h: 0.0'].every(x => mainJsContent.includes(x)) &&
+  uiContent.includes('id="btn-scenario-') &&
+  uiContent.includes('id="adherence-slider-input"');
 check(11, 'Countermeasure scenarios & adherence slider', hasScenarios, 'Adherent, Nominal, Zero + 0-1.5 h/d');
 
 // 12. Countermeasure checklist saved after reload
-const hasChecklist = htmlContent.includes('id="countermeasures-checklist"') &&
+const hasChecklist = uiContent.includes('id="countermeasures-checklist"') &&
   mainJsContent.includes('landfall_countermeasures');
 check(12, 'Autonomous countermeasure checklist persistence', hasChecklist, 'Dynamic checklist saved in localStorage');
 
-// 13. Link dropdown, Send packet, Copy packet, Retry, Emergency link
-const hasTriageComms = htmlContent.includes('id="link-preset-select"') &&
-  htmlContent.includes('id="btn-send-packet"') &&
-  htmlContent.includes('id="btn-copy-packet"') &&
-  htmlContent.includes('id="btn-emergency-link"') &&
-  htmlContent.includes('id="emergency-link-modal"') &&
-  mainJsContent.includes('available: true');
-check(13, 'Comms link, DTN queue, Copy, Retry, Emergency', hasTriageComms, 'Wrapped setLink, Copy, Retry, Bypass modal');
+// 13. Distance, link and crew controls, Send packet, Copy packet, Retry, Emergency link
+const hasTriageComms = ['MODEL', 'MOON', 'MARS_NEAR', 'MARS_MID', 'MARS_FAR'].every(k => mainJsContent.includes(`key: '${k}'`)) &&
+  uiContent.includes('data-toggle="linkUp"') &&
+  uiContent.includes('data-toggle="onboardSupport"') &&
+  uiContent.includes('id="btn-send-packet"') &&
+  uiContent.includes('id="btn-copy-packet"') &&
+  uiContent.includes('retry-packet-btn') &&
+  uiContent.includes('id="btn-emergency-link"') &&
+  uiContent.includes('id="emergency-link-modal"');
+check(13, 'Comms controls, DTN queue, Copy, Retry, Emergency', hasTriageComms, 'Distance, link, crew, copy, retry, bypass modal');
 
 // 14. NASA links open in new tab with rel="noopener"
-const hasSecureLinks = htmlContent.includes('target="_blank"') || mainJsContent.includes('target="_blank" rel="noopener noreferrer"');
+const hasSecureLinks = uiContent.includes('target="_blank"') || mainJsContent.includes('target="_blank" rel="noopener noreferrer"');
 check(14, 'NASA literature links with rel="noopener"', hasSecureLinks, 'Secure external links');
 
 // 15. Reset demo asks for confirmation
-const hasResetConfirm = htmlContent.includes('id="btn-reset-demo"') &&
+const hasResetConfirm = uiContent.includes('id="btn-reset-demo"') &&
   mainJsContent.includes('confirm(');
 check(15, 'Reset demo confirmation dialog', hasResetConfirm, 'Restores Day 40 baseline on confirmation');
 
 // 16. Keyboard-only use with visible focus, ARIA, no color-only cues
-const hasAriaAndRoles = htmlContent.includes('role="tablist"') &&
-  htmlContent.includes('role="tab"') &&
-  htmlContent.includes('role="button"') &&
-  htmlContent.includes('tabindex="0"') &&
+const hasAriaAndRoles = uiContent.includes('role="tablist"') &&
+  uiContent.includes('role="tab"') &&
+  uiContent.includes('role="button"') &&
+  uiContent.includes('tabindex="0"') &&
   cssContent.includes(':focus-visible') &&
-  htmlContent.includes('shape-circle');
+  uiContent.includes('shape-circle');
 check(16, 'Keyboard accessibility, ARIA & geometric shapes', hasAriaAndRoles, 'Full keyboard focus & shape indicators');
 
 // Test Model Logic

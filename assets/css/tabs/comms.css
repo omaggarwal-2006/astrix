@@ -1,0 +1,29 @@
+/* LANDFALL · Comms (Deliver): environment controls, packet preview, DTN queue */
+
+.env-controls { display: grid; gap: 20px; }
+.env-delay-readout { font-family: var(--font-heading); font-size: var(--fs-xl); margin-top: 8px; }
+.env-delay-readout small { font-family: var(--font-body); font-size: var(--fs-sm); color: var(--text-3); margin-left: 6px; }
+
+.packet-fields { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: var(--fs-sm); }
+.packet-fields dt { color: var(--text-3); }
+.packet-fields dd { color: var(--text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.packet-json {
+  margin-top: 12px; max-height: 260px; overflow: auto; padding: 14px; border-radius: 12px; background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border); font: 12px/1.55 var(--font-mono); color: #BFD3E6; white-space: pre;
+}
+.packet-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+
+.queue-list { display: grid; gap: 10px; }
+.q-item { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0, 0, 0, 0.2); }
+.q-item.q-new { animation: riseIn 420ms var(--ease) both; }
+.q-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.q-id { font-family: var(--font-heading); font-size: var(--fs-md); }
+.q-anomaly { font-size: var(--fs-xs); color: var(--text-3); margin: 6px 0 10px; }
+.q-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.q-steps span { font-size: 11px; color: var(--text-3); padding-top: 8px; border-top: 3px solid rgba(255, 255, 255, 0.1); transition: border-color 400ms var(--ease), color 400ms var(--ease); }
+.q-steps span.done { border-top-color: var(--ok); color: var(--text-2); }
+.q-steps span.now { border-top-color: var(--accent); color: var(--text); background: linear-gradient(90deg, transparent, rgba(108, 180, 228, 0.12), transparent); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+.q-steps span.fail { border-top-color: var(--bad); color: #FFC2BB; }
+.q-reply { font: 12px/1.5 var(--font-mono); color: #BFD3E6; margin-top: 10px; }
+
+.emergency-box { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; border-color: rgba(238, 100, 88, 0.35); }

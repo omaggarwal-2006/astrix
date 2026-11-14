@@ -1,103 +1,27 @@
 /* LANDFALL · First-load title screen */
 
-/* First-Load Title Splash Screen Modal */
 .title-screen-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(5, 7, 13, 0.92);
-  backdrop-filter: blur(8px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; padding: 20px;
+  background:
+    radial-gradient(800px 500px at 50% 0%, rgba(108, 180, 228, 0.16), transparent 70%),
+    rgba(4, 6, 12, 0.94);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 400ms var(--ease);
 }
-
 .title-plate-box {
-  background: var(--hull);
-  border: 1px solid var(--hull-line);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-  border-radius: 6px;
-  max-width: 720px;
-  width: 100%;
-  padding: 32px;
-  text-align: left;
+  width: min(760px, 100%); padding: 40px; border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow-pop);
+  animation: popIn 520ms var(--ease) 80ms both;
 }
-
-.title-header-tag {
-  font-family: var(--font-heading);
-  font-size: 14px;
-  letter-spacing: 0.5px;
-  color: var(--nominal-teal);
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-.title-main-name {
-  font-family: var(--font-heading);
-  font-size: 48px;
-  color: var(--starlight);
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 16px;
-}
-
-.title-pitch-box {
-  background: #080D16;
-  border-left: 3px solid var(--earthlight);
-  padding: 14px 18px;
-  margin-bottom: 24px;
-  font-size: 16px;
-  color: var(--starlight);
-  line-height: 1.5;
-}
-
-.title-verbs-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 28px;
-}
-
-.verb-card {
-  background: #090E17;
-  border: 1px solid var(--hull-line);
-  border-radius: 4px;
-  padding: 14px;
-}
-
-.verb-word {
-  display: block;
-  font-family: var(--font-heading);
-  font-size: 15px;
-  color: var(--earthlight);
-  font-weight: 700;
-  margin-bottom: 4px;
-}
-
-.verb-desc {
-  font-size: 13.5px;
-  color: var(--starlight-dim);
-  line-height: 1.4;
-}
-
-.btn-start-console {
-  display: block;
-  width: 100%;
-  background: #172B40;
-  color: #FFFFFF;
-  border: 1px solid var(--earthlight);
-  border-radius: 4px;
-  font-family: var(--font-heading);
-  font-size: 18px;
-  font-weight: 600;
-  padding: 12px 20px;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.15s ease;
-}
-.btn-start-console:hover {
-  background: #233D5B;
-  box-shadow: 0 0 12px rgba(95, 168, 211, 0.4);
-}
+.title-header-tag { font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+.title-main-name { font-family: var(--font-heading); font-size: clamp(44px, 8vw, 72px); letter-spacing: 0.14em; line-height: 1; margin: 14px 0 12px; }
+.title-thesis { font-size: var(--fs-lg); color: var(--text); max-width: 600px; }
+.title-thesis em { font-style: normal; color: var(--accent); }
+.title-loop { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 26px 0 28px; }
+.title-loop div { padding: 14px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); }
+.title-loop b { display: block; font-family: var(--font-heading); color: var(--text); font-size: var(--fs-md); margin-bottom: 4px; }
+.title-loop span { font-size: var(--fs-xs); color: var(--text-3); line-height: 1.45; display: block; }
+.title-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.title-foot { margin-top: 18px; font-size: var(--fs-xs); color: var(--text-3); }
+@media (max-width: 640px) { .title-loop { grid-template-columns: 1fr 1fr; } .title-plate-box { padding: 26px; } }

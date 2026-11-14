@@ -1,21 +1,40 @@
-/* LANDFALL · Reduced motion and small-screen overrides (load last) */
+/* LANDFALL · Breakpoints and reduced motion (load last) */
 
-/* Prefers Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation: none !important;
-    transition: none !important;
-  }
+@media (max-width: 1180px) {
+  .status-chips .chip.opt { display: none; }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dims { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 }
 
-@media (max-width: 900px) {
-  .disclaimer-strip, .mission-pitch-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .mission-scrubber-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
+@media (max-width: 960px) {
+  .today-hero, .g-2, .g-3 { grid-template-columns: 1fr; }
+  .g-12 > [class*="span-"] { grid-column: span 12; }
+  .loop { grid-template-columns: 1fr; gap: 22px; }
+  .loop-step { margin-right: 0; }
+  .loop-step:not(:last-child)::after { top: auto; bottom: -22px; right: auto; left: 28px; width: 2px; height: 22px; background: repeating-linear-gradient(180deg, var(--accent) 0 6px, transparent 6px 10px); animation: none; }
+  .loop-step:not(:last-child)::before { top: auto; bottom: -24px; right: auto; left: 24px; border-top: 7px solid var(--accent); border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 0; }
+  .why-grid, .principles, .source-list { grid-template-columns: 1fr; }
+  .status-chips { display: none; }
+  .tabs-bar { top: 60px; }
+  .scrubber { grid-template-columns: 1fr; }
+  .scrubber-readout { text-align: left; }
+}
+
+@media (max-width: 640px) {
+  .container { width: calc(100% - 32px); }
+  .appbar-actions .btn-label { display: none; }
+  .brand-tag { display: none; }
+  .kpis, .dims { grid-template-columns: 1fr 1fr; }
+  .dims { grid-template-columns: 1fr; }
+  .readiness-card { flex-direction: column; align-items: flex-start; }
+  .view-head h1 { font-size: var(--fs-xl); }
+  .decision-path { font-size: var(--fs-xl); }
+  .mission-scene-canvas { height: 170px; }
+  .nav-tab-btn .tab-step { display: none; }
+  .whatif { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

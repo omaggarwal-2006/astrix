@@ -3,414 +3,163 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LANDFALL - View From The Ship | NASA Space Apps 2026</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23C4623A'/><circle cx='50' cy='50' r='20' fill='%233FB59A'/></svg>">
+  <title>LANDFALL · Delay-aware astronaut health</title>
+  <meta name="description" content="An offline astronaut health app that decides who should act on a health signal based on how far Earth is. NASA Space Apps 2026.">
+  <meta name="theme-color" content="#060911">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23D0703F'/><circle cx='50' cy='50' r='20' fill='%2345C2A2'/></svg>">
   <!-- Styles: load order matters (responsive.css last). See assets/css/ -->
   <link rel="stylesheet" href="./assets/css/tokens.css">
   <link rel="stylesheet" href="./assets/css/base.css">
   <link rel="stylesheet" href="./assets/css/layout.css">
   <link rel="stylesheet" href="./assets/css/components.css">
-  <link rel="stylesheet" href="./assets/css/header.css">
   <link rel="stylesheet" href="./assets/css/title-screen.css">
-  <link rel="stylesheet" href="./assets/css/tabs/overview.css">
-  <link rel="stylesheet" href="./assets/css/tabs/monitor.css">
+  <link rel="stylesheet" href="./assets/css/tabs/today.css">
+  <link rel="stylesheet" href="./assets/css/tabs/signals.css">
   <link rel="stylesheet" href="./assets/css/tabs/forecast.css">
+  <link rel="stylesheet" href="./assets/css/tabs/comms.css">
+  <link rel="stylesheet" href="./assets/css/tabs/evidence.css">
   <link rel="stylesheet" href="./assets/css/extras.css">
   <link rel="stylesheet" href="./assets/css/responsive.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Title Screen Plaque (First Load) -->
+  <!-- ===================== Title screen ===================== -->
   <div id="title-screen-modal" class="title-screen-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="title-plate-box">
-      <div class="title-header-tag">NASA Space Apps Challenge 2026 &bull; Health Monitoring Software</div>
+      <div class="title-header-tag">NASA Space Apps 2026 · Astronaut health monitoring</div>
       <h1 id="modal-title" class="title-main-name">LANDFALL</h1>
-
-      <div class="title-pitch-box">
-        <strong>"The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."</strong>
+      <p class="title-thesis">On the way to Mars, Earth is minutes away. The same symptom needs a different response at 3 seconds of delay than at 20 minutes. <em>LANDFALL decides who should act, and makes sure the report reaches Earth.</em></p>
+      <div class="title-loop" aria-label="How it works">
+        <div><b>Detect</b><span>Drift from this astronaut's own baseline</span></div>
+        <div><b>Forecast</b><span>Landing-day readiness from NASA loss rates</span></div>
+        <div><b>Decide</b><span>Self-care, crew medical officer or flight surgeon, for this delay</span></div>
+        <div><b>Deliver</b><span>A checksummed report that survives link loss</span></div>
       </div>
-
-      <div class="title-verbs-strip">
-        <div class="verb-card">
-          <span class="verb-word">1. Gather</span>
-          <p class="verb-desc">Health constellation and daily check-in evaluated against your personal baseline.</p>
-        </div>
-        <div class="verb-card">
-          <span class="verb-word">2. Evaluate</span>
-          <p class="verb-desc">Landing-day flight cones for bone, muscle, and cardio based on NASA published rates.</p>
-        </div>
-        <div class="verb-card">
-          <span class="verb-word">3. Act</span>
-          <p class="verb-desc">Autonomous triage routing health issues across interplanetary comm delay.</p>
-        </div>
+      <div class="title-actions">
+        <button id="btn-start-mission" class="btn btn-primary">Enter mission console</button>
+        <button id="btn-start-demo" class="btn">Watch the 40-second demo</button>
       </div>
-
-      <button id="btn-start-mission" class="btn-start-console">
-        Enter Mission Console (Ares-VI Transit) &rarr;
-      </button>
+      <p class="title-foot">Synthetic data · Illustrative model, not a clinical tool · Works offline</p>
     </div>
   </div>
 
   <script>
-    // Title screen dismissal. Kept inline (not in a module) so the button works even if a module fails to load.
-    (function() {
-      function dismissTitleModal() {
+    // Title screen dismissal. Kept inline (not in a module) so the buttons work even if a module fails to load.
+    (function () {
+      function dismiss() {
         var m = document.getElementById('title-screen-modal');
-        if (m) {
-          m.style.display = 'none';
-          try { m.remove(); } catch(err) {}
-        }
+        if (m) { m.style.display = 'none'; try { m.remove(); } catch (err) {} }
       }
-      var b = document.getElementById('btn-start-mission');
-      if (b) {
-        b.onclick = dismissTitleModal;
-        b.addEventListener('click', dismissTitleModal, { capture: true });
-      }
-      var overlay = document.getElementById('title-screen-modal');
-      if (overlay) {
-        overlay.addEventListener('click', function(ev) {
-          if (ev.target === overlay || (ev.target && ev.target.id === 'btn-start-mission')) {
-            dismissTitleModal();
-          }
-        });
-      }
-      document.addEventListener('keydown', function(ev) {
-        if (ev.key === 'Enter' || ev.key === 'Escape') {
-          dismissTitleModal();
-        }
+      ['btn-start-mission', 'btn-start-demo'].forEach(function (id) {
+        var b = document.getElementById(id);
+        if (b) b.addEventListener('click', dismiss, { capture: true });
+      });
+      document.addEventListener('keydown', function (ev) {
+        if ((ev.key === 'Enter' || ev.key === 'Escape') && document.getElementById('title-screen-modal')) dismiss();
       });
     })();
   </script>
 
-  <!-- Thin Operational Advisory Banner -->
-  <header class="disclaimer-strip" role="banner">
-    <div class="disclaimer-left">
-      <span class="disclaimer-badge">
-        <span class="badge-icon" aria-hidden="true"></span>
-        OPERATIONAL ADVISORY
-      </span>
-      <span>Illustrative model, not a clinical predictor. Synthetic data.</span>
-    </div>
-    <div class="disclaimer-controls">
-      <div id="crew-xp-pill" class="crew-xp-pill" title="Crew landing readiness experience points and tier">
-        <span class="shape-circle" id="crew-xp-shape"></span>
-        <span>Crew Readiness:</span>
-        <span id="crew-xp-num" class="crew-xp-val">850 XP</span>
-        <span id="crew-xp-tier" class="crew-tier-badge tier-1">Tier I</span>
+  <!-- ===================== App bar ===================== -->
+  <header class="appbar">
+    <div class="container appbar-inner">
+      <a class="brand" href="#today" aria-label="LANDFALL home">
+        <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(108,180,228,.35)" stroke-width="1.5" stroke-dasharray="3 4"/>
+          <circle cx="27" cy="22" r="8" fill="#D0703F"/>
+          <circle cx="9" cy="14" r="3.2" fill="#6CB4E4"/>
+          <path d="M11.5 13.2 Q19 6 25.5 14.5" fill="none" stroke="#ECE9E1" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span><span class="brand-name">LANDFALL</span><span class="brand-tag">Delay-aware astronaut health</span></span>
+      </a>
+      <div class="status-chips" aria-label="Mission status">
+        <span class="chip" id="chip-day"><span class="muted">Day</span> <b>40</b> <span class="muted">/ 180</span></span>
+        <span class="chip" id="chip-delay"><span class="muted">Earth</span> <b>2 min 48 s</b> <span class="muted">one way</span></span>
+        <span class="chip" id="chip-link"><span class="dot"></span> <b>Link up</b></span>
+        <span class="chip opt" id="chip-support"><span class="muted">Onboard</span> <b>CMO</b></span>
       </div>
-      <button id="btn-play-demo" class="chassis-btn primary" title="Run 30-second automated demo (days 35 to 60)">
-        Play 30-second demo
-      </button>
-      <button id="btn-pause-demo" class="chassis-btn" style="display: none;" title="Pause demo">
-        Pause
-      </button>
-      <button id="btn-stop-demo" class="chassis-btn" style="display: none;" title="Stop demo and return">
-        Stop
-      </button>
-      <button id="btn-reset-demo" class="chassis-btn" title="Reset all check-ins and demo data to Day 40 baseline">
-        Reset demo
-      </button>
+      <div class="appbar-actions">
+        <button id="btn-open-sim" class="btn" aria-haspopup="dialog" aria-controls="sim-drawer">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+          <span class="btn-label">Simulation</span>
+        </button>
+        <button id="btn-play-demo" class="btn btn-primary">
+          <svg class="ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.87l12-7.5a1 1 0 0 0 0-1.74l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>
+          <span class="btn-label">Play demo</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <!-- Main Viewport Shell -->
-  <div class="app-container">
-
-    <!-- =========================================================
-         STEP 1: THE MISSION SCENE (Top Canvas & Scrubber)
-    ========================================================== -->
-    <section class="mission-header-panel" aria-label="Mission Flight Header">
-      <div class="scene-header-bar">
-        <div class="scene-header-left">
-          <span class="scene-title-badge">Ares-VI transit flight path</span>
-          <span class="demo-clock-badge" id="demo-clock-rate">Demo clock: 1 s = 1.7 min</span>
-          <label for="scene-env-select" style="font-size: 12px; color: var(--starlight-dim); margin-left: 10px;">Environment:</label>
-          <select id="scene-env-select" class="scene-env-select" title="Switch orbital environment projection">
-            <option value="MARS">Mars Transit / Insertion (Ares-VI)</option>
-            <option value="ISS">Low Earth Orbit (ISS Station)</option>
-            <option value="MOON">Lunar Gateway (Artemis IV)</option>
-            <option value="EVA_SUIT">Deep Space EVA Pressure Suit</option>
-          </select>
-          <span class="demo-clock-badge" id="scene-environment-hud" style="margin-left: 10px;"></span>
-        </div>
-        <div class="scene-header-right">
-          <button id="btn-replay-entry-zoom" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px; margin-right: 6px;" title="Replay Mars orbital insertion approach zoom">
-            Replay entry zoom
-          </button>
-          <button id="btn-toggle-eva-suit" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px; margin-right: 8px;" title="Toggle mechanical EVA suit shell split">
-            Close suit shell
-          </button>
-          <button id="btn-toggle-scene" class="scene-collapse-btn" aria-expanded="true" aria-controls="mission-scene-content" title="Toggle transit visualization visibility">
-            Collapse view <span id="scene-toggle-icon">&minus;</span>
-          </button>
-        </div>
+  <div class="container">
+    <!-- ===================== Mission strip ===================== -->
+    <section class="card mission-strip" aria-label="Mission timeline">
+      <div class="mission-strip-head">
+        <span class="title">Ares-VI · Earth → Mars transit</span>
+        <span id="scene-environment-hud" class="scene-hud"></span>
+        <span class="spacer"></span>
+        <label class="sr-only" for="scene-env-select">Scene</label>
+        <select id="scene-env-select" class="scene-env-select" title="Change the scene">
+          <option value="MARS">Mars transit</option>
+          <option value="ISS">Low Earth orbit</option>
+          <option value="MOON">Lunar gateway</option>
+          <option value="EVA_SUIT">EVA suit</option>
+        </select>
+        <button id="btn-replay-entry-zoom" class="btn btn-ghost btn-sm" title="Replay the approach zoom">Replay zoom</button>
+        <button id="btn-toggle-eva-suit" class="btn btn-ghost btn-sm" title="Open or close the EVA suit shell">Close suit shell</button>
+        <button id="btn-toggle-scene" class="btn btn-ghost btn-sm" aria-expanded="true" aria-controls="mission-scene-content">Hide scene</button>
       </div>
-
       <div id="mission-scene-content" class="mission-scene-content">
-        <div class="scene-main-row">
-          <div class="scene-canvas-box">
-            <canvas id="mission-scene-canvas" class="mission-scene-canvas" aria-label="Earth to Mars transit starfield and trajectory arc"></canvas>
-          </div>
-          <div class="scene-readouts-sidebar" aria-label="Real-time transit metrics">
-            <div class="scene-readout-card">
-              <span class="scene-readout-label">Mission elapsed</span>
-              <div class="scene-readout-value" id="scene-day-readout">Day 40 <span class="readout-sub">of 180</span></div>
-            </div>
-            <div class="scene-readout-card">
-              <span class="scene-readout-label">Arrival countdown</span>
-              <div class="scene-readout-value" id="scene-arrival-readout">140 <span class="readout-sub">days to landing</span></div>
-            </div>
-            <div class="scene-readout-card">
-              <span class="scene-readout-label">One-way light time</span>
-              <div class="scene-readout-value delay-highlight" id="scene-delay-readout">Earth is 2 min 48 s away</div>
-              <span class="scene-readout-note">(source pending)</span>
-            </div>
-            <div class="scene-readout-card packet-status-card">
-              <span class="scene-readout-label">Telemetry downlink</span>
-              <div class="packet-status-text" id="scene-packet-status"><span class="shape-circle"></span> Link nominal</div>
-            </div>
-          </div>
-        </div>
+        <canvas id="mission-scene-canvas" class="mission-scene-canvas" aria-label="Earth to Mars transit with the ship's position and packets in flight"></canvas>
       </div>
-
-      <!-- Slim Scrubber Bar directly under Mission Scene (drag, click, arrow keys 1 to 180) -->
-      <div class="mission-scrubber-bar">
-        <label for="mission-scrubber-slider" class="scrubber-label">Transit scrubber:</label>
-        <div class="scrubber-track-wrap">
-          <input type="range" id="mission-scrubber-slider" class="mission-scrubber-slider" min="1" max="180" value="40" aria-label="Transit day slider 1 to 180" step="1">
-          <div class="scrubber-milestones">
-            <span class="milestone">Day 1 (Earth)</span>
-            <span class="milestone event-marker">Day 40 (Sleep collapse)</span>
-            <span class="milestone">Day 90 (Midway)</span>
-            <span class="milestone">Day 180 (Mars landing)</span>
+      <div class="scrubber">
+        <span class="scrubber-label">Mission day</span>
+        <div class="scrubber-track">
+          <input type="range" id="mission-scrubber-slider" class="mission-scrubber-slider" min="1" max="180" value="40" step="1" aria-label="Mission day, 1 to 180">
+          <div class="scrubber-milestones" id="scrubber-milestones">
+            <button data-day="1" style="left: 0%">Day 1 · Launch</button>
+            <button data-day="40" class="event" style="left: 21.8%">Day 40 · Sleep collapse</button>
+            <button data-day="90" style="left: 49.7%">Day 90 · Midway</button>
+            <button data-day="180" style="left: 100%">Day 180 · Landing</button>
           </div>
         </div>
-        <div class="scrubber-telemetry">
+        <div class="scrubber-readout">
           <strong id="telemetry-day" class="num">Day 40 / 180</strong>
-          <span style="color: var(--hull-line);">&bull;</span>
-          <span id="telemetry-distance" class="num">38.4 M km</span>
-          <span style="color: var(--hull-line);">&bull;</span>
-          <span id="telemetry-remaining" class="num">140 days to landing</span>
+          <span><span id="telemetry-distance" class="num">50.3 M km</span> · <span id="telemetry-remaining" class="num">140 days to landing</span></span>
         </div>
       </div>
     </section>
 
-    <!-- Pitch Line Banner -->
-    <div class="mission-pitch-row">
-      <p class="pitch-text">
-        "The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."
-      </p>
-      <span class="pitch-verbs">Gather &bull; Evaluate &bull; Act</span>
+    <!-- ===================== Tabs ===================== -->
+    <div class="tabs-bar">
+      <nav class="tabs" role="tablist" aria-label="Views">
+        <button class="nav-tab-btn active" role="tab" data-tab="today" id="tab-today" aria-controls="panel-today" aria-selected="true">Today</button>
+        <button class="nav-tab-btn" role="tab" data-tab="signals" id="tab-signals" aria-controls="panel-signals" aria-selected="false"><span class="tab-step">1</span> Signals <span class="badge" id="badge-signals"></span></button>
+        <button class="nav-tab-btn" role="tab" data-tab="forecast" id="tab-forecast" aria-controls="panel-forecast" aria-selected="false"><span class="tab-step">2</span> Forecast</button>
+        <button class="nav-tab-btn" role="tab" data-tab="comms" id="tab-comms" aria-controls="panel-comms" aria-selected="false"><span class="tab-step">3</span> Decide &amp; deliver <span class="badge info" id="badge-comms"></span></button>
+        <button class="nav-tab-btn" role="tab" data-tab="twin" id="tab-twin" aria-controls="panel-twin" aria-selected="false">Digital twin</button>
+        <button class="nav-tab-btn" role="tab" data-tab="evidence" id="tab-evidence" aria-controls="panel-evidence" aria-selected="false">Evidence</button>
+      </nav>
     </div>
 
-    <!-- Slim Top Navigation (No Badges) -->
-    <nav class="slim-nav-bar" role="tablist" aria-label="Mission Views">
-      <button class="nav-tab-btn active" role="tab" id="nav-btn-overview" aria-selected="true" data-tab="overview">
-        Overview
-      </button>
-      <button class="nav-tab-btn" role="tab" id="nav-btn-monitor" aria-selected="false" data-tab="monitor">
-        Monitor
-      </button>
-      <button class="nav-tab-btn" role="tab" id="nav-btn-forecast" aria-selected="false" data-tab="forecast">
-        Forecast
-      </button>
-      <button class="nav-tab-btn" role="tab" id="nav-btn-triage" aria-selected="false" data-tab="triage">
-        Triage &amp; Comms
-      </button>
-      <button class="nav-tab-btn" role="tab" id="nav-btn-sources" aria-selected="false" data-tab="sources">
-        Sources
-      </button>
-    </nav>
+    <!-- ===================== Views (content is built by src/ui/tabs/*) ===================== -->
+    <main id="main">
+      <section id="panel-today" class="tab-panel active" role="tabpanel" aria-labelledby="tab-today"></section>
+      <section id="panel-signals" class="tab-panel" role="tabpanel" aria-labelledby="tab-signals" hidden></section>
+      <section id="panel-forecast" class="tab-panel" role="tabpanel" aria-labelledby="tab-forecast" hidden></section>
+      <section id="panel-comms" class="tab-panel" role="tabpanel" aria-labelledby="tab-comms" hidden></section>
 
-    <!-- Main Screens Content -->
-    <main>
-
-      <!-- =========================================================
-           TAB 1: OVERVIEW (HERO READINESS, GO/NO-GO POLL & CONSTELLATION)
-      ========================================================== -->
-      <section id="panel-overview" class="tab-panel active" role="tabpanel">
-        
-        <!-- Hero: Landing Readiness Number at 72px with Plain Sentence -->
-        <div class="readiness-hero-plate">
-          <div class="readiness-hero-left">
-            <div style="position: relative; width: 92px; height: 92px; flex-shrink: 0;" aria-hidden="true">
-              <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#243044" stroke-width="8"></circle>
-                <circle id="mars-progress-ring" cx="50" cy="50" r="45" fill="none" stroke="#3FB59A" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="40"></circle>
-              </svg>
-              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%; background: #C4623A; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);"></div>
-            </div>
-            <div class="readiness-hero-meta">
-              <div id="readiness-number" class="readiness-hero-val num">84%</div>
-              <div id="readiness-sentence" class="readiness-hero-sentence">Fit for landing operations on Mars.</div>
-              <div class="readiness-hero-sub">Mission landing fitness index &bull; Evaluated against personal baseline &bull; Day 180 arrival model</div>
-            </div>
-          </div>
-          <div class="readiness-hero-badge" style="text-align: right;">
-            <span class="status-badge status-nominal" id="readiness-badge">
-              <span class="shape-circle"></span> Nominally cleared
-            </span>
+      <section id="panel-twin" class="tab-panel" role="tabpanel" aria-labelledby="tab-twin" hidden>
+        <div class="view-head">
+          <div>
+            <span class="eyebrow">Digital twin</span>
+            <h1>Where in the body the drift shows</h1>
+            <p>An 11-region model of the astronaut, drilled down to tissue layers. Illustrative: it uses its own loss model and is not part of the triage decision.</p>
           </div>
         </div>
-
-        <div class="panel-row">
-          
-          <!-- Left: The Go / No-Go Poll (7 cols) -->
-          <div class="col-7">
-            <div class="hull-plate" style="height: 100%;">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Mission-Control Go / No-Go Poll</h2>
-                <span class="plate-sub">Click any dimension to inspect in forecast &rarr;</span>
-              </div>
-              <div id="gonogo-poll-container" class="gonogo-poll-card">
-                <!-- Dynamically rendered 6 rows -->
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Health Constellation (5 cols) -->
-          <div class="col-5">
-            <div class="hull-plate" style="height: 100%;">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Health Constellation</h2>
-                <span class="plate-sub">Personal baseline ring (1.0)</span>
-              </div>
-              <div class="constellation-wrapper">
-                <canvas id="health-constellation-canvas" class="constellation-canvas" aria-label="Health constellation showing drift of 6 dimensions from baseline ring"></canvas>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Bottom: Active Health & Telemetry Alerts -->
-        <div class="panel-row" style="margin-top: 10px;">
-          <div class="col-12">
-            <div class="hull-plate">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Active Health &amp; Telemetry Alerts</h2>
-                <span class="plate-sub">Click an alert to route to triage &amp; comms &rarr;</span>
-              </div>
-              <div id="active-alerts-container">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- =========================================================
-           TAB 2: MONITOR (SUITED BODY MAP, FORM, QUIET PANELS)
-      ========================================================== -->
-      <section id="panel-monitor" class="tab-panel" role="tabpanel" hidden>
-        <div class="panel-row">
-          
-          <!-- Left: Check-in form & Quiet Cabin/Immune/Radiation (6 cols) -->
-          <div class="col-6">
-            <div class="hull-plate">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Daily Biomarker Check-In</h2>
-                <span class="plate-sub">Personal baseline logging</span>
-              </div>
-
-              <div id="checkin-error-msg" class="checkin-alert-box error" style="display: none;" role="alert"></div>
-              <div id="checkin-success-msg" class="checkin-alert-box success" style="display: none;" role="status"></div>
-
-              <form id="monitor-checkin-form">
-                <div class="monitor-form-grid">
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-hr">Heart rate (bpm)</label>
-                    <input type="number" id="monitor-hr" class="hull-input" value="64" min="35" max="220" required>
-                  </div>
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-sys">Systolic BP (mmHg)</label>
-                    <input type="number" id="monitor-sys" class="hull-input" value="116" min="70" max="220" required>
-                  </div>
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-dia">Diastolic BP (mmHg)</label>
-                    <input type="number" id="monitor-dia" class="hull-input" value="76" min="40" max="140" required>
-                  </div>
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-temp">Core temp (°C)</label>
-                    <input type="number" id="monitor-temp" class="hull-input" value="36.6" step="0.1" min="34.0" max="42.0" required>
-                  </div>
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-sleep">Sleep hours</label>
-                    <input type="number" id="monitor-sleep" class="hull-input" value="7.4" step="0.1" min="0" max="16" required>
-                  </div>
-                  <div class="form-group-hull">
-                    <label class="hull-label" for="monitor-mood">Mood (1 to 5)</label>
-                    <input type="number" id="monitor-mood" class="hull-input" value="4.2" step="0.1" min="1.0" max="5.0" required>
-                  </div>
-                  <div class="form-group-hull" style="grid-column: span 2;">
-                    <label class="hull-label" for="monitor-exercise">Daily exercise (minutes)</label>
-                    <input type="number" id="monitor-exercise" class="hull-input" value="90" min="0" max="240" required>
-                  </div>
-                </div>
-                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
-                  <button type="submit" id="btn-log-checkin" class="chassis-btn primary">
-                    Log today's check-in
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Quiet Cabin, Immune, and Radiation Plates -->
-            <div class="hull-plate" style="margin-top: 16px;">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Cabin Environment &amp; Immune Checks</h2>
-                <span class="plate-sub">Hostile/closed environment hazard</span>
-              </div>
-
-              <!-- Scrubber alert callout (Rule: Headache + High CO2) -->
-              <div id="scrubber-alert-callout" class="scrubber-alert-box" style="display: none;" role="alert"></div>
-
-              <!-- Cabin CO2 on one line -->
-              <div class="quiet-co2-single-line">
-                <span class="quiet-label">Cabin CO2:</span>
-                <strong id="quiet-co2" class="num" style="color: var(--starlight); margin: 0 6px;">2800 ppm</strong>
-                <span style="font-size: 13.5px; color: var(--starlight-dim);">(Operating limit: 4500 ppm ceiling)</span>
-              </div>
-
-              <div class="quiet-metrics-row" style="margin-top: 12px;">
-                <div class="quiet-metric-card">
-                  <span class="quiet-label">Cabin Temperature</span>
-                  <div id="quiet-temp" class="quiet-val num">21.5 °C</div>
-                  <span style="font-size: 13px; color: var(--starlight-dim);">Range 18&ndash;24 °C</span>
-                </div>
-                <div class="quiet-metric-card">
-                  <span class="quiet-label">Acoustic Load</span>
-                  <div id="quiet-noise" class="quiet-val num">58 dBA</div>
-                  <span style="font-size: 13px; color: var(--starlight-dim);">Habitation noise</span>
-                </div>
-              </div>
-
-              <span class="hull-label" style="display: block; margin: 12px 0 6px 0;">Subclinical immune checks (spaceflight stress awakens dormant viruses):</span>
-              <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
-                <span id="immune-status-cold-sore" class="status-badge status-nominal"><span class="shape-circle"></span> Cold sore (HSV-1)</span>
-                <span id="immune-status-rash" class="status-badge status-nominal"><span class="shape-circle"></span> Rash / Erythema</span>
-                <span id="immune-status-fatigue" class="status-badge status-nominal"><span class="shape-circle"></span> Fatigue</span>
-              </div>
-
-              <div style="display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--hull-line); padding-top: 10px;">
-                <div>
-                  <span class="quiet-label">Accumulated space radiation dose:</span>
-                  <strong id="quiet-rad" class="num" style="font-size: 18px; color: var(--starlight); margin-left: 6px;">59.2 mSv</strong>
-                </div>
-                <span style="font-size: 13px; color: var(--signal-amber);">(Tracked, not forecast)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Digital Twin Engine (Levels 1-3) & 3 Longitudinal Trend Charts (6 cols) -->
-          <div class="col-6">
-            <div class="hull-plate" style="margin-bottom: 16px;">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">4-Level Kinematic Digital Twin Engine</h2>
-                <span class="plate-sub">Personal baseline relative drift</span>
-              </div>
-
+        <div class="twin-layout">
+          <div class="card">
               <!-- Breadcrumb Navigation Bar -->
               <div id="twin-breadcrumb-bar" class="twin-breadcrumb-bar" role="navigation" aria-label="Digital Twin Navigation Hierarchy">
                 <button class="twin-crumb-btn" data-level="0" id="crumb-level-0">Ares-VI Transit</button>
@@ -604,7 +353,7 @@
                       </p>
                     </div>
                     <div id="micro-xp-badge" class="micro-reward-badge" style="display: none;">
-                      +15 XP Earned &bull; Protocol Applied
+                      Scan recorded · readiness score updated
                     </div>
                   </div>
 
@@ -651,199 +400,64 @@
                   </div>
                 </div>
               </div>
-
+          </div>
+          <div class="stack">
+            <div class="card">
+              <div class="card-head"><div><h3 class="card-title">Health constellation</h3><p class="card-sub">Six landing dimensions against the personal baseline ring</p></div></div>
+              <canvas id="health-constellation-canvas" class="constellation-canvas" aria-label="Radar chart of the six landing dimensions"></canvas>
             </div>
-
-            <!-- 180-Day Longitudinal Trend Charts (Sleep, Mood, HR) -->
-            <div class="hull-plate">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Longitudinal Physiological Timeline (180 Days)</h2>
-                <div style="display: flex; gap: 6px;">
-                  <button id="btn-chart-sleep" class="chassis-btn active" style="font-size: 13.5px; padding: 3px 10px;">Sleep</button>
-                  <button id="btn-chart-mood" class="chassis-btn" style="font-size: 13.5px; padding: 3px 10px;">Mood</button>
-                  <button id="btn-chart-hr" class="chassis-btn" style="font-size: 13.5px; padding: 3px 10px;">Heart rate</button>
-                </div>
-              </div>
-
-              <!-- Sleep Chart Canvas -->
-              <div id="chart-wrap-sleep" class="chart-display-wrap" style="height: 180px; width: 100%;">
-                <canvas id="trend-sleep-chart"></canvas>
-              </div>
-              <!-- Mood Chart Canvas -->
-              <div id="chart-wrap-mood" class="chart-display-wrap" style="height: 180px; width: 100%; display: none;">
-                <canvas id="trend-mood-chart"></canvas>
-              </div>
-              <!-- HR Chart Canvas -->
-              <div id="chart-wrap-hr" class="chart-display-wrap" style="height: 180px; width: 100%; display: none;">
-                <canvas id="trend-hr-chart"></canvas>
-              </div>
-
-              <!-- Plain Sentence Summary under Charts -->
-              <div id="plain-chart-summary" class="plain-chart-summary-text" style="font-size: 15px; margin-top: 10px; font-weight: 600;"></div>
+            <div class="card" id="score-card">
+              <div class="card-head"><div><h3 class="card-title">Mission readiness score</h3><p class="card-sub">0–1000: 60 % landing dimensions, 25 % exercise adherence, 15 % completed scans</p></div><span class="pill neutral" id="score-tier">Tier I</span></div>
+              <div class="score-value"><span id="score-num">0</span><small>/ 1000</small></div>
+              <div class="score-parts" id="score-parts"></div>
             </div>
           </div>
-
         </div>
       </section>
 
-      <!-- =========================================================
-           TAB 3: FORECAST (FLIGHT-PATH CONES & COUNTERMEASURES)
-      ========================================================== -->
-      <section id="panel-forecast" class="tab-panel" role="tabpanel" hidden>
-        
-        <div class="hull-plate" style="margin-bottom: 20px;">
-          <div style="display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
-            <div>
-              <span class="hull-label">Interactive countermeasure scenarios:</span>
-              <div style="display: flex; gap: 8px; margin-top: 6px;">
-                <button id="btn-scenario-15" class="chassis-btn">Adherent (1.5 h/d)</button>
-                <button id="btn-scenario-12" class="chassis-btn active">Nominal (1.2 h/d)</button>
-                <button id="btn-scenario-00" class="chassis-btn">Zero exercise (0.0 h/d)</button>
-              </div>
-            </div>
-
-            <div>
-              <span class="hull-label">Daily exercise adherence slider:</span>
-              <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
-                <input type="range" id="adherence-slider-input" min="0.0" max="1.5" step="0.1" value="1.2" style="width: 160px; accent-color: var(--nominal-teal); cursor: pointer;" aria-label="Daily exercise adherence in hours per day">
-                <strong id="adherence-slider-val" class="num" style="font-size: 18px; color: var(--nominal-teal); min-width: 90px;">1.2 hrs/day</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Trajectory Cones Container -->
-        <div id="cones-grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 18px;">
-          <!-- Rendered dynamically -->
-        </div>
-
-        <!-- Countermeasure Interactive Checklist -->
-        <div class="hull-plate" style="margin-top: 20px;">
-          <div class="hull-plate-header">
-            <h2 class="plate-title">Autonomous Countermeasure Checklist</h2>
-            <span class="plate-sub">Saves automatically to mission memory</span>
-          </div>
-          <div id="countermeasures-checklist" class="countermeasure-list-box">
-            <!-- Dynamic checklist -->
-          </div>
-        </div>
-
-      </section>
-
-      <!-- =========================================================
-           TAB 4: TRIAGE & COMMS (ACT)
-      ========================================================== -->
-      <section id="panel-triage" class="tab-panel" role="tabpanel" hidden>
-        <div class="panel-row">
-          
-          <!-- Left: Triage Decision & Link Selector (6 cols) -->
-          <div class="col-6">
-            <div class="hull-plate">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Autonomous Triage Evaluation</h2>
-                <span class="plate-sub">pipeline.js decision</span>
-              </div>
-
-              <div style="background: #080E17; border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 18px;">
-                <span class="hull-label">Designated treatment authority:</span>
-                <div id="triage-path-display" style="font-family: var(--font-heading); font-size: 28px; font-weight: 700; color: var(--starlight); margin: 4px 0 8px 0;">
-                  CREW MEDICAL OFFICER
-                </div>
-                <div id="triage-why-display" style="font-size: 15.5px; color: #CAD5D4; margin-bottom: 8px;"></div>
-                <div id="triage-delivery-display" style="font-size: 14.5px; color: var(--nominal-teal); font-weight: 600;"></div>
-              </div>
-
-              <!-- Interplanetary Link Selector -->
-              <div class="hull-plate-header" style="margin-top: 14px;">
-                <h2 class="plate-title">Communication Distance Preset (setLink)</h2>
-              </div>
-              <div style="margin-bottom: 10px;">
-                <label for="link-preset-select" class="hull-label" style="display: block; margin-bottom: 6px;">Choose Earth distance &amp; latency:</label>
-                <select id="link-preset-select" class="hull-input" style="width: 100%; cursor: pointer;">
-                  <!-- Options fed by LINK_PRESETS -->
-                </select>
-              </div>
-              <div id="queue-clock-speedup" style="font-size: 13.5px; color: var(--signal-amber); font-family: var(--font-mono); margin-bottom: 16px;">
-                demo clock: 1 s = 1.7 min
-              </div>
-
-              <!-- Action Buttons -->
-              <div style="display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--hull-line); padding-top: 16px;">
-                <button id="btn-send-packet" class="chassis-btn primary">
-                  Send packet &rarr; Earth
-                </button>
-                <button id="btn-emergency-link" class="chassis-btn" style="color: var(--alarm-coral); border-color: rgba(229, 89, 79, 0.4);">
-                  Open emergency link
-                </button>
-              </div>
-            </div>
-
-            <!-- Active Telemetry Packet Preview -->
-            <div class="hull-plate" style="margin-top: 16px;">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Interplanetary Telemetry Packet (packet.js)</h2>
-                <button id="btn-copy-packet" class="chassis-btn" style="font-size: 13px; padding: 3px 10px;">
-                  Copy packet
-                </button>
-              </div>
-              <pre id="triage-packet-preview" class="packet-preview-box" style="background: #060910; border: 1px solid var(--hull-line); border-radius: 4px; padding: 14px; color: #B0C4DE; font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word;"></pre>
-            </div>
-          </div>
-
-          <!-- Right: DTN Queue List (6 cols) -->
-          <div class="col-6">
-            <div class="hull-plate">
-              <div class="hull-plate-header">
-                <h2 class="plate-title">Store-and-Forward Telemetry Queue</h2>
-                <span class="plate-sub">queue.js DTN link status</span>
-              </div>
-
-              <div id="queue-items-container">
-                <!-- Rendered dynamically -->
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- =========================================================
-           TAB 5: SOURCES & HONESTY
-      ========================================================== -->
-      <section id="panel-sources" class="tab-panel" role="tabpanel" hidden>
-        <div id="sources-content-view">
-          <!-- Rendered dynamically from sources.js and CONTRACT.md -->
-        </div>
-      </section>
-
+      <section id="panel-evidence" class="tab-panel" role="tabpanel" aria-labelledby="tab-evidence" hidden></section>
     </main>
+  </div>
 
-  </div><!-- /app-container -->
+  <footer class="footer">
+    <div class="container">
+      <span>LANDFALL · NASA Space Apps 2026 · Raghav Dua, Tanishk, Om</span>
+      <span>Decision support, not diagnosis. Synthetic data. Illustrative model, not a clinical predictor.</span>
+    </div>
+  </footer>
 
-  <!-- Emergency Link Modal -->
-  <div id="emergency-link-modal" class="title-screen-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="emergency-title">
-    <div class="title-plate-box" style="max-width: 620px;">
-      <div class="title-header-tag" style="color: var(--alarm-coral);">DIRECT EMERGENCY LINK PROTOCOL</div>
-      <h2 id="emergency-title" style="font-family: var(--font-heading); font-size: 26px; color: var(--starlight); margin: 8px 0 12px 0;">Emergency Downlink Bypass</h2>
-      <p style="font-size: 15.5px; color: #CAD5D4; line-height: 1.5; margin-bottom: 14px;">
-        When an acute clinical emergency occurs with high-bandwidth DSN window alignment, store-and-forward queueing is bypassed. Telemetry streams with maximum transponder priority. If one-way propagation delay is under 300 seconds, live audio comms are activated.
-      </p>
-      <div style="background: #080D16; border: 1px solid var(--hull-line); border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px; color: var(--signal-amber);">
-        Status: Emergency carrier locked to Deep Space Network Goldstone / Canberra.
+  <!-- ===================== Simulation drawer ===================== -->
+  <aside id="sim-drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="sim-title" aria-hidden="true">
+    <div class="drawer-head">
+      <div><span class="eyebrow">Simulation</span><h2 id="sim-title" style="font-size: var(--fs-xl);">Change the situation</h2></div>
+      <button class="btn btn-ghost btn-sm" id="btn-close-sim" aria-label="Close simulation panel">Close</button>
+    </div>
+    <div class="drawer-body" id="sim-drawer-body"></div>
+  </aside>
+  <div class="drawer-scrim" id="sim-scrim"></div>
+
+  <!-- ===================== Emergency modal ===================== -->
+  <div id="emergency-link-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="emergency-title">
+    <div class="modal">
+      <span class="pill bad"><span class="shape-octagon"></span> Emergency override</span>
+      <h2 id="emergency-title" style="margin-top: 14px;">Medical emergency: use the direct ground link now.</h2>
+      <p>An emergency never waits for the store-and-forward queue. The crew opens the priority voice and telemetry channel straight to the flight surgeon, whatever the queue or link state, and the CMO starts onboard care in parallel.</p>
+      <div class="row" style="margin-top: 20px; justify-content: flex-end;">
+        <button id="btn-close-emergency" class="btn">Close</button>
       </div>
-      <button id="btn-close-emergency" class="chassis-btn primary" style="width: 100%;">
-        Acknowledge &amp; Return to Console
-      </button>
     </div>
   </div>
 
-  <!-- Demo Toast Notification -->
+  <!-- ===================== Demo caption ===================== -->
   <aside id="demo-caption-toast" class="demo-caption-toast" role="status" aria-live="polite">
-    <span class="disclaimer-badge">DEMO WALKTHROUGH</span>
-    <span id="demo-caption-text">Initializing Ares-VI transit simulation...</span>
+    <div id="demo-caption-text" class="demo-caption-text">Demo</div>
+    <div class="row">
+      <button id="btn-pause-demo" class="btn btn-sm">Pause</button>
+      <button id="btn-stop-demo" class="btn btn-sm btn-ghost">Stop</button>
+    </div>
+    <div class="demo-progress" id="demo-progress"></div>
   </aside>
 
-  <!-- Scripts: Offline Library first, then ES Module Controller -->
   <script src="./assets/vendor/chart.umd.min.js"></script>
   <script type="module" src="./src/main.js"></script>
 </body>

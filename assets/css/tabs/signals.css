@@ -1,0 +1,36 @@
+/* LANDFALL · Signals (Detect): vitals vs baseline, trends, cabin and radiation, check-in */
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.kpi {
+  padding: 16px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border);
+  transition: border-color 400ms var(--ease), background 400ms var(--ease);
+}
+.kpi .label { font-size: var(--fs-xs); color: var(--text-3); display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.kpi .value { font-family: var(--font-heading); font-size: 30px; line-height: 1.1; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.kpi .value small { font-family: var(--font-body); font-size: var(--fs-sm); color: var(--text-3); margin-left: 4px; font-weight: 400; }
+.kpi .base { font-size: var(--fs-xs); color: var(--text-3); margin-top: 6px; }
+.kpi.is-alert { border-color: rgba(238, 100, 88, 0.5); background: linear-gradient(180deg, var(--bad-soft), transparent); }
+.kpi.is-watch { border-color: rgba(237, 177, 74, 0.45); background: linear-gradient(180deg, var(--warn-soft), transparent); }
+
+.chart-tabs { display: inline-flex; }
+.chart-box { position: relative; height: 280px; }
+.chart-wrap { position: absolute; inset: 0; }
+.chart-summary { margin-top: 12px; font-size: var(--fs-sm); color: var(--text-2); }
+
+.env-rows { display: grid; gap: 16px; }
+.env-row .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; font-size: var(--fs-sm); color: var(--text-2); }
+.env-row .top b { font-family: var(--font-heading); font-size: var(--fs-lg); }
+.env-note { font-size: var(--fs-xs); color: var(--text-3); margin-top: 6px; }
+.immune { display: flex; gap: 8px; flex-wrap: wrap; }
+.callout { padding: 12px 14px; border-radius: 12px; font-size: var(--fs-sm); border: 1px solid rgba(238, 100, 88, 0.45); background: var(--bad-soft); color: #FFD7D2; display: flex; gap: 10px; align-items: flex-start; }
+.callout strong { color: #fff; }
+.callout.info { border-color: rgba(108, 180, 228, 0.45); background: var(--accent-soft); color: #D7ECFA; }
+
+.checkin summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.checkin summary::-webkit-details-marker { display: none; }
+.checkin summary .chev { transition: transform var(--dur) var(--ease); color: var(--text-3); }
+.checkin[open] summary .chev { transform: rotate(180deg); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; }
+.form-msg { margin-top: 12px; padding: 10px 12px; border-radius: 10px; font-size: var(--fs-sm); display: none; }
+.form-msg.error { display: block; background: var(--bad-soft); color: #FFD7D2; border: 1px solid rgba(238, 100, 88, 0.45); }
+.form-msg.success { display: block; background: var(--ok-soft); color: #C5F2E5; border: 1px solid rgba(69, 194, 162, 0.4); }

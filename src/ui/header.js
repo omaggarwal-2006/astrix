@@ -1,114 +1,64 @@
 /**
- * LANDFALL - Header: day and delay readouts, downlink status, readiness score pill, scene collapse (src/ui/header.js)
- * Moved from main.js unchanged during the repo restructure (docs/22-MIGRATION.md).
+ * LANDFALL - App bar status chips, scrubber readout, tab badges, scene collapse (src/ui/header.js)
  */
 
 import { AppState } from "../app/state.js";
-import { getForecast } from "../core/adapter.js";
-import { oneWayDelayS } from "../core/delay.js";
-import { getQueue, config as queueConfig } from "../core/queue.js";
-import { calculateCrewReadinessXP } from "./extras/twin-model.js";
+import { formatDelay } from "../core/delay.js";
+import { getQueue } from "../core/queue.js";
+import { CONFIG } from "../core/config.js";
+import { $ } from "./dom.js";
 
-// Collapsible Scene Toggle (persisted in localStorage)
+/** Runs after every state change. */
+export function updateHeader(state) {
+  const v = state.view;
+  const day = state.currentDay;
+  const remaining = state.maxDays - day;
+  const distMkm = (0.38 + (day / state.maxDays) * 224.62).toFixed(1);   // illustrative transit distance
+
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  set('chip-day', `<span class="muted">Day</span> <b>${day}</b> <span class="muted">/ ${state.maxDays}</span>`);
+  set('chip-delay', `<span class="muted">Earth</span> <b>${formatDelay(v.delayS)}</b> <span class="muted">one way</span>`);
+  set('chip-link', `<span class="dot"></span> <b>${state.env.linkUp ? 'Link up' : 'Link down'}</b>`);
+  set('chip-support', `<span class="muted">Onboard</span> <b>${state.env.onboardSupport ? 'CMO' : 'No CMO'}</b>`);
+  $('#chip-link')?.classList.toggle('is-bad', !state.env.linkUp);
+  $('#chip-delay')?.classList.toggle('is-warn', v.delayS >= CONFIG.liveCallMaxOneWayS);
+
+  set('telemetry-day', `Day ${day} / ${state.maxDays}`);
+  set('telemetry-distance', `${distMkm} M km`);
+  set('telemetry-remaining', `${remaining} days to landing`);
+
+  const slider = document.getElementById('mission-scrubber-slider');
+  if (slider && parseInt(slider.value, 10) !== day) slider.value = day;
+
+  // Tab badges: alerts today, packets still in flight
+  const alerts = v.alerts.length;
+  set('badge-signals', alerts ? String(alerts) : '');
+  const inFlight = getQueue().filter(e => e.packet.status !== 'ACKNOWLEDGED').length;
+  set('badge-comms', inFlight ? String(inFlight) : '');
+}
+
 export function initSceneCollapse() {
   const btn = document.getElementById('btn-toggle-scene');
   const content = document.getElementById('mission-scene-content');
   if (!btn || !content) return;
-
-  const isCollapsed = localStorage.getItem('landfall_scene_collapsed') === 'true';
-  if (isCollapsed) {
-    content.classList.add('collapsed');
-    btn.setAttribute('aria-expanded', 'false');
-    btn.innerHTML = `Expand view <span id="scene-toggle-icon">+</span>`;
-  }
-
+  const apply = (collapsed) => {
+    content.classList.toggle('collapsed', collapsed);
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.textContent = collapsed ? 'Show scene' : 'Hide scene';
+  };
+  apply(localStorage.getItem('landfall_scene_collapsed') === 'true');
   btn.addEventListener('click', () => {
-    const currentlyCollapsed = content.classList.toggle('collapsed');
-    btn.setAttribute('aria-expanded', currentlyCollapsed ? 'false' : 'true');
-    btn.innerHTML = currentlyCollapsed ?
-      `Expand view <span id="scene-toggle-icon">+</span>` :
-      `Collapse view <span id="scene-toggle-icon">&minus;</span>`;
-    localStorage.setItem('landfall_scene_collapsed', currentlyCollapsed ? 'true' : 'false');
-    if (!currentlyCollapsed && AppState.missionScene) {
-      AppState.missionScene.resize();
-    }
+    const collapsed = !content.classList.contains('collapsed');
+    apply(collapsed);
+    localStorage.setItem('landfall_scene_collapsed', collapsed ? 'true' : 'false');
+    if (!collapsed && AppState.missionScene) AppState.missionScene.resize();
   });
 }
 
-// Updates every header readout for the current state (was AppState.updateTelemetryText)
-export function updateHeader(state) {
-  const day = state.currentDay;
-  const remaining = state.maxDays - day;
-  const dist = (0.38 + (day / 180) * 224.62).toFixed(1);
-  const delaySec = oneWayDelayS(day);
-  const delayMin = Math.floor(delaySec / 60);
-  const delayRemSec = delaySec % 60;
-  const delayStr = `${delayMin} min ${delayRemSec} s`;
-
-  const elDay = document.getElementById('telemetry-day');
-  const elDist = document.getElementById('telemetry-distance');
-  const elRemaining = document.getElementById('telemetry-remaining');
-
-  if (elDay) elDay.textContent = `Day ${day} / ${state.maxDays}`;
-  if (elDist) elDist.textContent = `${dist} M km`;
-  if (elRemaining) elRemaining.textContent = `${remaining} days to landing`;
-
-  // Large sidebar readouts (Step 1)
-  const elSceneDay = document.getElementById('scene-day-readout');
-  const elSceneArrival = document.getElementById('scene-arrival-readout');
-  const elSceneDelay = document.getElementById('scene-delay-readout');
-  const elClockRate = document.getElementById('demo-clock-rate');
-  const elPacketStatus = document.getElementById('scene-packet-status');
-
-  if (elSceneDay) {
-    elSceneDay.innerHTML = `Day ${day} <span class="readout-sub">of 180</span>`;
-  }
-  if (elSceneArrival) {
-    elSceneArrival.innerHTML = `${remaining} <span class="readout-sub">days to landing</span>`;
-  }
-  if (elSceneDelay) {
-    elSceneDelay.textContent = `Earth is ${delayStr} away`;
-  }
-  if (elClockRate) {
-    const minPerSec = (queueConfig.speedup / 60).toFixed(1);
-    elClockRate.textContent = `Demo clock: 1 s = ${minPerSec} min`;
-  }
-
-  // Telemetry downlink status from queue
-  if (elPacketStatus) {
-    const q = getQueue();
-    if (!q || q.length === 0) {
-      elPacketStatus.innerHTML = `<span class="shape-circle"></span> Link nominal`;
-    } else {
-      const last = q[q.length - 1];
-      const st = last.packet.status;
-      if (st === 'QUEUED') {
-        elPacketStatus.innerHTML = `<span class="shape-triangle"></span> Packet queued`;
-      } else if (st === 'TRANSMITTED') {
-        elPacketStatus.innerHTML = `<span class="shape-triangle"></span> Downlink in flight`;
-      } else if (st === 'ACKNOWLEDGED') {
-        elPacketStatus.innerHTML = `<span class="shape-circle"></span> Uplink ACK verified`;
-      } else if (st === 'FAILED') {
-        elPacketStatus.innerHTML = `<span class="shape-diamond"></span> Link retry active`;
-      }
-    }
-  }
-
-  // Crew Readiness XP Pill (Gamification Engine)
-  const forecastList = getForecast(day, state.exerciseHours);
-  const xpData = calculateCrewReadinessXP(forecastList, state.whatIf, state.completedScansCount);
-  const elXpNum = document.getElementById('crew-xp-num');
-  const elXpTier = document.getElementById('crew-xp-tier');
-  const elXpShape = document.getElementById('crew-xp-shape');
-  if (elXpNum) elXpNum.textContent = `${xpData.xp} XP`;
-  if (elXpTier) {
-    elXpTier.textContent = xpData.tier.split(' — ')[0];
-    elXpTier.className = `crew-tier-badge ${xpData.status === 'alarm' ? 'tier-3' : xpData.status === 'caution' ? 'tier-2' : 'tier-1'}`;
-  }
-  if (elXpShape) {
-    elXpShape.className = xpData.shape === 'diamond' ? 'shape-diamond' : xpData.shape === 'triangle' ? 'shape-triangle' : 'shape-circle';
-  }
-
-  const profileDay = document.getElementById('twin-profile-day');
-  if (profileDay) profileDay.textContent = `${day}`;
+/** Milestone labels under the scrubber jump to that day. */
+export function initMilestones() {
+  document.getElementById('scrubber-milestones')?.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-day]');
+    if (b) AppState.setDay(parseInt(b.dataset.day, 10));
+  });
 }

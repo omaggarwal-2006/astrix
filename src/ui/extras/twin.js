@@ -22,7 +22,7 @@ export function initTwinControls() {
 
   if (c0) c0.addEventListener('click', () => {
     window.location.hash = 'overview';
-    activateTab('overview');
+    activateTab('today');
   });
   if (c1) c1.addEventListener('click', () => {
     AppState.twinLevel = 1;

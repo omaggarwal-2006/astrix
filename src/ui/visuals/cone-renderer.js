@@ -1,88 +1,73 @@
 /**
- * LANDFALL - Flight-Path Cone Renderer (src/ui/visuals/cone-renderer.js)
- * Draws physiological projections as widening trajectory cones:
- * - Upper edge = High estimate
- * - Center line = Mid landing projection
- * - Lower edge = Low estimate
- * Reshapes live in response to the What-If adherence slider.
+ * LANDFALL - Flight-path cone renderer (src/ui/visuals/cone-renderer.js)
+ * A projection from departure (100 % of baseline) to landing day:
+ * upper edge = high estimate, centre line = middle estimate, lower edge = low estimate.
+ * Dashed guides mark the GO (90 %) and NO-GO (80 %) levels.
  */
+
+const COLORS = { nominal: '#45C2A2', caution: '#EDB14A', alarm: '#EE6458' };
+const FILLS = { nominal: 'rgba(69,194,162,0.16)', caution: 'rgba(237,177,74,0.16)', alarm: 'rgba(238,100,88,0.2)' };
+const FLOOR = 72;   // bottom of the vertical scale, in % (NO-GO at 80 stays visible)
 
 export function renderTrajectoryCone(canvas, low, mid, high, status) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth || 320;
-  const h = canvas.clientHeight || 80;
-
+  const h = canvas.clientHeight || 90;
   canvas.width = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
-  ctx.resetTransform();
-  ctx.scale(dpr, dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 
-  // Status color
-  let accentColor = '#3FB59A';
-  if (status === 'caution') accentColor = '#E8A93A';
-  if (status === 'alarm') accentColor = '#E5594F';
-
-  const startX = 30;
-  const startY = h / 2; // Departure baseline
-  const endX = w - 40;
-
-  // Map 60% - 100% to Y height (100% is near top, 60% is near bottom)
+  const accent = COLORS[status] || COLORS.nominal;
+  const pad = 8;
+  const startX = 6, endX = w - 64;
   const mapY = (val) => {
-    const clamped = Math.max(60, Math.min(100, val));
-    return h - 15 - ((clamped - 60) / 40) * (h - 30);
+    const v = Math.max(FLOOR, Math.min(100, val));
+    return pad + ((100 - v) / (100 - FLOOR)) * (h - pad * 2);
   };
+  const startY = mapY(100);            // departure = 100 % of personal baseline
 
-  const endHighY = mapY(high);
-  const endMidY = mapY(mid);
-  const endLowY = mapY(low);
-
-  // 1. Draw Cone Area (Widening Confidence Interval)
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endHighY);
-  ctx.lineTo(endX, endLowY);
-  ctx.closePath();
-
-  ctx.fillStyle = status === 'nominal' ? 'rgba(63, 181, 154, 0.15)' : (status === 'caution' ? 'rgba(232, 169, 58, 0.15)' : 'rgba(229, 89, 79, 0.18)');
-  ctx.fill();
-
-  // Cone edges
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endHighY);
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endLowY);
-  ctx.strokeStyle = '#243044';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // 2. Draw Midpoint Trajectory Centerline
-  ctx.beginPath();
-  ctx.moveTo(startX, startY);
-  ctx.lineTo(endX, endMidY);
-  ctx.strokeStyle = accentColor;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // 3. Waypoint Points
-  // Departure start
-  ctx.beginPath();
-  ctx.arc(startX, startY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = '#5FA8D3';
-  ctx.fill();
-
-  // Landing day arrival
-  ctx.beginPath();
-  ctx.arc(endX, endMidY, 5, 0, Math.PI * 2);
-  ctx.fillStyle = accentColor;
-  ctx.fill();
-
-  // 4. Endpoint Readout Annotation
-  ctx.font = '13px "Saira Semi Condensed", sans-serif';
-  ctx.fillStyle = '#E8E4D8';
+  // Guides: GO and NO-GO levels
+  ctx.font = '10px "Hanken Grotesk", sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`${mid}%`, endX + 8, endMidY + 4);
+  [[90, 'GO 90'], [80, 'NO-GO 80']].forEach(([v, label]) => {
+    const y = mapY(v);
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(startX, y); ctx.lineTo(endX, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(180,189,201,0.55)';
+    ctx.fillText(label, endX + 6, y + 3);
+  });
+
+  // Cone
+  const yHigh = mapY(high), yMid = mapY(mid), yLow = mapY(low);
+  const grad = ctx.createLinearGradient(startX, 0, endX, 0);
+  grad.addColorStop(0, 'rgba(108,180,228,0.05)');
+  grad.addColorStop(1, FILLS[status] || FILLS.nominal);
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  ctx.lineTo(endX, yHigh);
+  ctx.lineTo(endX, yLow);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, yHigh); ctx.moveTo(startX, startY); ctx.lineTo(endX, yLow); ctx.stroke();
+
+  // Middle estimate
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, yMid); ctx.stroke();
+
+  // Departure and landing points
+  ctx.fillStyle = '#6CB4E4';
+  ctx.beginPath(); ctx.arc(startX + 2, startY, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = accent;
+  ctx.beginPath(); ctx.arc(endX, yMid, 4.5, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(6,9,17,0.9)'; ctx.lineWidth = 2; ctx.stroke();
 }
