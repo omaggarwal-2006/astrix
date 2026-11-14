@@ -1,168 +1,191 @@
-# 06 · Architecture
+# 06 · Architecture and Repo Structure
+
+How the code is organised today, how it runs, and where the v2 pieces go. How we got here and what is left: [22-MIGRATION.md](22-MIGRATION.md).
 
 ## Style
 
 A client-only static web app.
 
-- **ES modules**, no bundler, no framework, served by any static server (`launch.bat` uses Python's `http.server`).
-- **Pure logic** in `core/` (no DOM, no storage), so every rule runs in Node tests.
-- **UI** in `ui/`, which reads one `DayResult` and renders it.
-- **Engine** (Tanishk's model) loaded as classic scripts that set globals, wrapped by `adapter.js`.
-- **Service worker** for offline use after the first load.
+- **ES modules, no bundler, no framework.** Served as plain files by any static server (`launch.bat` uses Python's `http.server`). GitHub Pages serves the same files.
+- **Pure logic** in `src/core/`: no DOM; storage only in the queue. Everything there runs in Node tests.
+- **State and routing** in `src/app/`. State never imports UI code; screens register their renderers into it.
+- **Screens** in `src/ui/`, one module per tab or component.
+- **Static assets** in `assets/` (CSS, fonts, vendored Chart.js).
+- **Engine** (Tanishk's model, branch `origin/engine-ml`) will live in `engine/` as classic scripts that set globals, read only by `src/core/adapter.js`.
+- **Service worker** at the root for offline use, caching a generated file list.
 
-## As-built (today)
+## Repo tree (as-built)
 
 ```
-index.html
- ├─ <script> lib/chart.umd.min.js            (global Chart)
- └─ <script type="module"> main.js           (1,800-line controller: state, all tabs, demo, reset)
-       ├─ adapter.js ──► sample/sample_data.js     (scripted alerts and forecast)
-       ├─ pipeline.js ──► triage.js, packet.js, queue.js
-       ├─ triage.js, packet.js                      (Triage-tab preview)
-       ├─ sources.js, sample_alert.js
-       └─ js/mission-scene.js, constellation.js, cone-renderer.js, twin-model.js
-sw.js                                         (network-first cache)
+astrix/
+├── index.html                 App shell: header, mission scene, nav, tab markup, modals
+├── sw.js                      Service worker (must sit at the root to control the whole site)
+├── launch.bat                 One-click local launch (Windows)
+├── package.json               Scripts only, no dependencies: test, check, build:sw, serve
+├── README.md  CONTRACT.md
+├── .gitignore  .gitattributes  .editorconfig  .nojekyll
+├── .github/
+│   ├── workflows/ci.yml       npm test + smoke check + manifest and link checks on every push and PR
+│   ├── pull_request_template.md
+│   └── CODEOWNERS             Reviewers per folder
+│
+├── src/
+│   ├── main.js                Bootstrap: registers tabs, starts canvases and controls, sets Day 40
+│   ├── sw-manifest.js         GENERATED list of files the service worker caches
+│   ├── core/                  Logic, no DOM
+│   │   ├── config.js          Every threshold and tunable number (frozen)
+│   │   ├── delay.js           The one Earth–ship delay function (D-05)
+│   │   ├── adapter.js         The only data entry point for the UI (engine plugs in here)
+│   │   ├── triage.js          Triage decision (as-built score; v2 decision table goes here)
+│   │   ├── packet.js          Packet build and FNV-1a checksum (v2: bundle.js)
+│   │   ├── queue.js           Store-and-forward queue with link state, retries, persistence
+│   │   ├── pipeline.js        handleAlert(): triage → packet → queue (v2: run-day.js)
+│   │   └── sources.js         Sources, NASA numbers, link presets, assumptions, disclaimer
+│   ├── data/
+│   │   ├── sample-data.js     Interim synthetic 180-day dataset, alerts and forecast
+│   │   └── sample-alert.js    Fixture alert A-001
+│   ├── app/
+│   │   ├── state.js           AppState + registerTab() / setHeaderRenderer() hooks
+│   │   └── router.js          Hash routing; activates a tab and renders only that tab
+│   └── ui/
+│       ├── header.js          Day, delay, downlink status, readiness score pill, scene collapse
+│       ├── banners.js         Emergency ground-link modal
+│       ├── controls.js        Reset
+│       ├── demo-runner.js     Play / pause / stop demo and caption toast
+│       ├── tabs/              overview.js · monitor.js · forecast.js · comms.js · sources.js
+│       ├── components/        trend-chart.js (Chart.js wrapper)
+│       ├── visuals/           mission-scene.js · scene-controls.js · cone-renderer.js
+│       └── extras/            twin.js · twin-model.js · micro-lab.js · constellation.js
+│
+├── assets/
+│   ├── css/                   tokens · base · layout · components · header · title-screen
+│   │                          · tabs/overview · tabs/monitor · tabs/forecast · extras · responsive
+│   ├── fonts/                 saira-condensed.woff2 · hanken-grotesk.woff2 · README.md (licenses)
+│   └── vendor/                chart.umd.min.js (Chart.js 4.4.4) · README.md (license)
+│
+├── tests/
+│   ├── unit/                  triage · packet · adapter · sources · delay · config
+│   ├── integration/           pipeline.test.mjs (alert → packet → queue → acknowledgement)
+│   └── smoke/ui-check.mjs     Checks the 16 UI features exist in markup and source
+│
+├── scripts/
+│   ├── build-sw-manifest.mjs  Writes src/sw-manifest.js; --check mode for CI
+│   └── check-links.mjs        Checks every relative link and anchor in the docs
+│
+└── docs/                      Product and engineering docs
 ```
 
-Problems this structure causes:
+Coming next: `engine/` (merge of `origin/engine-ml`), `eval/` (evaluation harness), and the v2 modules listed in [§ v2 modules](#v2-modules-where-they-go).
 
-| Problem | Effect |
+## Layers and rules
+
+```
+┌──────────────────────────── src/ui/ ─────────────────────────────┐
+│ header · tabs/* · components/* · visuals/* · extras/* · demo      │
+└──────────────▲────────────────────────────────────┬──────────────┘
+               │ registerTab / setHeaderRenderer     │ AppState.setDay(), activateTab()
+┌──────────────┴──────────── src/app/ ───────────────▼──────────────┐
+│ state.js (no UI imports) · router.js                              │
+└──────────────────────────────────────────────────────────────────┘
+               ▲ (today: tabs also call src/core directly)
+┌──────────────┴──────────── src/core/ ─────────────────────────────┐
+│ config · delay · adapter · triage · packet · queue · pipeline     │
+│ sources            ──► src/data/sample-data.js (until the engine) │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+| Rule | Status |
 |---|---|
-| `main.js` owns state, rendering and logic | Hard to test; each tab computes its own piece of the decision |
-| Every day change re-renders all five tabs | Slow on scrubbing (N4) |
-| Twin model has its own loss formula | A second story that can contradict the alerts (U4) |
-| Delay computed in three places | Scene, presets and docs disagree (H3) |
-| Engine not connected | The forecast is scripted |
+| `src/core/` never imports from `src/app/` or `src/ui/` | Holds today |
+| `src/app/state.js` imports no UI module | Holds today (renderers register themselves) |
+| Every threshold lives in `src/core/config.js` | Triage, queue and delay done; Detect, forecast and radiation values move in with v2 |
+| Delay is computed only in `src/core/delay.js` | Holds today (header and mission scene use it) |
+| The UI renders a `DayResult` and never computes a decision | v2 target (`runDay()`); today the Comms tab calls `triage()` itself |
 
-## Target (v2)
+## Runtime flow (today)
 
-### Layers
+1. `index.html` loads the 11 stylesheets in cascade order, Chart.js, then `src/main.js`.
+2. `src/main.js` registers the five tab renderers and the header renderer, starts the mission scene and constellation canvases, binds all controls, subscribes to queue changes, sets the link preset and calls `AppState.setDay(40)`.
+3. A day change (scrubber, demo runner, Reset) calls `AppState.setDay()`. That updates the mission scene, the header, and **only the visible tab**. Other tabs render when opened.
+4. Clicking a tab changes the URL hash; `router.js` hears `hashchange`, shows the panel and renders it.
+5. **Send packet** on the Comms tab calls `handleAlert()`, which enqueues once. Queue changes re-render the queue table, the packet flight and the downlink readout.
 
-```
-┌──────────────────────────────── UI (ui/) ─────────────────────────────────┐
-│ Today · Signals · Forecast · Comms · Evaluation · Sources · Extras        │
-│ Demo controls · Banners · Mission scene                                   │
-└───────────────▲───────────────────────────────────────┬───────────────────┘
-                │ DayResult                             │ user actions
-┌───────────────┴───────────────────────────────────────▼───────────────────┐
-│ app/state.js   selected day · demo env · what-if hours · subscriptions    │
-└───────────────▲───────────────────────────────────────┬───────────────────┘
-                │                                       │ runDay(day, env)
-┌───────────────┴───────────────────── core/ (pure) ────▼───────────────────┐
-│ run-day.js ─► detect.js ─► forecast.js ─► triage.js ─► bundle.js          │
-│                 ▲             ▲             ▲              │               │
-│           wellbeing.js   adapter.js     delay.js       explain.js          │
-│           radiation.js       │          config.js                          │
-└──────────────────────────────┼────────────────────────────┬───────────────┘
-                               │                            │ enqueue on Send
-              ┌────────────────▼────────┐        ┌──────────▼───────────────┐
-              │ engine/ (UMD globals)   │        │ core/queue.js            │
-              │ DataEngine, LandfallML  │        │ priority, lifetime,      │
-              │ ForecastEngine          │        │ retries, receipts        │
-              └─────────────────────────┘        └──────────┬───────────────┘
-                                                            │
-                                                  localStorage (§ storage)
-```
-
-### Data flow for one day
-
-1. The user picks a day, or a demo control changes `env`.
-2. `app/state.js` calls `runDay(day, env)` once.
-3. `run-day.js`:
-   1. Builds the history (days 1…day): `adapter.getHistory()` merges engine or sample data with crew-logged days.
-   2. `detect(history, day)` → alerts, fused alert, missing data, confidence.
-   3. `forecast(history, day, { exerciseHours })` → six ranges with labels (model via adapter, rules fallback).
-   4. `triage({ alerts, forecast, reading, env })` → decision with fired rules.
-   5. `buildBundle(decision, …)` if the decision needs one (preview only, not queued).
-   6. `explain(...)` → the five plain sentences.
-4. State stores the `DayResult` and notifies **only the visible tab**, plus the banners and the header.
-5. On **Send**, the UI calls `enqueue(bundle)`. The queue emits `onChange`; the Comms tab and scene update.
-
-Rendering never computes decisions. Logic never touches the DOM.
-
-### Delay (one function, decision D-05)
+## The delay function (D-05)
 
 ```js
-// core/delay.js
-oneWayDelayS(day, config)          // linear model, 1.3 s → 750 s
-effectiveDelayS(day, env)          // env.delayOverrideS ?? oneWayDelayS(day)
+// src/core/delay.js
+oneWayDelayS(day)    // round(1.3 + day / 180 × 750) → Day 40 = 168 s
+formatDelay(seconds) // "2 min 48 s"
 ```
 
-Used by the mission scene, the header, triage and captions. Nothing else computes delay.
+Used by the header, the mission scene and its HUD. The Comms tab's link selector still sets its own preset delay; in v2 the selector becomes an override of this function ([07-TRIAGE_SPEC.md §2](07-TRIAGE_SPEC.md#2-interface)).
 
-### Bundle and queue
+## Offline (service worker)
 
-See [07-TRIAGE_SPEC.md §5–6](07-TRIAGE_SPEC.md#5-the-bundle). The queue is the only stateful part of `core/`: it holds timers and writes to storage, so tests inject a fake clock and fake storage.
+| Item | How |
+|---|---|
+| File list | `src/sw-manifest.js`, generated by `npm run build:sw` from `src/`, `assets/` and `engine/` (excluding `engine/ml/`) |
+| Install | Caches each file separately; a missing file is logged, not fatal |
+| Fetch | Network-first for same-origin GET; cache fallback when offline; cross-origin requests untouched |
+| Updates | Bump `CACHE_NAME` in `sw.js` for a release; old caches are deleted on activate |
+| Guard | CI fails if the manifest is stale (`npm run check`) |
 
-### Engine integration
+## CSS
 
-See [15-FORECAST_SPEC.md §6](15-FORECAST_SPEC.md#6-model-forecast-engine-advisory). In short:
+Eleven files loaded in a fixed order from `index.html`. The split kept the original cascade: no selector changed relative order with another block that styles the same class (checked when splitting). `responsive.css` must stay last.
+
+| File | Holds |
+|---|---|
+| `tokens.css` | Custom properties (palette, fonts) |
+| `base.css` | `@font-face`, reset, typography, focus ring |
+| `layout.css` | App shell, panel grid, hull plates |
+| `components.css` | Status shapes and badges, buttons, caption toast |
+| `header.css` | Disclaimer strip, scene header, scrubber, pitch line, nav, score pill, environment select |
+| `title-screen.css` | First-load title screen |
+| `tabs/overview.css`, `tabs/monitor.css`, `tabs/forecast.css` | Per-tab styles |
+| `extras.css` | Digital twin, tissue cards, micro-lab |
+| `responsive.css` | Reduced motion and small-screen overrides |
+
+## Engine integration (next)
+
+See [15-FORECAST_SPEC.md §6](15-FORECAST_SPEC.md#6-model-forecast-engine-advisory). In short, after merging `origin/engine-ml`:
 
 ```html
-<script src="./lib/chart.umd.min.js"></script>
+<script src="./assets/vendor/chart.umd.min.js"></script>
 <script src="./engine/data.js"></script>
-<script src="./engine/forecast.js"></script>
 <script src="./engine/model.js"></script>
+<script src="./engine/forecast.js"></script>
 <script src="./engine/predict.js"></script>
-<script type="module" src="./main.js"></script>
+<script type="module" src="./src/main.js"></script>
 ```
 
-`adapter.js` is the only module that reads `window.DataEngine` / `window.LandfallML`. It falls back to `core/forecast.js` rules if they're missing.
+`src/core/adapter.js` is the only module that reads `window.DataEngine` / `window.LandfallML`, and it falls back to `src/data/sample-data.js` if they're missing. Run `npm run build:sw` after the merge so the engine files are cached.
 
-### Offline (service worker)
+**One simulator (D-16).** The Python simulator in `engine/ml/simulator.py` is the single source of synthetic data: it produces `engine/data.js` for the UI and exports seeded crews to `eval/crews/` for the evaluation harness. There is no separate JavaScript generator.
 
-| Item | Rule |
-|---|---|
-| Strategy | Network-first for same-origin GET; cache fallback when offline (as-built since `3ecac47`) |
-| Cache list | Every file loaded at runtime, including `engine/*.js`, `engine/model.json`, `eval/results.json` |
-| Install | Cache files one by one and log failures, so one missing file doesn't break offline mode (as-built uses all-or-nothing `cache.addAll`) |
-| Scope | Same-origin requests only; never cache external links |
-| Version | `CACHE_NAME` bumped on every release |
+## v2 modules: where they go
 
-### Storage
-
-All keys are listed in [18-DATA_MODEL.md §8](18-DATA_MODEL.md#8-storage-keys). Reset clears every key except UI preferences.
-
-## Target file tree
-
-```
-index.html  main.js (bootstrap only)  sw.js  launch.bat  package.json (scripts only, no dependencies)
-README.md  CONTRACT.md (v4.0, points to docs/18)
-core/       config.js delay.js detect.js forecast.js triage.js bundle.js queue.js
-            radiation.js wellbeing.js explain.js run-day.js adapter.js sources.js
-app/        state.js
-ui/         today.js signals.js forecast-tab.js comms.js evaluation.js sources-tab.js
-            controls.js banners.js header.js
-            visuals/ mission-scene.js cone-renderer.js
-            extras/  twin.js twin-model.js constellation.js micro-lab.js
-data/       generator.js sample-crew.js
-engine/     (merged from origin/engine-ml) data.js forecast.js model.js model.json predict.js MODEL_CARD.md ml/
-eval/       scenarios.js run-eval.mjs results.json results.md
-tests/      detect.test.mjs forecast.test.mjs triage.test.mjs bundle.test.mjs queue.test.mjs
-            radiation.test.mjs wellbeing.test.mjs run-day.test.mjs eval.test.mjs
-css/ fonts/ lib/ docs/
-```
-
-Deleted: `js/app.js`, `js/today.js`, `js/act-ui.js`, `js/demo.js`, `js/trends.js`, `js/forecast-ui.js`, `js/sources-ui.js`, `js/storage.js`, `js/nasa-catalog.js`, `placeholders/`, `triage/`, `src/LandfallApp.jsx`, `sample_alert.js`, `test*.mjs` (replaced by `tests/`).
-
-### Moving files without breaking the team
-
-| Step | What | Safe because |
+| v2 module | File | Spec |
 |---|---|---|
-| 1 | Add `core/config.js` and `core/delay.js`; point existing code at them | Pure additions |
-| 2 | Add `core/detect.js`, `core/triage.js` v2 beside the old files; switch `adapter.js` | Old files untouched until the switch |
-| 3 | Add `run-day.js` and the Today screen | New tab; other tabs keep working |
-| 4 | Move tabs into `ui/` one at a time | One PR per tab |
-| 5 | Delete dead files | Nothing imports them (verify with a grep first) |
+| Detect | `src/core/detect.js` | [14](14-DETECT_SPEC.md) |
+| Forecast rules | `src/core/forecast.js` | [15](15-FORECAST_SPEC.md) |
+| Decision table | `src/core/triage.js` (replaces the score) | [07](07-TRIAGE_SPEC.md) |
+| Bundle | `src/core/bundle.js` (renamed from `packet.js`) | [07 §5](07-TRIAGE_SPEC.md#5-the-bundle) |
+| Queue v2 | `src/core/queue.js` | [07 §6](07-TRIAGE_SPEC.md#6-the-queue) |
+| Radiation, wellbeing | `src/core/radiation.js`, `src/core/wellbeing.js` | [16](16-RADIATION_AND_ISOLATION.md) |
+| Explanation | `src/core/explain.js` | [07 §4](07-TRIAGE_SPEC.md#4-explanation-t9-l3) |
+| Loop | `src/core/run-day.js` (replaces `pipeline.js`) | [03 L1](03-PRD.md#l--decision-loop) |
+| Storage keys and migration | `src/app/storage.js` | [18 §8](18-DATA_MODEL.md#8-storage-keys) |
+| Today screen | `src/ui/tabs/today.js` (from `overview.js`) | [19](19-UI_GUIDE.md#today-screen) |
+| Signals, Comms, Evaluation tabs | `src/ui/tabs/signals.js` (from `monitor.js`), `comms.js`, `evaluation.js` | [19](19-UI_GUIDE.md#other-tabs) |
+| Demo controls drawer | `src/ui/controls.js` | [19](19-UI_GUIDE.md#demo-controls-u1) |
+| Triage table component | `src/ui/components/triage-table.js` | [07 §3](07-TRIAGE_SPEC.md#3-the-decision-table-t1) |
+| Evaluation harness | `eval/run-eval.mjs`, `eval/scenarios.js`, `eval/results/` | [17](17-EVALUATION.md) |
+| Tests | `tests/unit/*.test.mjs`, `tests/integration/*.test.mjs` | [09](09-TEST_PLAN.md) |
 
 ## Design decisions
 
-Recorded in [20-DECISIONS.md](20-DECISIONS.md). The key ones:
-
-- Rules and statistics decide; the model advises (D-02).
-- One live-call limit, 10 s (D-01). One delay function (D-05).
-- The emergency path is evaluated before routing and never waits on the queue (D-03).
-- Logic is pure and testable; the UI renders a `DayResult` (D-07).
+Recorded in [20-DECISIONS.md](20-DECISIONS.md). The ones that shape the structure: D-05 (one delay function), D-07 (pure core), D-12 (dead code deleted), D-15 (`src/` layout), D-16 (one simulator), D-17 (render only the visible tab).
 
 ## Integrity, not security
 

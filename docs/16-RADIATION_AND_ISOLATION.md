@@ -4,8 +4,8 @@ The challenge names radiation, isolation and confinement. v1 covered them thinly
 
 | Module | Owner | Target files | Requirements |
 |---|---|---|---|
-| Radiation dose tracker | Tanishk (data, rules) · Om (UI) | `core/radiation.js` | R1–R3 |
-| Wellbeing check-in | Om (UI) · Tanishk (metrics) | `core/wellbeing.js` | W1–W4 |
+| Radiation dose tracker | Tanishk (data, rules) · Om (UI) | `src/core/radiation.js` | R1–R3 |
+| Wellbeing check-in | Om (UI) · Tanishk (metrics) | `src/core/wellbeing.js` | W1–W4 |
 
 As-built: Monitor shows a cumulative dose (1.48 mSv/day, unsourced, no limit) and a check-in form with vitals and mood only. See [00-STATUS.md](00-STATUS.md#r--radiation).
 

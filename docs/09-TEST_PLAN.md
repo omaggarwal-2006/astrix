@@ -2,7 +2,7 @@
 
 ## Principles
 
-- **Behaviour, not strings.** A test calls a function and checks its output. The current `tests/ui-check.mjs` only checks that text exists in files; keep it as a smoke check, but it doesn't count as testing.
+- **Behaviour, not strings.** A test calls a function and checks its output. The current `tests/smoke/ui-check.mjs` only checks that text exists in files; keep it as a smoke check, but it doesn't count as testing.
 - **Built-in tools only.** Node's test runner (`node --test`) and `node:assert`. No packages to install.
 - **Pure logic is tested in Node.** The queue gets a fake clock and fake storage.
 - **One test per triage-table row**, so every row of the demo has proof behind it.
@@ -10,23 +10,23 @@
 ## How to run
 
 ```bash
-node --test tests/
+npm test
 ```
 
 ## Automated tests
 
 | File | Covers | Key cases |
 |---|---|---|
-| `tests/detect.test.mjs` | [14 §8](14-DETECT_SPEC.md#8-tests) | Baseline, SD floor, one-night dip vs slide, EWMA before z, fusion, missing data, CO2 absolute limit, determinism |
-| `tests/forecast.test.mjs` | [15 §10](15-FORECAST_SPEC.md#10-tests) | Monotonic slider (rules and model), NASA range at full adherence, `low ≤ mid ≤ high`, labels, NO-GO → triage reason, model fallback |
-| `tests/triage.test.mjs` | [07 §9](07-TRIAGE_SPEC.md#9-tests-one-per-table-row-plus-queue) | Every rule row; combining rules; escalate-one-level; exact safety strings; one live-call limit |
-| `tests/bundle.test.mjs` | [07 §5](07-TRIAGE_SPEC.md#5-the-bundle) | Schema, stable checksum (key order doesn't matter), tamper detection, ID format, duplicate guard, private note excluded |
-| `tests/queue.test.mjs` | [07 §6](07-TRIAGE_SPEC.md#6-the-queue) | Link down/up, priority order, expiry, retry limit, manual retry without double send, checksum mismatch never retried, reload behaviour |
-| `tests/radiation.test.mjs` | [16 §1.5](16-RADIATION_AND_ISOLATION.md#15-tests) | Cumulative dose, SPE banner and bundle, limit fractions |
-| `tests/wellbeing.test.mjs` | [16 §2.6](16-RADIATION_AND_ISOLATION.md#26-tests) | Mood drift wording, missed check-ins, sleep regularity |
-| `tests/run-day.test.mjs` | Loop | Day 40 story end to end; readiness headline rule; only one delay value used |
-| `tests/eval.test.mjs` | [17](17-EVALUATION.md) | Same seed, same results; N0 has no emergency alerts; A6–A8 never missed |
-| `tests/config.test.mjs` | Ground rule 7 | No threshold literals outside `core/config.js` (scan `core/` for known numbers) |
+| `tests/unit/detect.test.mjs` | [14 §8](14-DETECT_SPEC.md#8-tests) | Baseline, SD floor, one-night dip vs slide, EWMA before z, fusion, missing data, CO2 absolute limit, determinism |
+| `tests/unit/forecast.test.mjs` | [15 §10](15-FORECAST_SPEC.md#10-tests) | Monotonic slider (rules and model), NASA range at full adherence, `low ≤ mid ≤ high`, labels, NO-GO → triage reason, model fallback |
+| `tests/unit/triage.test.mjs` | [07 §9](07-TRIAGE_SPEC.md#9-tests-one-per-table-row-plus-queue) | Every rule row; combining rules; escalate-one-level; exact safety strings; one live-call limit |
+| `tests/unit/bundle.test.mjs` | [07 §5](07-TRIAGE_SPEC.md#5-the-bundle) | Schema, stable checksum (key order doesn't matter), tamper detection, ID format, duplicate guard, private note excluded |
+| `tests/unit/queue.test.mjs` | [07 §6](07-TRIAGE_SPEC.md#6-the-queue) | Link down/up, priority order, expiry, retry limit, manual retry without double send, checksum mismatch never retried, reload behaviour |
+| `tests/unit/radiation.test.mjs` | [16 §1.5](16-RADIATION_AND_ISOLATION.md#15-tests) | Cumulative dose, SPE banner and bundle, limit fractions |
+| `tests/unit/wellbeing.test.mjs` | [16 §2.6](16-RADIATION_AND_ISOLATION.md#26-tests) | Mood drift wording, missed check-ins, sleep regularity |
+| `tests/integration/run-day.test.mjs` | Loop | Day 40 story end to end; readiness headline rule; only one delay value used |
+| `tests/integration/eval.test.mjs` | [17](17-EVALUATION.md) | Same seed, same results; N0 has no emergency alerts; A6–A8 never missed |
+| `tests/unit/config.test.mjs` | Ground rule 7 | No threshold literals outside `src/core/config.js` (scan `src/core/` for known numbers) |
 
 ## Manual scenario checklist (browser)
 

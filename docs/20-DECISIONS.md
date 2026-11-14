@@ -6,7 +6,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 - **Status:** Proposed
 - **Context:** The as-built code uses 300 s; the v1 specs used 10 s. The v2 demo routes a case at about 3 minutes of delay to the CMO because "a live call isn't possible", which is only true if the limit is below that.
-- **Decision:** `liveCallMaxOneWayS = 10`, defined once in `core/config.js`.
+- **Decision:** `liveCallMaxOneWayS = 10`, defined once in `src/core/config.js`.
 - **Consequences:** Moon (1.3 s) and ISS are live; operational lunar latency at the top of its 3–14 s range and all Mars cases go by bundle. The demo story holds. `sources.js` assumption text changes from 300 s to 10 s.
 
 ## D-02 · Rules decide; the model advises
@@ -31,7 +31,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 - **Status:** Proposed
 - **Context:** The scene uses `1.3 + day/180 × 750`, the presets use 1.3–1,320 s, and the v1 docs said "≈ 128 s at Day 40".
-- **Decision:** `core/delay.js` keeps the linear model (1.3 s → 750 s, so Day 40 = 168 s), labelled a demo assumption. The delay selector can override it. Every module, caption and doc uses this function.
+- **Decision:** `src/core/delay.js` keeps the linear model (1.3 s → 750 s, so Day 40 = 168 s), labelled a demo assumption. The delay selector can override it. Every module, caption and doc uses this function.
 - **Consequences:** Day 40 is "2 min 48 s one way" everywhere. Real geometry (3–22 min over the synodic cycle) is described in Sources, not modelled.
 
 ## D-06 · Forecast dimensions follow the engine
@@ -43,7 +43,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 ## D-07 · Pure core, rendering UI
 
 - **Status:** Proposed
-- **Decision:** All logic lives in `core/` as pure ES modules (except the queue's timers and storage, which are injected). The UI renders a `DayResult` from `runDay()` and never computes decisions.
+- **Decision:** All logic lives in `src/core/` as pure ES modules (except the queue's timers and storage, which are injected). The UI renders a `DayResult` from `runDay()` and never computes decisions.
 - **Consequences:** Logic is testable in Node; tabs can't disagree; only the visible tab re-renders.
 
 ## D-08 · XP becomes "mission readiness score", or is cut
@@ -55,7 +55,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 ## D-09 · The digital twin must share the alerts' data, or move to Extras
 
 - **Status:** Proposed
-- **Decision:** Region colours come from `DayResult` (alerts and forecast). The separate loss model in `js/twin-model.js` is removed. If that isn't done by Phase 4, the twin moves to Extras.
+- **Decision:** Region colours come from `DayResult` (alerts and forecast). The separate loss model in `src/ui/extras/twin-model.js` is removed. If that isn't done by Phase 4, the twin moves to Extras.
 
 ## D-10 · Missing data escalates
 
@@ -69,9 +69,9 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 ## D-12 · Delete dead code and the orphan React app
 
-- **Status:** Proposed
-- **Context:** About 40 % of the files are never loaded; `src/LandfallApp.jsx` has no build setup.
-- **Decision:** Delete the files listed in [06 §Target file tree](06-ARCHITECTURE.md#target-file-tree). Git history keeps them.
+- **Status:** Accepted, done (14 Nov 2026, see [22-MIGRATION.md](22-MIGRATION.md))
+- **Context:** About 40 % of the files were never loaded; `src/LandfallApp.jsx` had no build setup.
+- **Decision:** Delete them. Git history keeps them; the React prototype can live on a `react-prototype` branch.
 
 ## D-13 · Docs describe the target; STATUS describes the code
 
@@ -82,3 +82,24 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 - **Status:** Proposed
 - **Decision:** The demo uses "fail next" and "fail all" instead of a random failure rate, so every run shows the same thing. Seeded random failures are for the evaluation only.
+
+## D-15 · All app code under `src/`
+
+- **Status:** Accepted, done (14 Nov 2026)
+- **Context:** Logic files sat in the repo root next to `index.html` and `launch.bat`, and one `main.js` held everything.
+- **Decision:** `index.html`, `sw.js` (it must stay at the root to control the whole site) and `launch.bat` stay at the root. All code goes under `src/`: `src/core/` (logic), `src/data/` (interim data), `src/app/` (state, routing), `src/ui/` (screens). Static files go under `assets/`.
+- **Consequences:** A clean root for reviewers; docs refer to `src/core/…` paths. See [06-ARCHITECTURE.md](06-ARCHITECTURE.md).
+
+## D-16 · One simulator for all synthetic data
+
+- **Status:** Proposed
+- **Context:** The evaluation plan called for a JavaScript generator, while the engine already has a Python simulator that produces the UI dataset. Two simulators would drift apart.
+- **Decision:** `engine/ml/simulator.py` is the single source. It produces `engine/data.js` (the crew the UI shows) and exports seeded crews to `eval/crews/` for the harness. The harness stays in JavaScript so it runs the app's real logic.
+- **Consequences:** Calibration happens once ([17-EVALUATION.md §2](17-EVALUATION.md#2-calibrated-synthetic-data-e1)). Regenerating crews needs Python.
+
+## D-17 · Render only the visible tab
+
+- **Status:** Accepted, done (14 Nov 2026)
+- **Context:** Every day change rebuilt all five tabs, including charts and canvases, on every scrubber step (N4).
+- **Decision:** Tabs register a renderer with `src/app/state.js`; a day change renders the header and the visible tab only. A tab renders when it's opened.
+- **Consequences:** Faster scrubbing. Code that needs another tab's content must open that tab first (as the Go/No-Go rows already do).

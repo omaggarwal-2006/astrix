@@ -1,7 +1,7 @@
 # 15 · Forecast Specification (v2)
 
-Owner: Tanishk · Target files: `core/forecast.js` (rules) and `engine/` (model) behind `adapter.js` · Tests: `tests/forecast.test.mjs` · Requirements: F1–F7
-As-built: `sample/sample_data.js → generateForecastForDay()`, with a different dimension set and fixed ± bands. The model engine is on the unmerged branch `origin/engine-ml`. See [00-STATUS.md](00-STATUS.md#f--forecast).
+Owner: Tanishk · Target files: `src/core/forecast.js` (rules) and `engine/` (model) behind `adapter.js` · Tests: `tests/unit/forecast.test.mjs` · Requirements: F1–F7
+As-built: `src/data/sample-data.js → generateForecastForDay()`, with a different dimension set and fixed ± bands. The model engine is on the unmerged branch `origin/engine-ml`. See [00-STATUS.md](00-STATUS.md#f--forecast).
 
 ## 1. Job in the loop
 
@@ -91,7 +91,7 @@ The engine on `origin/engine-ml` is a multi-target ridge regression with 10th/50
 | Step | What | Owner |
 |---|---|---|
 | 1 | Merge `origin/engine-ml` into a feature branch; files land in `engine/` | Tanishk |
-| 2 | Load `engine/data.js`, `forecast.js`, `model.js`, `predict.js` as classic `<script>` tags **before** `main.js`. They set `window.DataEngine`, `ForecastEngine`, `LANDFALL_MODEL`, `LandfallML` | Om |
+| 2 | Load `engine/data.js`, `forecast.js`, `model.js`, `predict.js` as classic `<script>` tags **before** `src/main.js`. They set `window.DataEngine`, `ForecastEngine`, `LANDFALL_MODEL`, `LandfallML` | Om |
 | 3 | `adapter.getForecast()` calls `LandfallML.predictLanding(history, { plannedExerciseHours })` and maps the result to `ForecastDimension` | Om |
 | 4 | Map status `green / amber / red` → apply §4 thresholds to the engine's `low / mid / high` instead, so one rule labels both forecasts | Om |
 | 5 | Normalise engine field names (`heartRate`, `sleepHours`, …) into `DayReading` in one function in the adapter | Tanishk |

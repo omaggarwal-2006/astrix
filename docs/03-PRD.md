@@ -175,7 +175,7 @@ Each requirement has an owner and an acceptance check. Status is tracked in [00-
 | AC6 | Tampered bundle: FAILED, not retryable, even after reload |
 | AC7 | Emergency vitals: direct-ground-link banner with the link down |
 | AC8 | SPE: shelter banner; EXPEDITED bundle ahead of NORMAL ones |
-| AC9 | `node --test` passes; evaluation report generated from a recorded run |
+| AC9 | `npm test` passes; evaluation report generated from a recorded run |
 | AC10 | Works with the network disabled after one load |
 
 ## 9. Open questions

@@ -37,7 +37,7 @@ A static, offline web app that tells **one story end to end**: Day 40 of a Mars 
 | M10 | Evaluation harness and report | Raghav | M2, M5 |
 | M11 | One delay function; captions generated from data | Om | M5 |
 | M12 | Readiness headline reflects alarms; XP renamed; extras moved | Om | M1 |
-| M13 | Delete dead code; `node --test` suite | Om + Raghav | — |
+| M13 | Delete dead code; `npm test` suite (done in the restructure, see 22-MIGRATION.md) | Om + Raghav | — |
 | M14 | Docs, sources verified, demo video, submission | Raghav | all |
 
 ## Out of scope
@@ -70,14 +70,14 @@ A static, offline web app that tells **one story end to end**: Day 40 of a Mars 
 
 ## Definition of done
 
-- [ ] `node --test` passes, with one test per triage-table row.
+- [ ] `npm test` passes, with one test per triage-table row.
 - [ ] `eval/results.json` generated from a recorded run (seed, commit and date inside).
 - [ ] App opens via `launch.bat` with no console errors on days 1, 40, 44, 90 and 180.
 - [ ] Demo story steps 1–8 work using only on-screen controls.
 - [ ] Works with the network disabled after one load.
 - [ ] No "source pending" label left in the UI without an explanation.
 - [ ] Every number in the UI is labelled NASA (with source) or team assumption.
-- [ ] Dead code deleted; repo tree matches [06-ARCHITECTURE.md](06-ARCHITECTURE.md#target-file-tree).
+- [x] Dead code deleted; repo follows the `src/` layout in [06-ARCHITECTURE.md](06-ARCHITECTURE.md#repo-tree-as-built).
 - [ ] `CONTRACT.md` Part A matches the code, and every migrated module has moved to Part B.
 - [ ] 3-minute video recorded; submission form filled.
 - [ ] Each teammate has run the demo from a fresh clone.

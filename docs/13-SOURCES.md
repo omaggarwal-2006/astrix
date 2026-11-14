@@ -74,11 +74,11 @@ Every key in [18-DATA_MODEL.md §7](18-DATA_MODEL.md#7-configuration) marked "As
 
 | File | Holds |
 |---|---|
-| `sources.js` (→ `core/sources.js`) | `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, `DISCLAIMER` |
-| `sample/sample_data.js` forecast `citationUrl` | S-03, S-04, S-08–S-11 |
+| `src/core/sources.js` | `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, `DISCLAIMER` |
+| `src/data/sample-data.js` forecast `citationUrl` | S-03, S-04, S-08–S-11 |
 | `engine/MODEL_CARD.md` (engine branch) | Its own citation table |
 
-When a status here changes, update `sources.js` in the same PR, and remove the "(source pending)" note in `index.html` once S-06 is verified.
+When a status here changes, update `src/core/sources.js` in the same PR, and remove the "(source pending)" note in `index.html` once S-06 is verified.
 
 ## Verification log
 

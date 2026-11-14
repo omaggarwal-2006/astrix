@@ -44,7 +44,7 @@ Must fit without scrolling at 1366×768, with the triage table collapsible.
 | **Forecast** | Forecast in depth | Six cones starting at 100 %, threshold guides, what-if slider with "assumption" label, countermeasure checklist | Fix the 80 % cone origin |
 | **Comms** | Act in depth | Full triage table, delay selector, bundle JSON with Copy, queue table with state, attempts, expiry, receipt, Retry | Replaces Triage & Comms |
 | **Evaluation** | Evidence | Reads `eval/results.json`: summary table, per-scenario table, run metadata | Shows "No run recorded" if missing |
-| **Sources** | Honesty | Sources with status, assumptions list from `config`, disclaimer, sample-vs-real table | Generated from `core/sources.js` and `config` |
+| **Sources** | Honesty | Sources with status, assumptions list from `config`, disclaimer, sample-vs-real table | Generated from `src/core/sources.js` and `config` |
 | **Extras** | Visuals not in the story | Digital twin (if not made consistent), constellation, micro-lab | Clearly labelled "illustrative visuals" |
 
 ## Demo controls (U1)
@@ -69,7 +69,7 @@ Injected values are marked "simulated" in the bundle and on screen.
 
 Keep, with these rules (U3):
 
-- Delay text comes from `core/delay.js`, never its own formula.
+- Delay text comes from `src/core/delay.js`, never its own formula.
 - Packet flight animation follows real queue state.
 - Environment selector (Mars / ISS / Moon / EVA) changes the **delay preset** too, or is removed. A scene that says "ISS" while triage uses Mars delay is a second story.
 

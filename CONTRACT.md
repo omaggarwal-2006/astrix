@@ -18,17 +18,17 @@ When a module moves from Part A to Part B, update both parts and [`docs/00-STATU
 
 | File | Owner | Exports |
 |---|---|---|
-| `adapter.js` | Om (Tanishk's engine plugs in here) | `getAlerts(day)`, `getForecast(day, exerciseHours = 1.2)`, `getReadings(day)`, `getBaseline()`, `mapSeverity(severity)` |
-| `sample/sample_data.js` | Interim (Om) | `generateAlertsForDay`, `generateForecastForDay`, `generateDayReadings`, `BASELINE_READINGS` |
-| `pipeline.js` | Raghav | `handleAlert(alert, ctx, env)`, `peekNextSeq()` |
-| `triage.js` | Raghav | `triage(alert, ctx)` |
-| `packet.js` | Raghav | `buildPacket(alert, decision, ctx, seq)`, `verifyPacket(packet)` |
-| `queue.js` | Raghav | `enqueue`, `getQueue`, `onChange`, `setLink`, `clearQueue`, `config` |
-| `sources.js` | Raghav | `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, `DISCLAIMER` |
-| `sample_alert.js` | Raghav | `sampleAlert` (fixture `A-001`) |
-| `js/twin-model.js` | Om | `BODY_REGIONS`, `TISSUE_LAYERS`, `getRegionIntegrity`, `getTissueIntegrity`, `calculateCrewReadinessXP`, `ASTRONAUT_PROFILE` |
+| `src/core/adapter.js` | Om (Tanishk's engine plugs in here) | `getAlerts(day)`, `getForecast(day, exerciseHours = 1.2)`, `getReadings(day)`, `getBaseline()`, `mapSeverity(severity)` |
+| `src/data/sample-data.js` | Interim (Om) | `generateAlertsForDay`, `generateForecastForDay`, `generateDayReadings`, `BASELINE_READINGS` |
+| `src/core/pipeline.js` | Raghav | `handleAlert(alert, ctx, env)`, `peekNextSeq()` |
+| `src/core/triage.js` | Raghav | `triage(alert, ctx)` |
+| `src/core/packet.js` | Raghav | `buildPacket(alert, decision, ctx, seq)`, `verifyPacket(packet)` |
+| `src/core/queue.js` | Raghav | `enqueue`, `getQueue`, `onChange`, `setLink`, `clearQueue`, `config` |
+| `src/core/sources.js` | Raghav | `SOURCES`, `NUMBERS`, `LINK_PRESETS`, `ASSUMPTIONS`, `DISCLAIMER` |
+| `src/data/sample-alert.js` | Raghav | `sampleAlert` (fixture `A-001`) |
+| `src/ui/extras/twin-model.js` | Om | `BODY_REGIONS`, `TISSUE_LAYERS`, `getRegionIntegrity`, `getTissueIntegrity`, `calculateCrewReadinessXP`, `ASTRONAUT_PROFILE` |
 
-The UI reads data **only** through `adapter.js`. `js/twin-model.js` has no data imports.
+The UI reads data **only** through `src/core/adapter.js`. `src/ui/extras/twin-model.js` has no data imports. Thresholds live in `src/core/config.js`; the Earth delay in `src/core/delay.js`.
 
 ### A2. Readings (`getReadings(day)`)
 

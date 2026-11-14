@@ -1,7 +1,7 @@
 # 14 · Detect Specification (v2)
 
-Owner: Tanishk · Target file: `core/detect.js` · Tests: `tests/detect.test.mjs` · Requirements: D1–D8, W3
-As-built: alerts are scripted in `sample/sample_data.js` (`generateAlertsForDay`). Nothing below is computed yet. See [00-STATUS.md](00-STATUS.md#d--detect).
+Owner: Tanishk · Target file: `src/core/detect.js` · Tests: `tests/unit/detect.test.mjs` · Requirements: D1–D8, W3
+As-built: alerts are scripted in `src/data/sample-data.js` (`generateAlertsForDay`). Nothing below is computed yet. See [00-STATUS.md](00-STATUS.md#d--detect).
 
 ## 1. Job in the loop
 

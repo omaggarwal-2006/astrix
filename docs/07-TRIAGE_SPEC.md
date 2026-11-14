@@ -1,7 +1,7 @@
 # 07 · Act Specification: Triage Table, Bundle and Queue (v2)
 
-Owner: Raghav · Target files: `core/triage.js`, `core/bundle.js`, `core/queue.js` · Tests: `tests/triage.test.mjs`, `tests/bundle.test.mjs`, `tests/queue.test.mjs`
-Requirements: T1–T10, Q1–Q9, R3 · As-built: root `triage.js` (score formula), `packet.js`, `queue.js`, `pipeline.js`. See [00-STATUS.md](00-STATUS.md#t--triage).
+Owner: Raghav · Target files: `src/core/triage.js`, `src/core/bundle.js`, `src/core/queue.js` · Tests: `tests/unit/triage.test.mjs`, `tests/unit/bundle.test.mjs`, `tests/unit/queue.test.mjs`
+Requirements: T1–T10, Q1–Q9, R3 · As-built: `src/core/triage.js` (score formula), `src/core/packet.js`, `src/core/queue.js`, `src/core/pipeline.js`. See [00-STATUS.md](00-STATUS.md#t--triage).
 
 ## 1. Job in the loop
 
@@ -14,7 +14,7 @@ triage({ alerts, forecast, reading, env, config }) → Decision
 // env = { oneWayDelayS, linkUp, onboardSupport }
 ```
 
-- `oneWayDelayS` comes from `core/delay.js` (one function for the whole app, decision D-05), unless the delay selector overrides it.
+- `oneWayDelayS` comes from `src/core/delay.js` (one function for the whole app, decision D-05), unless the delay selector overrides it.
 - Pure function. The UI never builds its own decision.
 - Returns a `Decision` ([18-DATA_MODEL.md §6](18-DATA_MODEL.md#6-dayresult)): `path`, `delivery`, `priorityClass`, `rulesFired[]`, `reasons[]`, `banners[]`, `whatWouldChange[]`, `confidence`.
 
@@ -237,5 +237,5 @@ These strings are tested for exact match:
 | `packet_id: PKT-0001`, `priority` LOW…CRITICAL | `bundle_id: LF-D040-0001`, `priority_class` |
 | `TRANSMITTED` | `TRANSMITTING` |
 | Unlimited retries; reload re-queues FAILED | `maxAttempts` 3; `retryable` flag persisted |
-| Trends hard-coded in `main.js` | Computed from history |
+| Trends hard-coded in `src/ui/tabs/comms.js` (`buildTriageInputs`) | Computed from history |
 | `landfall_queue` | `landfall_queue_v2` (old key ignored, cleared by Reset) |

@@ -60,33 +60,40 @@ More: [`docs/21-DEV_SETUP.md`](docs/21-DEV_SETUP.md).
 
 ## Test it
 
+No install step: `package.json` has scripts only. Needs Node 22 or newer.
+
 ```bash
-node tests/ui-check.mjs
+npm test
 ```
 
 ```bash
-node test5.mjs
+npm run test:smoke
 ```
 
-`tests/ui-check.mjs` checks that features exist in the source, not that they behave correctly. Behaviour tests with Node's built-in runner (`node --test tests/`) are planned: [`docs/09-TEST_PLAN.md`](docs/09-TEST_PLAN.md).
+```bash
+npm run check
+```
 
-## Repo layout (today)
+`npm test` runs 33 unit and integration tests (triage, packets, queue and link recovery, adapter shapes, delay, config). `test:smoke` checks that the 16 UI features exist in the source. `check` verifies the service worker's file list and every doc link. CI runs all three on every push and pull request. Test plan: [`docs/09-TEST_PLAN.md`](docs/09-TEST_PLAN.md).
+
+## Repo layout
 
 | Path | What |
 |---|---|
-| `index.html`, `main.js`, `css/`, `js/` | UI: tabs, mission scene, digital twin, charts, demo runner |
-| `adapter.js` | The single place the UI gets data from; the real engine plugs in here |
-| `sample/sample_data.js` | Interim synthetic dataset, alerts and forecast |
-| `triage.js`, `packet.js`, `queue.js`, `pipeline.js` | Triage, checksum packets and the store-and-forward queue |
-| `sources.js` | NASA sources, numbers, link presets, assumptions, disclaimer |
-| `sw.js` | Service worker for offline use |
+| `index.html` | App shell: header, mission scene, tabs, modals |
+| `src/main.js` | Bootstrap: wires state, tabs and controls together |
+| `src/core/` | Logic, no DOM: `config.js` (every threshold), `delay.js`, `adapter.js` (the only data entry point; the engine plugs in here), `triage.js`, `packet.js`, `queue.js`, `pipeline.js`, `sources.js` |
+| `src/data/` | Interim synthetic dataset and the sample alert |
+| `src/app/` | `state.js` and `router.js` (hash routing; renders only the visible tab) |
+| `src/ui/` | Header, `tabs/`, `components/`, `visuals/` (mission scene, cones), `extras/` (digital twin, micro-lab, constellation), demo runner, controls |
+| `assets/` | CSS (11 files), fonts and vendored Chart.js, with license notes |
+| `tests/` | `unit/`, `integration/`, `smoke/` |
+| `scripts/` | Service-worker manifest generator, doc link checker |
+| `sw.js` | Service worker for offline use (stays at the root) |
 | `launch.bat` | One-click local launch on Windows |
 | `docs/` | v2 product and engineering docs |
-| `lib/`, `fonts/` | Vendored Chart.js and fonts (no CDN) |
 
-Not used by the app (to be deleted, decision D-12): `js/app.js`, `js/today.js`, `js/act-ui.js`, `js/demo.js`, `js/trends.js`, `js/forecast-ui.js`, `js/sources-ui.js`, `js/storage.js`, `js/nasa-catalog.js`, `placeholders/`, `src/LandfallApp.jsx`, `engine/` and `triage/` (empty).
-
-The target layout is in [`docs/06-ARCHITECTURE.md`](docs/06-ARCHITECTURE.md#target-file-tree).
+Architecture: [`docs/06-ARCHITECTURE.md`](docs/06-ARCHITECTURE.md). What moved where in the restructure: [`docs/22-MIGRATION.md`](docs/22-MIGRATION.md).
 
 ## Team
 

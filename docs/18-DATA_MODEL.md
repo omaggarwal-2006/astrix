@@ -193,7 +193,7 @@ The average of forecast values is shown as a supporting number, never as the hea
 
 ## 7. Configuration
 
-One object, `core/config.js`, frozen at load. Every threshold in the docs refers to a key here. All values are **team assumptions** unless a source is given.
+One object, `src/core/config.js`, frozen at load. Every threshold in the docs refers to a key here. All values are **team assumptions** unless a source is given.
 
 | Key | Value | Used by | Source |
 |---|---|---|---|

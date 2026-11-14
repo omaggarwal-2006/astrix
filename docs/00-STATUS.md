@@ -1,6 +1,6 @@
 # 00 · Status: v2 Target vs As-Built
 
-Last reviewed: 14 Nov 2026, against `main` at commit `553827c` and the unmerged branch `origin/engine-ml`.
+Last reviewed: 14 Nov 2026, against `main` at commit `8b24eef` plus the `src/` restructure ([22-MIGRATION.md](22-MIGRATION.md)), and the unmerged branch `origin/engine-ml`.
 Update this file in the same pull request as any code change that moves a requirement.
 
 Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirmed in [08-TEAM_AND_PLAN.md](08-TEAM_AND_PLAN.md).
@@ -10,7 +10,7 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 | Area | Built | Partial | Planned | Headline |
 |---|---|---|---|---|
 | Decision loop (L) | 0 | 1 | 2 | Detect, Forecast and Act are still three separate features |
-| Detect (D) | 0 | 4 | 4 | Baseline and alerts are hard-coded in `sample/sample_data.js` |
+| Detect (D) | 0 | 4 | 4 | Baseline and alerts are hard-coded in `src/data/sample-data.js` |
 | Forecast (F) | 2 | 2 | 3 | Real engine exists on `origin/engine-ml`, not merged |
 | Triage (T) | 0 | 4 | 6 | Hidden score formula; no emergency, SANS or missing-data rules |
 | Bundle and queue (Q) | 2 | 5 | 2 | Works end to end; no priority, lifetime or retry limit |
@@ -18,8 +18,8 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 | Isolation (W) | 0 | 2 | 2 | Mood is tracked; no stress, social contact or sleep regularity |
 | Evaluation (E) | 0 | 1 | 4 | Engine branch evaluates the forecast model, not detection |
 | UI (U) | 1 | 6 | 1 | Only the delay selector and Reset exist as demo controls |
-| Non-functional (N) | 2 | 3 | 2 | Offline works; renders are slow and not deterministic |
-| Repo health (H) | 0 | 2 | 1 | Dead code, string-only tests, three delay models |
+| Non-functional (N) | 2 | 3 | 2 | Offline works; only the visible tab renders; some visuals still use random numbers |
+| Repo health (H) | 2 | 1 | 0 | Dead code deleted; 33 behaviour tests and CI; the delay selector is not yet an override of the one delay function |
 
 ## The five things blocking the v2 demo
 
@@ -127,10 +127,10 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### N · Non-functional
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| N1 | Works offline after first load | Built | Network-first service worker, `landfall-v5-network-first` | Om |
+| N1 | Works offline after first load | Built | Network-first service worker (`landfall-v6-src-layout`), generated file list, per-file caching | Om |
 | N2 | No build step | Built | ES modules served statically | Om |
 | N3 | Deterministic for the same input | Partial | Micro-lab canvas and starfield use `Math.random()` | Om |
-| N4 | Render under 50 ms per day change | Partial | Every day change re-renders all five tabs | Om |
+| N4 | Render under 50 ms per day change | Partial | Only the visible tab renders on a day change (D-17); not timed yet | Om |
 | N5 | Colour is never the only signal | Partial | Shapes are used with colour; not audited | Om |
 | N6 | Privacy: role views and minimal packet fields | Planned | — | Raghav |
 | N7 | Every number labelled NASA or team assumption | Partial | Sources tab does this; several UI numbers have no label | All |
@@ -138,9 +138,9 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### H · Repo health
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| H1 | Delete dead code and the orphan React app | Planned | Unused: `js/app.js`, `today.js`, `act-ui.js`, `demo.js`, `trends.js`, `forecast-ui.js`, `sources-ui.js`, `storage.js`, `nasa-catalog.js`, `placeholders/*`, `src/LandfallApp.jsx` | Om |
-| H2 | Behaviour tests with `node --test` | Partial | `tests/ui-check.mjs` checks strings only; `test*.mjs` print output, assert nothing | Raghav |
-| H3 | One delay model | Partial | Scene, presets and docs disagree | Om |
+| H1 | Delete dead code and the orphan React app | Built | Deleted in the restructure (D-12); repo now follows the `src/` layout (D-15) | Om |
+| H2 | Behaviour tests with `node --test` | Built | `npm test`: 33 unit and integration tests for the current modules; CI runs them with the smoke check. v2 modules add their own tests | Raghav |
+| H3 | One delay model | Partial | Header and mission scene use `src/core/delay.js`; docs agree (168 s on Day 40). The Comms link selector still sets its own preset instead of overriding the function | Om |
 
 ## Already fixed (for the record)
 
@@ -152,5 +152,6 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 | `19fbcdc` | Check-ins override that day's vitals; micro-lab sliders feed the model |
 | `19fbcdc` | Missing `telemetry-remaining` and `scene-environment-hud` elements added; dead suit-map code removed |
 | `19fbcdc` | `test*.mjs` import paths fixed |
+| `src/` restructure | Code under `src/`, assets under `assets/`, `main.js` split into 16 modules, dead code deleted, `config.js` and `delay.js`, 33 tests, CI, generated service-worker list ([22-MIGRATION.md](22-MIGRATION.md)) |
 | `3ecac47` | Service worker switched to network-first |
 | `d7075b4` | Inline favicon, no 404 |

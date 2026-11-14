@@ -4,8 +4,8 @@
 
 | Person | Role | Owns |
 |---|---|---|
-| **Raghav** | Act + integration + delivery | Triage table, bundle and queue (`core/triage.js`, `bundle.js`, `queue.js`), `run-day.js`, config and delay, evaluation harness, sources, tests, docs, demo video, submission |
-| **Tanishk** | Detect + Forecast + data | `core/detect.js`, `core/forecast.js`, engine merge, `data/generator.js` and calibration, radiation data, wellbeing metrics |
+| **Raghav** | Act + integration + delivery | Triage table, bundle and queue (`src/core/triage.js`, `bundle.js`, `queue.js`), `run-day.js`, config and delay, evaluation harness, sources, tests, docs, demo video, submission |
+| **Tanishk** | Detect + Forecast + data | `src/core/detect.js`, `src/core/forecast.js`, engine merge, simulator calibration and crew export (decision D-16), radiation data, wellbeing metrics |
 | **Om** | UI | Today screen, tabs, demo controls, banners, mission scene, demo runner, service worker, accessibility, moving extras, deleting dead code |
 
 Owners are proposals in v2; confirm in the next sync and update [00-STATUS.md](00-STATUS.md).
@@ -19,7 +19,7 @@ The official deadline isn't confirmed yet (open question OQ1). Fill in real date
 | Phase | Length | Goal | Exit check |
 |---|---|---|---|
 | **0. Align** | ½ day | Agree on this doc set; confirm owners and decisions D-01…D-12 | Decisions marked "Accepted" |
-| **1. Foundations** | 1–2 days | `core/config.js`, `core/delay.js`, engine merged, Detect v2 shape, triage table skeleton | `node --test` runs; one delay everywhere |
+| **1. Foundations** | 1–2 days | `src/core/config.js`, `src/core/delay.js`, engine merged, Detect v2 shape, triage table skeleton | `node --test` runs; one delay everywhere |
 | **2. Loop** | 2 days | `runDay()`, Today screen, demo controls, bundle and queue v2, forecast → triage link | Demo story steps 1–6 work |
 | **3. Coverage and evidence** | 1–2 days | Radiation, wellbeing check-in, evaluation harness, results file | Steps 6–7 work; results committed |
 | **4. Clean-up** | 1 day | Move extras, delete dead code, fix captions, readiness rule, a11y pass, sources verified | Definition of done in [04-MVP.md](04-MVP.md#definition-of-done) |
@@ -29,10 +29,10 @@ The official deadline isn't confirmed yet (open question OQ1). Fill in real date
 
 ### Raghav
 - [ ] Phase 0: walk the team through docs v2; record decisions in [20-DECISIONS.md](20-DECISIONS.md).
-- [ ] Phase 1: `core/config.js` (every key in [18 §7](18-DATA_MODEL.md#7-configuration)) and `core/delay.js`.
-- [ ] Phase 1: `core/triage.js` decision table with all rows and tests ([07 §9](07-TRIAGE_SPEC.md#9-tests-one-per-table-row-plus-queue)).
-- [ ] Phase 2: `core/bundle.js` (stable checksum, ID, lifetime, priority) and `core/queue.js` v2 (priority order, retry limit, receipts, failure modes, duplicate guard).
-- [ ] Phase 2: `core/run-day.js` and `core/explain.js`.
+- [ ] Phase 1: `src/core/config.js` (every key in [18 §7](18-DATA_MODEL.md#7-configuration)) and `src/core/delay.js`.
+- [ ] Phase 1: `src/core/triage.js` decision table with all rows and tests ([07 §9](07-TRIAGE_SPEC.md#9-tests-one-per-table-row-plus-queue)).
+- [ ] Phase 2: `src/core/bundle.js` (stable checksum, ID, lifetime, priority) and `src/core/queue.js` v2 (priority order, retry limit, receipts, failure modes, duplicate guard).
+- [ ] Phase 2: `src/core/run-day.js` and `src/core/explain.js`.
 - [ ] Phase 3: evaluation harness and results ([17](17-EVALUATION.md)).
 - [ ] Phase 4: open every source and update [13-SOURCES.md](13-SOURCES.md); remove "source pending" labels.
 - [x] Bump `CONTRACT.md` to v4.0 (Part A as-built, Part B v2) and rewrite the root README.
@@ -41,18 +41,19 @@ The official deadline isn't confirmed yet (open question OQ1). Fill in real date
 
 ### Tanishk
 - [ ] Phase 1: merge `origin/engine-ml`; fix `engine/ml/requirements.txt` encoding; normalise engine fields into `DayReading`.
-- [ ] Phase 1: `core/detect.js`: computed baseline, z, EWMA, fusion, missing data, confidence, alert text ([14](14-DETECT_SPEC.md)).
-- [ ] Phase 2: `core/forecast.js` rules forecast with ranges and labels; adapter mapping for the model ([15](15-FORECAST_SPEC.md)).
-- [ ] Phase 3: `data/generator.js` seeded and calibrated; radiation background, SPE generator; sleep regularity and wellbeing metrics.
+- [ ] Phase 1: `src/core/detect.js`: computed baseline, z, EWMA, fusion, missing data, confidence, alert text ([14](14-DETECT_SPEC.md)).
+- [ ] Phase 2: `src/core/forecast.js` rules forecast with ranges and labels; adapter mapping for the model ([15](15-FORECAST_SPEC.md)).
+- [ ] Phase 3: simulator (`engine/ml/simulator.py`) seeded, calibrated and exporting crews to `eval/crews/`; radiation background, SPE generator; sleep regularity and wellbeing metrics.
 - [ ] Phase 3: update the engine model card to match the six dimensions and the "advisory" framing.
 
 ### Om
-- [ ] Phase 1: load engine scripts before `main.js`; add `engine/*` to the service-worker cache; per-file cache install.
-- [ ] Phase 2: `app/state.js` and the Today screen ([19](19-UI_GUIDE.md#today-screen)); render only the visible tab.
+- [ ] Phase 1: load engine scripts before `src/main.js`; run `npm run build:sw` so `engine/*` is cached. (Per-file cache install is done.)
+- [ ] Phase 2: `src/app/state.js` and the Today screen ([19](19-UI_GUIDE.md#today-screen)); render only the visible tab.
 - [ ] Phase 2: demo controls drawer ([19](19-UI_GUIDE.md#demo-controls-u1)); banners.
 - [ ] Phase 3: check-in form v2 (mood, stress, social, bed and wake time); radiation bar; Evaluation tab.
-- [ ] Phase 4: readiness headline rule; rename XP; move constellation, micro-lab (and twin, if not made consistent) to Extras; cone origin at 100 %; captions from data; mission scene uses `core/delay.js`.
-- [ ] Phase 4: delete dead code ([06](06-ARCHITECTURE.md#target-file-tree)); accessibility pass ([19](19-UI_GUIDE.md#accessibility-u8-n5)).
+- [ ] Phase 4: readiness headline rule; rename XP; move constellation, micro-lab (and twin, if not made consistent) to Extras; cone origin at 100 %; captions from data; mission scene uses `src/core/delay.js`.
+- [x] Delete dead code and move to the `src/` layout ([22](22-MIGRATION.md)).
+- [ ] Phase 4: move tab markup out of `index.html` and inline styles into CSS ([22 next steps](22-MIGRATION.md#next-steps)); accessibility pass ([19](19-UI_GUIDE.md#accessibility-u8-n5)).
 
 ## Git workflow
 
@@ -60,9 +61,9 @@ So far every commit went straight to `main`. From Phase 1:
 
 - `main` is always demo-able. No direct commits.
 - One branch per task: `feat/triage-table`, `feat/today-screen`, `fix/cone-origin`, `docs/…`.
-- Pull request into `main`, one teammate reviews, `node --test` must pass.
+- Pull request into `main`, one teammate reviews, `npm test` and `npm run check` must pass (CI runs both).
 - Commit messages: `area: what` (for example `triage: add SANS rule`).
-- Shared files (`core/config.js`, `docs/18-DATA_MODEL.md`) change only in their own small PRs, so they don't conflict.
+- Shared files (`src/core/config.js`, `docs/18-DATA_MODEL.md`) change only in their own small PRs, so they don't conflict.
 - Tag a release before recording: `git tag demo-v2.0`.
 
 ## Communication
@@ -75,7 +76,7 @@ So far every commit went straight to `main`. From Phase 1:
 
 | From → To | What |
 |---|---|
-| Raghav → everyone | `core/config.js` and `core/delay.js` first; nobody adds a threshold anywhere else |
+| Raghav → everyone | `src/core/config.js` and `src/core/delay.js` first; nobody adds a threshold anywhere else |
 | Tanishk → Raghav | Alert and forecast shapes with `level`, `confidence`, `label` |
 | Raghav → Om | `runDay()` and the queue API, including `setFailureMode` and `clearQueue` |
 | Tanishk → Om | Engine globals and the adapter mapping |

@@ -14,23 +14,35 @@ Then open <http://localhost:8080>.
 
 Opening `index.html` directly (`file://`) does **not** work: browsers block ES module imports from files.
 
-## Run the tests
+## Run the tests and checks
+
+No install step: `package.json` has scripts only. Node 22 or newer.
 
 ```bash
-node --test tests/
+npm test
 ```
 
-Until `tests/` holds real tests, the current checks are:
+Runs the unit and integration tests in `tests/unit/` and `tests/integration/` with Node's built-in runner.
 
 ```bash
-node tests/ui-check.mjs
+npm run test:smoke
 ```
+
+Checks that the 16 UI features exist in the markup and source. It doesn't test behaviour.
 
 ```bash
-node test5.mjs
+npm run check
 ```
 
-`tests/ui-check.mjs` only checks that strings exist in the source files. A pass doesn't mean the feature works.
+Fails if `src/sw-manifest.js` is out of date or a doc link is broken. CI runs all three on every push and pull request.
+
+## After adding, moving or deleting a file the browser loads
+
+```bash
+npm run build:sw
+```
+
+Regenerates the service worker's list of files to cache offline. Commit the updated `src/sw-manifest.js`.
 
 ## Run the evaluation (once built)
 
@@ -77,8 +89,8 @@ localStorage.clear(); location.reload();
 
 ## Before you open a pull request
 
-- [ ] `node --test tests/` passes.
+- [ ] `npm test`, `npm run test:smoke` and `npm run check` pass.
 - [ ] App loads with no console errors on days 1, 40, 44, 90, 180.
 - [ ] If you changed a shape or threshold: [18-DATA_MODEL.md](18-DATA_MODEL.md) and [20-DECISIONS.md](20-DECISIONS.md) updated.
 - [ ] If you moved a requirement: [00-STATUS.md](00-STATUS.md) updated.
-- [ ] No new hard-coded threshold, delay or dose value outside `core/config.js`.
+- [ ] No new hard-coded threshold, delay or dose value outside `src/core/config.js`.

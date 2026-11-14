@@ -65,11 +65,11 @@ Raghav Dua, Tanishk, Om. Acknowledge NASA open resources, the Canadian Space Age
 
 ## Final checklist
 
-- [ ] `node --test` green; fresh-clone run verified on two machines.
+- [ ] `npm test` and `npm run check` green; fresh-clone run verified on two machines.
 - [ ] `eval/results.md` generated from the tagged commit; numbers in the summary and video match it.
 - [ ] Every source in [13-SOURCES.md](13-SOURCES.md) opened and marked verified, or the claim removed.
 - [ ] No "source pending" left without explanation.
 - [ ] Disclaimer on every screen and in the README.
-- [ ] Dead code deleted; repo tree matches [06-ARCHITECTURE.md](06-ARCHITECTURE.md#target-file-tree).
+- [x] Dead code deleted; repo follows the `src/` layout in [06-ARCHITECTURE.md](06-ARCHITECTURE.md#repo-tree-as-built).
 - [ ] Video uploaded; links work while logged out.
 - [ ] Submission form saved and submitted with a day of buffer.

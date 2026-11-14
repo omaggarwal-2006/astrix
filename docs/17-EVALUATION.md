@@ -1,6 +1,6 @@
 # 17 · Evaluation: Calibrated Data and the Harness
 
-Owner: Raghav (harness) · Tanishk (generator calibration) · Target files: `data/generator.js`, `eval/scenarios.js`, `eval/run-eval.mjs` · Output: `eval/results.json`, `eval/results.md` · Requirements: E1–E5
+Owner: Raghav (harness) · Tanishk (generator calibration) · Target files: `engine/ml/simulator.py` (crew export, decision D-16), `eval/scenarios.js`, `eval/run-eval.mjs` · Output: `eval/results.json`, `eval/results.md` · Requirements: E1–E5
 As-built: nothing yet. The engine branch's `engine/ml/evaluate.py` compares **forecast** models (ML vs rules). That's useful, but it doesn't measure **alerting** or **triage**, which this harness does.
 
 ## 1. Why this matters

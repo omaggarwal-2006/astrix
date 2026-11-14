@@ -69,8 +69,8 @@ All values are in [18-DATA_MODEL.md §7](18-DATA_MODEL.md#7-configuration).
 | Medical misinterpretation | Medium | Low | Disclaimers, supportive wording, no diagnosis | Om |
 | Unverified NASA figures quoted | Medium | Medium | Open every source; remove unverified claims | Raghav |
 | Demo fails live (storage, browser) | Medium | Low | Reset button, two browsers tested, backup video | Om |
-| Dead code confuses reviewers | Low | High | Delete in Phase 4 | Om |
-| Merge conflicts in `main.js` | Medium | Medium | Split into `ui/` files; one PR per tab | Om |
+| Dead code confuses reviewers | Low | Low | Done: deleted in the restructure (D-12) | Om |
+| Merge conflicts in one big UI file | Low | Low | Done: `main.js` split into `src/app/` and `src/ui/` modules (22-MIGRATION.md); CODEOWNERS routes reviews | Om |
 | Git identities don't match credits | Low | Medium | Agree one name and email each | All |
 
 ## What LANDFALL is not

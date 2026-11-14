@@ -49,6 +49,7 @@ Status labels are used in every file:
 | [06-ARCHITECTURE.md](06-ARCHITECTURE.md) | Modules, data flow, as-built vs target structure |
 | [05-DEPENDENCIES.md](05-DEPENDENCIES.md) | Runtime, tooling, engine and team dependencies |
 | [21-DEV_SETUP.md](21-DEV_SETUP.md) | Running, testing and debugging locally |
+| [22-MIGRATION.md](22-MIGRATION.md) | The `src/` restructure: what moved where, how it was checked, next steps |
 
 ### Evidence and quality
 | File | What it answers |
