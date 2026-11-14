@@ -3,7 +3,7 @@
  * Enables 100% offline functionality after first load over HTTP/HTTPS.
  */
 
-const CACHE_NAME = 'landfall-redesign-v2';
+const CACHE_NAME = 'landfall-v3-view-from-ship';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

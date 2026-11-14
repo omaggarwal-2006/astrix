@@ -2,16 +2,17 @@
  * LANDFALL - "The View From The Ship" Main Controller (main.js)
  * Implements:
  * 1. The Mission Scene (Top Starfield, Hohmann Arc, Earth & Mars scaling, Packet flight)
- * 2. Overview: Health Constellation (replacing radar) + Mars Readiness Glyph
- * 3. Monitor: Suited Astronaut Outline Map + Restyled Chart.js Lines
- * 4. Forecast: Flight-Path Cones reshaping with slider
- * 5. Triage & Comms: Triage decision + DTN queue list
- * 6. Sources: Dynamically rendered from teammate's sources.js
+ * 2. Overview: Hero 72px Landing Readiness + Go/No-Go Poll + Health Constellation + Active Alerts
+ * 3. Monitor: Suited Body Map with Escape-close + Check-In form with validation + 3 Trend Lines + Quiet Cabin
+ * 4. Forecast: Flight-Path Cones + Scenario Buttons + Exercise Slider + Saved Countermeasure Checklist
+ * 5. Triage & Comms: Triage Decision + setLink + Send/Copy Packet + Retry Failed DTN Queue + Emergency Link
+ * 6. Sources: Dynamically rendered from sources.js + Gap Analysis + Sample vs Real contract table
+ * 7. Demo runner: Play, Pause, Stop (returns to previous day) + Reset Demo
  */
 
 import { getAlerts, getForecast, getReadings, getBaseline, mapSeverity } from "./adapter.js";
 import { handleAlert } from "./pipeline.js";
-import { getQueue, onChange as onQueueChange, setLink as setQueueLink, config as queueConfig } from "./queue.js";
+import { getQueue, onChange as onQueueChange, setLink as setQueueLink, enqueue as enqueuePacket, config as queueConfig } from "./queue.js";
 import { SOURCES, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./sources.js";
 import { sampleAlert } from "./sample_alert.js";
 import { MissionScene } from "./js/mission-scene.js";
@@ -20,16 +21,19 @@ import { renderTrajectoryCone } from "./js/cone-renderer.js";
 
 export const AppState = {
   currentDay: 40,
+  preDemoDay: 40,
   maxDays: 180,
   activeTab: 'overview',
+  activeTrendChart: 'sleep',
   exerciseHours: 1.2,
   activePresetKey: 'MARS_MID',
-  activeBodyPart: 'head',
+  activeBodyPart: 'helmet',
   missionScene: null,
   constellation: null,
   trendCharts: {},
   demoInterval: null,
   isDemoRunning: false,
+  isDemoPaused: false,
 
   setDay(day, notify = true) {
     this.currentDay = Math.max(1, Math.min(this.maxDays, parseInt(day, 10)));
@@ -126,14 +130,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initNavigation();
   initSceneCollapse();
+  initCheckinForm();
+  initTrendChartButtons();
   initScenarioButtons();
+  initTriageControls();
+  initEmergencyModal();
   initDemoRunner();
+  initResetDemoButton();
   initTitleScreen();
+
+  // Escape key closes suited body map detail
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const box = document.getElementById('suited-body-readout');
+      if (box) {
+        box.innerHTML = `
+          <div style="padding: 14px; color: var(--starlight-dim); font-size: 14.5px;">
+            Body detail closed. Select any suited region on the astronaut to view localized telemetry.
+          </div>
+        `;
+      }
+    }
+  });
 
   // Subscribe to queue changes
   onQueueChange(() => {
     renderQueueTable(getQueue());
     if (AppState.missionScene) AppState.missionScene.draw();
+    AppState.updateTelemetryText();
   });
 
   // Initial link preset
@@ -172,7 +196,7 @@ function initNavigation() {
     }
   });
 
-  // Activate initial tab from hash or default to overview
+  // Initial tab from hash or default to overview
   const initialHash = window.location.hash.replace('#', '').trim();
   if (initialHash && ['overview', 'monitor', 'forecast', 'triage', 'sources'].includes(initialHash)) {
     activateTab(initialHash);
@@ -334,7 +358,7 @@ function renderGoNoGoPoll(forecast) {
       window.location.hash = 'forecast';
       activateTab('forecast');
       setTimeout(() => {
-        const target = Array.from(document.querySelectorAll('.cone-card-title')).find(el => el.textContent.includes(dim));
+        const target = Array.from(document.querySelectorAll('.cone-card strong')).find(el => el.textContent.includes(dim));
         if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
@@ -417,6 +441,80 @@ function renderMonitorTab() {
   renderTrendLines(day);
 }
 
+function initCheckinForm() {
+  const form = document.getElementById('monitor-checkin-form');
+  const errBox = document.getElementById('checkin-error-msg');
+  const succBox = document.getElementById('checkin-success-msg');
+  if (!form) return;
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (errBox) errBox.style.display = 'none';
+    if (succBox) succBox.style.display = 'none';
+
+    const hr = parseFloat(document.getElementById('monitor-hr').value);
+    const sys = parseFloat(document.getElementById('monitor-sys').value);
+    const dia = parseFloat(document.getElementById('monitor-dia').value);
+    const temp = parseFloat(document.getElementById('monitor-temp').value);
+    const sleep = parseFloat(document.getElementById('monitor-sleep').value);
+    const mood = parseFloat(document.getElementById('monitor-mood').value);
+    const exercise = parseFloat(document.getElementById('monitor-exercise').value);
+
+    // Validation rules with plain error messages
+    if (isNaN(hr) || hr < 35 || hr > 220) {
+      showError('Heart rate must be between 35 and 220 bpm.');
+      return;
+    }
+    if (isNaN(sys) || sys < 70 || sys > 220) {
+      showError('Systolic BP must be between 70 and 220 mmHg.');
+      return;
+    }
+    if (isNaN(dia) || dia < 40 || dia > 140) {
+      showError('Diastolic BP must be between 40 and 140 mmHg.');
+      return;
+    }
+    if (isNaN(temp) || temp < 34.0 || temp > 42.0) {
+      showError('Core temperature must be between 34.0 and 42.0 °C.');
+      return;
+    }
+    if (isNaN(sleep) || sleep < 0.0 || sleep > 16.0) {
+      showError('Sleep hours must be between 0.0 and 16.0 hours.');
+      return;
+    }
+    if (isNaN(mood) || mood < 1.0 || mood > 5.0) {
+      showError('Mood score must be between 1.0 and 5.0.');
+      return;
+    }
+    if (isNaN(exercise) || exercise < 0 || exercise > 240) {
+      showError('Daily exercise must be between 0 and 240 minutes.');
+      return;
+    }
+
+    // Save to localStorage
+    const key = 'landfall_custom_checkins';
+    const existing = JSON.parse(localStorage.getItem(key) || '{}');
+    existing[AppState.currentDay] = { hr, sys, dia, temp, sleep, mood, exercise, timestamp: Date.now() };
+    localStorage.setItem(key, JSON.stringify(existing));
+
+    if (succBox) {
+      succBox.style.display = 'block';
+      succBox.textContent = `Check-in for Day ${AppState.currentDay} logged and saved to telemetry memory.`;
+      setTimeout(() => {
+        if (succBox) succBox.style.display = 'none';
+      }, 5000);
+    }
+
+    AppState.renderCurrentTab();
+  });
+
+  function showError(msg) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = msg;
+    }
+  }
+}
+
 function renderSuitedBodyMap(alerts, readings) {
   const hasHead = alerts.some(a => a.metric === 'sleep_h' || a.metric === 'cabin_co2');
   const hasChest = alerts.some(a => a.metric === 'hr_bpm');
@@ -442,14 +540,33 @@ function renderSuitedBodyMap(alerts, readings) {
 
   renderBodyReadout(AppState.activeBodyPart, readings, alerts);
 
-  // Bind clicks
+  // Bind clicks and keyboard Enter/Space
   ['helmet', 'chest', 'torso', 'arms', 'legs'].forEach(part => {
     const el = document.getElementById(`suit-${part}`);
     if (el && !el.dataset.bound) {
       el.dataset.bound = "true";
-      el.addEventListener('click', () => {
-        AppState.activeBodyPart = part;
-        renderBodyReadout(part, getReadings(AppState.currentDay), getAlerts(AppState.currentDay));
+      const toggle = () => {
+        if (AppState.activeBodyPart === part) {
+          AppState.activeBodyPart = null;
+          const box = document.getElementById('suited-body-readout');
+          if (box) {
+            box.innerHTML = `
+              <div style="padding: 14px; color: var(--starlight-dim); font-size: 14.5px;">
+                Body detail panel closed. Click any suit part to inspect readings.
+              </div>
+            `;
+          }
+        } else {
+          AppState.activeBodyPart = part;
+          renderBodyReadout(part, getReadings(AppState.currentDay), getAlerts(AppState.currentDay));
+        }
+      };
+      el.addEventListener('click', toggle);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
       });
     }
   });
@@ -457,37 +574,51 @@ function renderSuitedBodyMap(alerts, readings) {
 
 function renderBodyReadout(part, readings, alerts) {
   const box = document.getElementById('suited-body-readout');
-  if (!box) return;
+  if (!box || !part) return;
 
   const v = readings.vitals;
   const names = {
-    helmet: 'Helmet & Neurosensory (Circadian Sleep & Cabin CO2)',
-    chest: 'Chest & Life Support (Cardiovascular Autonomic Tone)',
-    torso: 'Torso Core (Visceral Microgravity Fluid Shift)',
-    arms: 'Upper Limbs & Suit Dexterity (Grip Strength)',
-    legs: 'Lower Limbs & Calcaneus (Bone Density & Soleus Tone)'
+    helmet: 'Helmet & Neuro-Circadian (Sleep & CO2)',
+    chest: 'Chest & Autonomic Core (Cardiovascular Tone)',
+    torso: 'Torso (Core Temperature & Visceral Fluid Shift)',
+    arms: 'Upper Limbs (Muscle Endurance & Skin Check)',
+    legs: 'Lower Limbs (Bone Density & Soleus Tone)'
   };
 
   let desc = '';
+  let statusBadge = '<span class="status-badge status-nominal"><span class="shape-circle"></span> Nominal</span>';
+
   if (part === 'helmet') {
     const alert = alerts.find(a => a.metric === 'sleep_h');
-    desc = alert ? `Alert: ${alert.reason}. Spaceflight stress & CO2 accumulation present.` : `Sleep ${v.sleep_h} h (within baseline). Pupillary reflex nominal.`;
+    if (alert) {
+      statusBadge = '<span class="status-badge status-alarm"><span class="shape-diamond"></span> Alarm</span>';
+      desc = `Active Alert: ${alert.reason}. Spaceflight stress and elevated CO2 contribute to circadian disruption.`;
+    } else {
+      desc = `Sleep duration: ${v.sleep_h} h (within baseline). Pupillary reflexes and circadian alignment stable.`;
+    }
   } else if (part === 'chest') {
-    desc = `Heart rate: ${v.hr_bpm} bpm. BP: ${v.bp_sys}/${v.bp_dia} mmHg. Stable autonomic tone.`;
+    desc = `Heart rate: ${v.hr_bpm} bpm. BP: ${v.bp_sys}/${v.bp_dia} mmHg. Autonomic baroreflex regulation nominal.`;
   } else if (part === 'torso') {
-    desc = `Core temp: ${v.temp_c}°C. Visceral circulatory adaptation stable.`;
+    desc = `Core temp: ${v.temp_c} °C. Cephalad fluid shift compensated by venous compliance.`;
   } else if (part === 'arms') {
-    desc = `Grip strength retention: 94%. Upper extremity joint mobility nominal.`;
+    desc = `Grip strength retention: 94%. Upper extremity joint mobility and suit glove dexterity nominal.`;
   } else if (part === 'legs') {
-    desc = `Daily exercise: ${v.exercise_min} mins. Heel calcaneus bone load monitored against microgravity resorption.`;
+    const alert = alerts.find(a => a.metric === 'exercise_min');
+    if (alert) {
+      statusBadge = '<span class="status-badge status-caution"><span class="shape-triangle"></span> Caution</span>';
+      desc = `Active Alert: ${alert.reason}. Ensure 1.5 hrs/day resistive load on ARED-II.`;
+    } else {
+      desc = `Daily exercise: ${v.exercise_min} mins. Heel calcaneus bone load monitored against microgravity resorption.`;
+    }
   }
 
   box.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--hull-line); padding-bottom: 8px; margin-bottom: 10px;">
       <strong style="font-family: var(--font-heading); font-size: 17px; color: var(--starlight);">${names[part] || part}</strong>
-      <span class="status-badge status-nominal">Telemetry monitored</span>
+      ${statusBadge}
     </div>
-    <p style="font-size: 15px; color: #CAD5D4; line-height: 1.5;">${desc}</p>
+    <p style="font-size: 15px; color: #CAD5D4; line-height: 1.5; margin-bottom: 8px;">${desc}</p>
+    <span style="font-size: 12.5px; color: var(--starlight-dim);">Click part again or press Escape to close.</span>
   `;
 }
 
@@ -513,14 +644,12 @@ function renderQuietPanels(readings, alerts) {
 
   if (alertBox) {
     if (hasHeadache && highCO2) {
-      alertBox.style.display = 'flex';
+      alertBox.style.display = 'block';
       alertBox.innerHTML = `
-        <span class="shape-triangle"></span>
-        <div>
-          <strong style="color: var(--starlight); font-size: 15.5px;">Headache plus high CO2: check the scrubber first.</strong>
-          <div style="font-size: 14px; color: #CAD5D4; margin-top: 2px;">
-            Hypercapnia suspected (${c.co2} ppm vs 4500 ppm ceiling). Inspect Amine Bed canister before administering analgesics.
-          </div>
+        <span class="shape-diamond"></span>
+        <strong>Headache plus high CO2: check the scrubber first</strong>
+        <div style="font-size: 14px; color: #FFCCC7; margin-top: 3px; font-weight: 400;">
+          Cabin CO2 is ${c.co2} ppm (operating limit: 4500 ppm). Check the Amine Bed scrubber canister before treating headache symptoms.
         </div>
       `;
     } else {
@@ -542,21 +671,66 @@ function renderQuietPanels(readings, alerts) {
   setIm('immune-status-fatigue', im.fatigue);
 }
 
+function initTrendChartButtons() {
+  const btnSleep = document.getElementById('btn-chart-sleep');
+  const btnMood = document.getElementById('btn-chart-mood');
+  const btnHr = document.getElementById('btn-chart-hr');
+
+  const showChart = (chartKey) => {
+    AppState.activeTrendChart = chartKey;
+    [btnSleep, btnMood, btnHr].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+
+    const wrapSleep = document.getElementById('chart-wrap-sleep');
+    const wrapMood = document.getElementById('chart-wrap-mood');
+    const wrapHr = document.getElementById('chart-wrap-hr');
+
+    if (wrapSleep) wrapSleep.style.display = chartKey === 'sleep' ? 'block' : 'none';
+    if (wrapMood) wrapMood.style.display = chartKey === 'mood' ? 'block' : 'none';
+    if (wrapHr) wrapHr.style.display = chartKey === 'hr' ? 'block' : 'none';
+
+    if (chartKey === 'sleep' && btnSleep) btnSleep.classList.add('active');
+    if (chartKey === 'mood' && btnMood) btnMood.classList.add('active');
+    if (chartKey === 'hr' && btnHr) btnHr.classList.add('active');
+
+    renderTrendLines(AppState.currentDay);
+  };
+
+  if (btnSleep) btnSleep.addEventListener('click', () => showChart('sleep'));
+  if (btnMood) btnMood.addEventListener('click', () => showChart('mood'));
+  if (btnHr) btnHr.addEventListener('click', () => showChart('hr'));
+}
+
 function renderTrendLines(activeDay) {
   if (!window.Chart) return;
+
   drawRestyledTrend('trend-sleep-chart', 'sleep_h', 7.4, 3.0, 9.0, 'Hours', activeDay);
   drawRestyledTrend('trend-mood-chart', 'mood', 4.2, 1.0, 5.0, 'Score (1-5)', activeDay);
   drawRestyledTrend('trend-hr-chart', 'hr_bpm', 64, 50, 95, 'BPM', activeDay);
 
-  const sumSleep = document.getElementById('plain-sleep-summary');
-  if (sumSleep) {
-    const d = getReadings(activeDay).vitals.sleep_h;
-    if (activeDay >= 40 && activeDay <= 52) {
-      sumSleep.textContent = `Sleep ${d} h vs baseline 7.4 h, ${activeDay - 39} days running. Acute circadian collapse window.`;
-      sumSleep.style.color = '#FFAAA3';
+  const sumEl = document.getElementById('plain-chart-summary');
+  if (sumEl) {
+    const readings = getReadings(activeDay).vitals;
+    if (AppState.activeTrendChart === 'sleep') {
+      if (activeDay >= 40 && activeDay <= 52) {
+        sumEl.textContent = `Day ${activeDay}: Sleep dropped to ${readings.sleep_h} h vs baseline 7.4 h. Circadian disruption alert active.`;
+        sumEl.style.color = '#FFAAA3';
+      } else {
+        sumEl.textContent = `Day ${activeDay}: Sleep is ${readings.sleep_h} h, steady with personal baseline.`;
+        sumEl.style.color = 'var(--starlight)';
+      }
+    } else if (AppState.activeTrendChart === 'mood') {
+      if (activeDay >= 43 && activeDay <= 55) {
+        sumEl.textContent = `Day ${activeDay}: Mood score declined to ${readings.mood} / 5.0 secondary to chronic sleep debt.`;
+        sumEl.style.color = '#E8A93A';
+      } else {
+        sumEl.textContent = `Day ${activeDay}: Behavioral health score is ${readings.mood} / 5.0, within expected nominal range.`;
+        sumEl.style.color = 'var(--starlight)';
+      }
     } else {
-      sumSleep.textContent = `Sleep ${d} h vs baseline 7.4 h, steady physiological continuity.`;
-      sumSleep.style.color = '#9FAAA8';
+      sumEl.textContent = `Day ${activeDay}: Resting heart rate is ${readings.hr_bpm} bpm vs personal baseline 64 bpm. Stable autonomic regulation.`;
+      sumEl.style.color = 'var(--starlight)';
     }
   }
 }
@@ -592,7 +766,7 @@ function drawRestyledTrend(canvasId, key, baseVal, yMin, yMax, yUnit, activeDay)
           tension: 0.15
         },
         {
-          label: 'Baseline (Ring color)',
+          label: 'Personal Baseline',
           data: baseline,
           borderColor: '#243044',
           borderWidth: 1.5,
@@ -634,7 +808,7 @@ function drawRestyledTrend(canvasId, key, baseVal, yMin, yMax, yUnit, activeDay)
 }
 
 // -------------------------------------------------------------
-// STEP 4: FORECAST TAB (FLIGHT-PATH CONE)
+// STEP 4: FORECAST TAB (FLIGHT-PATH CONES & COUNTERMEASURES)
 // -------------------------------------------------------------
 function renderForecastTab() {
   const day = AppState.currentDay;
@@ -685,6 +859,45 @@ function renderForecastTab() {
     const canvas = document.getElementById(`cone-canvas-${idx}`);
     renderTrajectoryCone(canvas, f.landing.low, f.landing.mid, f.landing.high, f.status);
   });
+
+  renderCountermeasuresChecklist();
+}
+
+const COUNTERMEASURES_LIST = [
+  { id: 'cm_ared', label: 'Resistive vibration exercise load protocol (ARED-II) \u2022 1.5 hrs/day' },
+  { id: 'cm_light', label: 'Dynamic blue-enriched (460 nm) circadian phase-shifting entrainment' },
+  { id: 'cm_amine', label: 'Cabin LiOH / Solid Amine scrubber canister exchange & hypercapnia purge' },
+  { id: 'cm_antiviral', label: 'Low-dose Valacyclovir antiviral prophylaxis for dormant HSV-1 suppression' },
+  { id: 'cm_sleep_hygiene', label: 'Dark-cabin acoustic attenuation and scheduled sleep hygiene window' }
+];
+
+function renderCountermeasuresChecklist() {
+  const container = document.getElementById('countermeasures-checklist');
+  if (!container) return;
+
+  const saved = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
+  let html = '';
+
+  COUNTERMEASURES_LIST.forEach(cm => {
+    const checked = saved[cm.id] !== undefined ? saved[cm.id] : true;
+    html += `
+      <div class="countermeasure-item">
+        <input type="checkbox" id="${cm.id}" ${checked ? 'checked' : ''} data-cm="${cm.id}">
+        <label for="${cm.id}">${cm.label}</label>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+
+  container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const id = e.target.getAttribute('data-cm');
+      const cur = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
+      cur[id] = e.target.checked;
+      localStorage.setItem('landfall_countermeasures', JSON.stringify(cur));
+    });
+  });
 }
 
 function initScenarioButtons() {
@@ -696,6 +909,15 @@ function initScenarioButtons() {
   const update = (hrs) => {
     AppState.exerciseHours = hrs;
     if (slider) slider.value = hrs;
+
+    [btn15, btn12, btn00].forEach(b => {
+      if (b) b.classList.remove('active');
+    });
+
+    if (hrs === 1.5 && btn15) btn15.classList.add('active');
+    if (hrs === 1.2 && btn12) btn12.classList.add('active');
+    if (hrs === 0.0 && btn00) btn00.classList.add('active');
+
     renderForecastTab();
     renderOverviewTab();
   };
@@ -706,7 +928,16 @@ function initScenarioButtons() {
 
   if (slider) {
     slider.addEventListener('input', (e) => {
-      AppState.exerciseHours = parseFloat(e.target.value);
+      const val = parseFloat(e.target.value);
+      AppState.exerciseHours = val;
+
+      [btn15, btn12, btn00].forEach(b => {
+        if (b) b.classList.remove('active');
+      });
+      if (val === 1.5 && btn15) btn15.classList.add('active');
+      if (val === 1.2 && btn12) btn12.classList.add('active');
+      if (val === 0.0 && btn00) btn00.classList.add('active');
+
       renderForecastTab();
       renderOverviewTab();
     });
@@ -714,7 +945,7 @@ function initScenarioButtons() {
 }
 
 // -------------------------------------------------------------
-// STEP 5: TRIAGE & COMMS AND SOURCES
+// STEP 5: TRIAGE & COMMS
 // -------------------------------------------------------------
 function renderTriageTab() {
   const day = AppState.currentDay;
@@ -744,6 +975,7 @@ function renderTriageTab() {
   const pathEl = document.getElementById('triage-path-display');
   const whyEl = document.getElementById('triage-why-display');
   const deliveryEl = document.getElementById('triage-delivery-display');
+  const previewEl = document.getElementById('triage-packet-preview');
 
   if (pathEl) {
     const titles = {
@@ -755,6 +987,12 @@ function renderTriageTab() {
   }
   if (whyEl) whyEl.textContent = decision.why;
   if (deliveryEl) deliveryEl.textContent = `Delivery: ${decision.delivery}`;
+
+  if (previewEl && result.packet) {
+    previewEl.textContent = JSON.stringify(result.packet, null, 2);
+  } else if (previewEl) {
+    previewEl.textContent = "// No packet required for current clinical path (handled on-board).";
+  }
 
   // Link selector
   initLinkSelector();
@@ -785,9 +1023,71 @@ function initLinkSelector() {
 
   const speedupNote = document.getElementById('queue-clock-speedup');
   if (speedupNote) {
-    const speedRatio = queueConfig.speedup;
-    const minsSim = (speedRatio / 60).toFixed(1);
+    const minsSim = (queueConfig.speedup / 60).toFixed(1);
     speedupNote.textContent = `demo clock: 1 s = ${minsSim} min`;
+  }
+}
+
+function initTriageControls() {
+  const btnSend = document.getElementById('btn-send-packet');
+  const btnCopy = document.getElementById('btn-copy-packet');
+
+  if (btnSend) {
+    btnSend.addEventListener('click', () => {
+      const day = AppState.currentDay;
+      const alerts = getAlerts(day);
+      const alert = alerts.length > 0 ? alerts[0] : sampleAlert;
+      const readings = getReadings(day);
+
+      const preset = LINK_PRESETS[AppState.activePresetKey] || LINK_PRESETS.MARS_MID;
+      const env = { onboardSupport: true, link: { available: true, delay_s: preset.delay_s } };
+      const ctx = {
+        missionDay: day,
+        current: readings.vitals,
+        baseline: getBaseline(),
+        trend7: [6.8, 6.5, 6.0, 5.8, 5.5, 5.3, 5.1],
+        trend30: [7.4, 7.3, 7.4, 7.2, 6.9, 6.1, 5.1],
+        cabin: readings.cabin,
+        countermeasure: "Enforce circadian sleep hygiene protocol."
+      };
+
+      const res = handleAlert(alert, ctx, env);
+      if (res.packet) {
+        enqueuePacket(res.packet);
+        renderQueueTable(getQueue());
+        showCaption(`Telemetry packet ${res.packet.packet_id} queued and dispatched to Earth DSN downlink.`);
+        setTimeout(hideCaption, 4000);
+      }
+    });
+  }
+
+  if (btnCopy) {
+    btnCopy.addEventListener('click', () => {
+      const preview = document.getElementById('triage-packet-preview');
+      if (preview && preview.textContent) {
+        navigator.clipboard.writeText(preview.textContent).then(() => {
+          btnCopy.textContent = 'Copied!';
+          setTimeout(() => { btnCopy.textContent = 'Copy packet'; }, 2000);
+        }).catch(() => {});
+      }
+    });
+  }
+}
+
+function initEmergencyModal() {
+  const btnOpen = document.getElementById('btn-emergency-link');
+  const btnClose = document.getElementById('btn-close-emergency');
+  const modal = document.getElementById('emergency-link-modal');
+
+  if (btnOpen && modal) {
+    btnOpen.addEventListener('click', () => {
+      modal.style.display = 'flex';
+    });
+  }
+  if (btnClose && modal) {
+    btnClose.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
   }
 }
 
@@ -801,7 +1101,7 @@ function renderQueueTable(queue) {
   }
 
   let html = '';
-  queue.forEach(entry => {
+  queue.forEach((entry, idx) => {
     const p = entry.packet;
     const statusMap = {
       QUEUED: { label: 'Queued', shape: 'shape-circle', status: 'caution' },
@@ -810,6 +1110,12 @@ function renderQueueTable(queue) {
       FAILED: { label: 'Failed (retrying)', shape: 'shape-diamond', status: 'alarm' }
     };
     const s = statusMap[p.status] || statusMap.QUEUED;
+
+    const retryBtnHtml = p.status === 'FAILED' ? `
+      <button class="chassis-btn retry-packet-btn" data-index="${idx}" style="font-size: 13px; padding: 3px 8px; margin-top: 6px;">
+        Retry transmission
+      </button>
+    ` : '';
 
     html += `
       <div style="background: #080D16; border: 1px solid var(--hull-line); border-radius: 4px; padding: 14px 18px; margin-bottom: 10px;">
@@ -825,31 +1131,71 @@ function renderQueueTable(queue) {
         <div style="font-size: 13.5px; color: var(--starlight-dim);">
           Attempts: <strong>${entry.attempts}</strong> &bull; Ground Reply: <span style="font-family: var(--font-mono); color: #B5C5C4;">${entry.ground_reply || 'Awaiting transmission acknowledgement...'}</span>
         </div>
+        ${retryBtnHtml}
       </div>
     `;
   });
 
   container.innerHTML = html;
+
+  // Bind working retry buttons
+  container.querySelectorAll('.retry-packet-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const q = getQueue();
+      if (q[idx]) {
+        q[idx].packet.status = 'QUEUED';
+        setQueueLink(LINK_PRESETS[AppState.activePresetKey] || LINK_PRESETS.MARS_MID);
+        renderQueueTable(q);
+      }
+    });
+  });
 }
 
+// -------------------------------------------------------------
+// STEP 6: SOURCES TAB & HONESTY
+// -------------------------------------------------------------
 function renderSourcesTab() {
   const container = document.getElementById('sources-content-view');
   if (!container) return;
 
   let html = `
+    <!-- Disclaimer -->
     <div style="background: var(--hull); border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 24px;">
       <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--nominal-teal); margin-bottom: 6px;">Operational Disclaimer</h3>
       <p style="font-size: 16px; color: var(--starlight); line-height: 1.5;">${DISCLAIMER}</p>
     </div>
 
-    <!-- NASA Hazard Principle: Separate sentences, no quotes -->
+    <!-- NASA Hazard Principle: Two separate sentences, no quotes -->
     <div style="background: #090E17; border-left: 3px solid var(--nominal-teal); padding: 16px 20px; margin-bottom: 24px; border-radius: 2px;">
-      <p style="font-size: 15.5px; color: var(--starlight); line-height: 1.5;">
+      <p style="font-size: 15.5px; color: var(--starlight); line-height: 1.5; margin-bottom: 6px;">
         NASA human research identifies that microgravity hazards can feed off one another.
+      </p>
+      <p style="font-size: 15.5px; color: var(--starlight-dim); line-height: 1.5;">
         In LANDFALL, our design links environmental cabin sensor readings directly to crew physiological symptoms.
       </p>
     </div>
 
+    <!-- What Exists and What Gap LANDFALL Fills -->
+    <div style="background: var(--hull); border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 12px;">What Exists and What Gap LANDFALL Fills</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; font-size: 14.5px;">
+        <div style="background: #060A10; padding: 12px; border-radius: 4px; border: 1px solid var(--hull-line);">
+          <strong style="color: var(--earthlight);">ARCHeR & NASA HRP:</strong> Focuses on algorithmic diagnosis under Earth physician supervision. LANDFALL closes the gap by assuming Earth is out-of-the-loop and enabling autonomous triage.
+        </div>
+        <div style="background: #060A10; padding: 12px; border-radius: 4px; border: 1px solid var(--hull-line);">
+          <strong style="color: var(--earthlight);">Standard Measures:</strong> Collects post-flight biomarker baselines. LANDFALL puts baselines to active longitudinal use on transit day.
+        </div>
+        <div style="background: #060A10; padding: 12px; border-radius: 4px; border: 1px solid var(--hull-line);">
+          <strong style="color: var(--earthlight);">Immune Biomarkers:</strong> Spaceflight studies reveal subclinical viral reactivation. LANDFALL models dormant HSV-1 reactivation under high stress and sleep collapse.
+        </div>
+        <div style="background: #060A10; padding: 12px; border-radius: 4px; border: 1px solid var(--hull-line);">
+          <strong style="color: var(--earthlight);">Tempus Pro & Wearables:</strong> Stream vitals to ground. LANDFALL routes data across DTN store-and-forward architecture with simulated speed-of-light delay.
+        </div>
+      </div>
+    </div>
+
+    <!-- Official NASA Literature Sources -->
     <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 12px;">Official NASA Sources &amp; Literature</h3>
     <div style="margin-bottom: 28px;">
   `;
@@ -871,8 +1217,43 @@ function renderSourcesTab() {
   html += `
     </div>
 
+    <!-- Contract Data Integrity (Sample vs Real) -->
+    <div style="background: var(--hull); border: 1px solid var(--hull-line); border-radius: 4px; padding: 20px; margin-bottom: 24px;">
+      <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 8px;">Data Integrity: Sample vs Production Modules</h3>
+      <table class="gonogo-table" style="font-size: 14.5px;">
+        <thead>
+          <tr>
+            <th>Module</th>
+            <th>Author</th>
+            <th>Status</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>pipeline.js</code>, <code>queue.js</code>, <code>packet.js</code>, <code>triage.js</code>, <code>sources.js</code></td>
+            <td>Teammate 3</td>
+            <td><span class="status-badge status-nominal"><span class="shape-circle"></span> Real code</span></td>
+            <td>Core DTN queuing, FNV-1a checksums, triage logic</td>
+          </tr>
+          <tr>
+            <td><code>index.html</code>, <code>css/style.css</code>, <code>main.js</code>, <code>js/*</code></td>
+            <td>Om (UI Lead)</td>
+            <td><span class="status-badge status-nominal"><span class="shape-circle"></span> Production</span></td>
+            <td>The View From The Ship frontend, canvas, accessibilty</td>
+          </tr>
+          <tr>
+            <td><code>sample/sample_data.js</code></td>
+            <td>Interim</td>
+            <td><span class="status-badge status-caution"><span class="shape-triangle"></span> Synthetic sample</span></td>
+            <td>180-day baseline data simulating Day 40 sleep collapse story</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <h3 style="font-family: var(--font-heading); font-size: 20px; color: var(--starlight); margin-bottom: 12px;">Modelling Assumptions (ASSUMPTIONS)</h3>
-    <ul style="padding-left: 24px; font-size: 15.5px; color: #CAD5D4; line-height: 1.6;">
+    <ul style="padding-left: 24px; font-size: 15.5px; color: #CAD5D4; line-height: 1.6; margin-bottom: 24px;">
   `;
 
   ASSUMPTIONS.forEach(a => {
@@ -884,35 +1265,69 @@ function renderSourcesTab() {
 }
 
 // -------------------------------------------------------------
-// STEP 7: DEMO RUNNER (Days 35 to 60)
+// STEP 7: DEMO RUNNER (Play, Pause, Stop) & RESET DEMO
 // -------------------------------------------------------------
 function initDemoRunner() {
-  const btn = document.getElementById('btn-play-demo');
-  if (!btn) return;
+  const btnPlay = document.getElementById('btn-play-demo');
+  const btnPause = document.getElementById('btn-pause-demo');
+  const btnStop = document.getElementById('btn-stop-demo');
 
-  btn.addEventListener('click', () => {
-    if (AppState.isDemoRunning) {
+  if (btnPlay) {
+    btnPlay.addEventListener('click', () => {
+      if (AppState.isDemoRunning) {
+        stopDemo();
+      } else {
+        startDemo();
+      }
+    });
+  }
+
+  if (btnPause) {
+    btnPause.addEventListener('click', () => {
+      if (AppState.isDemoPaused) {
+        resumeDemo();
+      } else {
+        pauseDemo();
+      }
+    });
+  }
+
+  if (btnStop) {
+    btnStop.addEventListener('click', () => {
       stopDemo();
-    } else {
-      startDemo();
-    }
-  });
+    });
+  }
 }
 
 function startDemo() {
   AppState.isDemoRunning = true;
-  const btn = document.getElementById('btn-play-demo');
-  if (btn) {
-    btn.textContent = 'Stop demo';
-    btn.classList.add('active');
+  AppState.isDemoPaused = false;
+  AppState.preDemoDay = AppState.currentDay; // Remember previous day to restore on Stop
+
+  const btnPlay = document.getElementById('btn-play-demo');
+  const btnPause = document.getElementById('btn-pause-demo');
+  const btnStop = document.getElementById('btn-stop-demo');
+
+  if (btnPlay) {
+    btnPlay.textContent = 'Running demo...';
+    btnPlay.classList.add('active');
+  }
+  if (btnPause) {
+    btnPause.style.display = 'inline-block';
+    btnPause.textContent = 'Pause';
+  }
+  if (btnStop) {
+    btnStop.style.display = 'inline-block';
   }
 
   AppState.setDay(35);
   activateTab('overview');
-  showCaption("Day 35: Nominal cruise. Healthy sleep (7.4h), calm vitals, 1.5h exercise adherence.");
+  showCaption("Day 35: Nominal transit cruise. All parameters aligned with personal baseline.");
 
   let step = 35;
   AppState.demoInterval = setInterval(() => {
+    if (AppState.isDemoPaused) return;
+
     step += 1;
     AppState.setDay(step);
 
@@ -921,13 +1336,13 @@ function startDemo() {
       showCaption("Day 40: Acute sleep collapse (4.2h)! Headache reported. Cabin CO2 spikes to 5200 ppm. 'Check scrubber first' rule triggers.");
     } else if (step === 44) {
       activateTab('forecast');
-      showCaption("Day 44 (Evaluate): Trajectory cones widen and turn red as cumulative sleep debt impacts landing readiness.");
+      showCaption("Day 44 (Evaluate): Flight-path cones widen and turn red as cumulative sleep debt impacts landing readiness.");
     } else if (step === 48) {
       AppState.exerciseHours = 1.5;
       const slider = document.getElementById('adherence-slider-input');
       if (slider) slider.value = 1.5;
       renderForecastTab();
-      showCaption("Day 48: Raising What-If exercise adherence to 1.5 hrs/day restores landing-day bone and aerobic flight cones.");
+      showCaption("Day 48: Raising What-If exercise adherence to 1.5 hrs/day reshapes flight cones and stabilizes landing readiness.");
     } else if (step === 54) {
       activateTab('triage');
       showCaption("Day 54 (Act): Comm delay is 12m+ round-trip. Autonomous triage assigns resolution to Crew Medical Officer via store-and-forward packet.");
@@ -939,14 +1354,37 @@ function startDemo() {
   }, 1000);
 }
 
+function pauseDemo() {
+  AppState.isDemoPaused = true;
+  const btnPause = document.getElementById('btn-pause-demo');
+  if (btnPause) btnPause.textContent = 'Resume';
+}
+
+function resumeDemo() {
+  AppState.isDemoPaused = false;
+  const btnPause = document.getElementById('btn-pause-demo');
+  if (btnPause) btnPause.textContent = 'Pause';
+}
+
 function stopDemo() {
   AppState.isDemoRunning = false;
+  AppState.isDemoPaused = false;
   if (AppState.demoInterval) clearInterval(AppState.demoInterval);
-  const btn = document.getElementById('btn-play-demo');
-  if (btn) {
-    btn.textContent = 'Play 30-second demo';
-    btn.classList.remove('active');
+
+  const btnPlay = document.getElementById('btn-play-demo');
+  const btnPause = document.getElementById('btn-pause-demo');
+  const btnStop = document.getElementById('btn-stop-demo');
+
+  if (btnPlay) {
+    btnPlay.textContent = 'Play 30-second demo';
+    btnPlay.classList.remove('active');
   }
+  if (btnPause) btnPause.style.display = 'none';
+  if (btnStop) btnStop.style.display = 'none';
+
+  // Return to previous day
+  AppState.setDay(AppState.preDemoDay || 40);
+  hideCaption();
 }
 
 function showCaption(text) {
@@ -961,6 +1399,24 @@ function showCaption(text) {
 function hideCaption() {
   const toast = document.getElementById('demo-caption-toast');
   if (toast) toast.classList.remove('visible');
+}
+
+function initResetDemoButton() {
+  const btn = document.getElementById('btn-reset-demo');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const ok = confirm("Reset all logged check-in entries, countermeasures, and return to Day 40 baseline?");
+    if (ok) {
+      localStorage.removeItem('landfall_custom_checkins');
+      localStorage.removeItem('landfall_countermeasures');
+      localStorage.removeItem('landfall_queue');
+      AppState.exerciseHours = 1.2;
+      AppState.setDay(40);
+      activateTab('overview');
+      alert("Demo state successfully reset to Day 40 baseline.");
+    }
+  });
 }
 
 function initTitleScreen() {

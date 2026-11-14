@@ -14,8 +14,9 @@ export function renderTrajectoryCone(canvas, low, mid, high, status) {
   const w = canvas.clientWidth || 320;
   const h = canvas.clientHeight || 80;
 
-  canvas.width = w * dpr;
-  canvas.height = h * dpr;
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  ctx.resetTransform();
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, w, h);
 

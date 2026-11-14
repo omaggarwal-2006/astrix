@@ -52,6 +52,12 @@
       <button id="btn-play-demo" class="chassis-btn primary" title="Run 30-second automated demo (days 35 to 60)">
         Play 30-second demo
       </button>
+      <button id="btn-pause-demo" class="chassis-btn" style="display: none;" title="Pause demo">
+        Pause
+      </button>
+      <button id="btn-stop-demo" class="chassis-btn" style="display: none;" title="Stop demo and return">
+        Stop
+      </button>
       <button id="btn-reset-demo" class="chassis-btn" title="Reset all check-ins and demo data to Day 40 baseline">
         Reset demo
       </button>
@@ -243,39 +249,42 @@
                 <span class="plate-sub">Personal baseline logging</span>
               </div>
 
+              <div id="checkin-error-msg" class="checkin-alert-box error" style="display: none;" role="alert"></div>
+              <div id="checkin-success-msg" class="checkin-alert-box success" style="display: none;" role="status"></div>
+
               <form id="monitor-checkin-form">
                 <div class="monitor-form-grid">
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-hr">Heart rate (bpm)</label>
-                    <input type="number" id="monitor-hr" class="hull-input" value="64">
+                    <input type="number" id="monitor-hr" class="hull-input" value="64" min="35" max="220" required>
                   </div>
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-sys">Systolic BP (mmHg)</label>
-                    <input type="number" id="monitor-sys" class="hull-input" value="116">
+                    <input type="number" id="monitor-sys" class="hull-input" value="116" min="70" max="220" required>
                   </div>
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-dia">Diastolic BP (mmHg)</label>
-                    <input type="number" id="monitor-dia" class="hull-input" value="76">
+                    <input type="number" id="monitor-dia" class="hull-input" value="76" min="40" max="140" required>
                   </div>
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-temp">Core temp (°C)</label>
-                    <input type="number" id="monitor-temp" class="hull-input" value="36.6" step="0.1">
+                    <input type="number" id="monitor-temp" class="hull-input" value="36.6" step="0.1" min="34.0" max="42.0" required>
                   </div>
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-sleep">Sleep hours</label>
-                    <input type="number" id="monitor-sleep" class="hull-input" value="7.4" step="0.1">
+                    <input type="number" id="monitor-sleep" class="hull-input" value="7.4" step="0.1" min="0" max="16" required>
                   </div>
                   <div class="form-group-hull">
                     <label class="hull-label" for="monitor-mood">Mood (1 to 5)</label>
-                    <input type="number" id="monitor-mood" class="hull-input" value="4.2" step="0.1">
+                    <input type="number" id="monitor-mood" class="hull-input" value="4.2" step="0.1" min="1.0" max="5.0" required>
                   </div>
                   <div class="form-group-hull" style="grid-column: span 2;">
                     <label class="hull-label" for="monitor-exercise">Daily exercise (minutes)</label>
-                    <input type="number" id="monitor-exercise" class="hull-input" value="90">
+                    <input type="number" id="monitor-exercise" class="hull-input" value="90" min="0" max="240" required>
                   </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end;">
-                  <button type="button" class="chassis-btn primary" onclick="alert('Check-in logged to local telemetry cache.')">
+                <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                  <button type="submit" id="btn-log-checkin" class="chassis-btn primary">
                     Log today's check-in
                   </button>
                 </div>
@@ -289,28 +298,30 @@
                 <span class="plate-sub">Hostile/closed environment hazard</span>
               </div>
 
-              <!-- Scrubber alert callout -->
-              <div id="scrubber-alert-callout" class="scrubber-alert" role="alert"></div>
+              <!-- Scrubber alert callout (Rule: Headache + High CO2) -->
+              <div id="scrubber-alert-callout" class="scrubber-alert-box" style="display: none;" role="alert"></div>
 
-              <div class="quiet-metrics-row">
+              <!-- Cabin CO2 on one line -->
+              <div class="quiet-co2-single-line">
+                <span class="quiet-label">Cabin CO2:</span>
+                <strong id="quiet-co2" class="num" style="color: var(--starlight); margin: 0 6px;">2800 ppm</strong>
+                <span style="font-size: 13.5px; color: var(--starlight-dim);">(Operating limit: 4500 ppm ceiling)</span>
+              </div>
+
+              <div class="quiet-metrics-row" style="margin-top: 12px;">
                 <div class="quiet-metric-card">
-                  <span class="quiet-label">Cabin CO2</span>
-                  <div id="quiet-co2" class="quiet-val num">2800 ppm</div>
-                  <span style="font-size: 13px; color: var(--starlight-dim);">Ceiling 4500 ppm</span>
-                </div>
-                <div class="quiet-metric-card">
-                  <span class="quiet-label">Temperature</span>
+                  <span class="quiet-label">Cabin Temperature</span>
                   <div id="quiet-temp" class="quiet-val num">21.5 °C</div>
-                  <span style="font-size: 13px; color: var(--starlight-dim);">Range 18-24 °C</span>
+                  <span style="font-size: 13px; color: var(--starlight-dim);">Range 18&ndash;24 °C</span>
                 </div>
                 <div class="quiet-metric-card">
-                  <span class="quiet-label">Noise</span>
+                  <span class="quiet-label">Acoustic Load</span>
                   <div id="quiet-noise" class="quiet-val num">58 dBA</div>
-                  <span style="font-size: 13px; color: var(--starlight-dim);">Acoustic load</span>
+                  <span style="font-size: 13px; color: var(--starlight-dim);">Habitation noise</span>
                 </div>
               </div>
 
-              <span class="hull-label" style="display: block; margin-bottom: 8px;">Subclinical immune checks (spaceflight stress awakens dormant viruses):</span>
+              <span class="hull-label" style="display: block; margin: 12px 0 6px 0;">Subclinical immune checks (spaceflight stress awakens dormant viruses):</span>
               <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
                 <span id="immune-status-cold-sore" class="status-badge status-nominal"><span class="shape-circle"></span> Cold sore (HSV-1)</span>
                 <span id="immune-status-rash" class="status-badge status-nominal"><span class="shape-circle"></span> Rash / Erythema</span>
@@ -319,51 +330,69 @@
 
               <div style="display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--hull-line); padding-top: 10px;">
                 <div>
-                  <span class="quiet-label">Accumulated space radiation:</span>
+                  <span class="quiet-label">Accumulated space radiation dose:</span>
                   <strong id="quiet-rad" class="num" style="font-size: 18px; color: var(--starlight); margin-left: 6px;">59.2 mSv</strong>
                 </div>
-                <span style="font-size: 13px; color: var(--starlight-dim);">(Tracked, not forecast)</span>
+                <span style="font-size: 13px; color: var(--signal-amber);">(Tracked, not forecast)</span>
               </div>
             </div>
           </div>
 
-          <!-- Right: Suited Body Map & 180-Day Trend Charts (6 cols) -->
+          <!-- Right: Suited Body Map & 3 Trend Charts (6 cols) -->
           <div class="col-6">
             <div class="hull-plate" style="margin-bottom: 16px;">
               <div class="hull-plate-header">
                 <h2 class="plate-title">Suited Astronaut Body Map</h2>
-                <span class="plate-sub">Click suit part for alert detail</span>
+                <span class="plate-sub">Click suit part (or keyboard focus) for detail</span>
               </div>
 
               <div class="suited-body-container">
                 <div class="body-svg-housing">
-                  <svg viewBox="0 0 100 200" style="width: 100%; height: 100%; cursor: pointer;" aria-label="Suited astronaut outline">
+                  <svg viewBox="0 0 100 200" style="width: 100%; height: 100%;" aria-label="Suited astronaut anatomical overview">
                     <!-- Suited Helmet -->
-                    <path id="suit-helmet" class="suit-part" d="M 50,12 C 38,12 36,24 36,32 C 36,40 40,44 50,44 C 60,44 64,40 64,32 C 64,24 62,12 50,12 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <path id="suit-helmet" class="suit-part" role="button" tabindex="0" aria-label="Helmet: Neuro-circadian & cognitive vitals" d="M 50,12 C 38,12 36,24 36,32 C 36,40 40,44 50,44 C 60,44 64,40 64,32 C 64,24 62,12 50,12 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
                     <!-- Suited Chest Plate -->
-                    <path id="suit-chest" class="suit-part" d="M 34,48 L 66,48 L 70,82 L 30,82 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <path id="suit-chest" class="suit-part" role="button" tabindex="0" aria-label="Chest: Cardiorespiratory regulation vitals" d="M 34,48 L 66,48 L 70,82 L 30,82 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
                     <!-- Suited Torso Core -->
-                    <path id="suit-torso" class="suit-part" d="M 30,84 L 70,84 L 66,112 L 34,112 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <path id="suit-torso" class="suit-part" role="button" tabindex="0" aria-label="Torso: Core temperature and immune state" d="M 30,84 L 70,84 L 66,112 L 34,112 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
                     <!-- Suited Arms & Gloves -->
-                    <path id="suit-arms" class="suit-part" d="M 28,49 L 18,88 L 12,122 L 20,124 L 26,92 L 32,72 Z M 72,49 L 82,88 L 88,122 L 80,124 L 74,92 L 68,72 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <path id="suit-arms" class="suit-part" role="button" tabindex="0" aria-label="Arms: Muscle aerobic endurance and cutaneous checks" d="M 28,49 L 18,88 L 12,122 L 20,124 L 26,92 L 32,72 Z M 72,49 L 82,88 L 88,122 L 80,124 L 74,92 L 68,72 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
                     <!-- Suited Legs & Boots -->
-                    <path id="suit-legs" class="suit-part" d="M 34,114 L 46,114 L 44,162 L 40,192 L 30,192 L 32,156 Z M 54,114 L 66,114 L 68,156 L 70,192 L 60,192 L 56,162 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+                    <path id="suit-legs" class="suit-part" role="button" tabindex="0" aria-label="Legs: Weight-bearing bone density and exercise adherence" d="M 34,114 L 46,114 L 44,162 L 40,192 L 30,192 L 32,156 Z M 54,114 L 66,114 L 68,156 L 70,192 L 60,192 L 56,162 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
                   </svg>
                 </div>
-                <div id="suited-body-readout" class="body-readout-box"></div>
+                <div id="suited-body-readout" class="body-readout-box">
+                  <!-- Populated by clicking suit part -->
+                </div>
               </div>
             </div>
 
-            <!-- Trend Chart: Sleep Duration -->
+            <!-- 180-Day Longitudinal Trend Charts (Sleep, Mood, HR) -->
             <div class="hull-plate">
               <div class="hull-plate-header">
-                <h2 class="plate-title">Sleep Duration &bull; 180-Day Longitudinal Timeline</h2>
-                <span class="plate-sub">Day 40 sleep collapse</span>
+                <h2 class="plate-title">Longitudinal Physiological Timeline (180 Days)</h2>
+                <div style="display: flex; gap: 6px;">
+                  <button id="btn-chart-sleep" class="chassis-btn active" style="font-size: 13.5px; padding: 3px 10px;">Sleep</button>
+                  <button id="btn-chart-mood" class="chassis-btn" style="font-size: 13.5px; padding: 3px 10px;">Mood</button>
+                  <button id="btn-chart-hr" class="chassis-btn" style="font-size: 13.5px; padding: 3px 10px;">Heart rate</button>
+                </div>
               </div>
-              <div style="height: 180px; width: 100%;">
+
+              <!-- Sleep Chart Canvas -->
+              <div id="chart-wrap-sleep" class="chart-display-wrap" style="height: 180px; width: 100%;">
                 <canvas id="trend-sleep-chart"></canvas>
               </div>
-              <div id="plain-sleep-summary" style="font-size: 15px; margin-top: 10px; font-weight: 600;"></div>
+              <!-- Mood Chart Canvas -->
+              <div id="chart-wrap-mood" class="chart-display-wrap" style="height: 180px; width: 100%; display: none;">
+                <canvas id="trend-mood-chart"></canvas>
+              </div>
+              <!-- HR Chart Canvas -->
+              <div id="chart-wrap-hr" class="chart-display-wrap" style="height: 180px; width: 100%; display: none;">
+                <canvas id="trend-hr-chart"></canvas>
+              </div>
+
+              <!-- Plain Sentence Summary under Charts -->
+              <div id="plain-chart-summary" class="plain-chart-summary-text" style="font-size: 15px; margin-top: 10px; font-weight: 600;"></div>
             </div>
           </div>
 
@@ -371,7 +400,7 @@
       </section>
 
       <!-- =========================================================
-           TAB 3: FORECAST (FLIGHT-PATH CONES)
+           TAB 3: FORECAST (FLIGHT-PATH CONES & COUNTERMEASURES)
       ========================================================== -->
       <section id="panel-forecast" class="tab-panel" role="tabpanel" hidden>
         
@@ -381,7 +410,7 @@
               <span class="hull-label">Interactive countermeasure scenarios:</span>
               <div style="display: flex; gap: 8px; margin-top: 6px;">
                 <button id="btn-scenario-15" class="chassis-btn">Adherent (1.5 h/d)</button>
-                <button id="btn-scenario-12" class="chassis-btn">Nominal (1.2 h/d)</button>
+                <button id="btn-scenario-12" class="chassis-btn active">Nominal (1.2 h/d)</button>
                 <button id="btn-scenario-00" class="chassis-btn">Zero exercise (0.0 h/d)</button>
               </div>
             </div>
@@ -389,7 +418,7 @@
             <div>
               <span class="hull-label">Daily exercise adherence slider:</span>
               <div style="display: flex; align-items: center; gap: 12px; margin-top: 6px;">
-                <input type="range" id="adherence-slider-input" min="0.0" max="1.5" step="0.1" value="1.2" style="width: 160px; accent-color: var(--nominal-teal); cursor: pointer;">
+                <input type="range" id="adherence-slider-input" min="0.0" max="1.5" step="0.1" value="1.2" style="width: 160px; accent-color: var(--nominal-teal); cursor: pointer;" aria-label="Daily exercise adherence in hours per day">
                 <strong id="adherence-slider-val" class="num" style="font-size: 18px; color: var(--nominal-teal); min-width: 90px;">1.2 hrs/day</strong>
               </div>
             </div>
@@ -399,6 +428,17 @@
         <!-- Trajectory Cones Container -->
         <div id="cones-grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 18px;">
           <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Countermeasure Interactive Checklist -->
+        <div class="hull-plate" style="margin-top: 20px;">
+          <div class="hull-plate-header">
+            <h2 class="plate-title">Autonomous Countermeasure Checklist</h2>
+            <span class="plate-sub">Saves automatically to mission memory</span>
+          </div>
+          <div id="countermeasures-checklist" class="countermeasure-list-box">
+            <!-- Dynamic checklist -->
+          </div>
         </div>
 
       </section>
@@ -426,7 +466,7 @@
                 <div id="triage-delivery-display" style="font-size: 14.5px; color: var(--nominal-teal); font-weight: 600;"></div>
               </div>
 
-              <!-- Link Presets Dropdown -->
+              <!-- Interplanetary Link Selector -->
               <div class="hull-plate-header" style="margin-top: 14px;">
                 <h2 class="plate-title">Communication Distance Preset (setLink)</h2>
               </div>
@@ -436,9 +476,30 @@
                   <!-- Options fed by LINK_PRESETS -->
                 </select>
               </div>
-              <div id="queue-clock-speedup" style="font-size: 13.5px; color: var(--signal-amber); font-family: var(--font-mono);">
-                demo clock: 1 s = 1.6 min
+              <div id="queue-clock-speedup" style="font-size: 13.5px; color: var(--signal-amber); font-family: var(--font-mono); margin-bottom: 16px;">
+                demo clock: 1 s = 1.7 min
               </div>
+
+              <!-- Action Buttons -->
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--hull-line); padding-top: 16px;">
+                <button id="btn-send-packet" class="chassis-btn primary">
+                  Send packet &rarr; Earth
+                </button>
+                <button id="btn-emergency-link" class="chassis-btn" style="color: var(--alarm-coral); border-color: rgba(229, 89, 79, 0.4);">
+                  Open emergency link
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Telemetry Packet Preview -->
+            <div class="hull-plate" style="margin-top: 16px;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Interplanetary Telemetry Packet (packet.js)</h2>
+                <button id="btn-copy-packet" class="chassis-btn" style="font-size: 13px; padding: 3px 10px;">
+                  Copy packet
+                </button>
+              </div>
+              <pre id="triage-packet-preview" class="packet-preview-box" style="background: #060910; border: 1px solid var(--hull-line); border-radius: 4px; padding: 14px; color: #B0C4DE; font-family: var(--font-mono); font-size: 13px; white-space: pre-wrap; word-break: normal; overflow-wrap: break-word;"></pre>
             </div>
           </div>
 
@@ -447,7 +508,7 @@
             <div class="hull-plate">
               <div class="hull-plate-header">
                 <h2 class="plate-title">Store-and-Forward Telemetry Queue</h2>
-                <span class="plate-sub">queue.js status</span>
+                <span class="plate-sub">queue.js DTN link status</span>
               </div>
 
               <div id="queue-items-container">
@@ -464,13 +525,30 @@
       ========================================================== -->
       <section id="panel-sources" class="tab-panel" role="tabpanel" hidden>
         <div id="sources-content-view">
-          <!-- Rendered dynamically from sources.js -->
+          <!-- Rendered dynamically from sources.js and CONTRACT.md -->
         </div>
       </section>
 
     </main>
 
   </div><!-- /app-container -->
+
+  <!-- Emergency Link Modal -->
+  <div id="emergency-link-modal" class="title-screen-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="emergency-title">
+    <div class="title-plate-box" style="max-width: 620px;">
+      <div class="title-header-tag" style="color: var(--alarm-coral);">DIRECT EMERGENCY LINK PROTOCOL</div>
+      <h2 id="emergency-title" style="font-family: var(--font-heading); font-size: 26px; color: var(--starlight); margin: 8px 0 12px 0;">Emergency Downlink Bypass</h2>
+      <p style="font-size: 15.5px; color: #CAD5D4; line-height: 1.5; margin-bottom: 14px;">
+        When an acute clinical emergency occurs with high-bandwidth DSN window alignment, store-and-forward queueing is bypassed. Telemetry streams with maximum transponder priority. If one-way propagation delay is under 300 seconds, live audio comms are activated.
+      </p>
+      <div style="background: #080D16; border: 1px solid var(--hull-line); border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px; color: var(--signal-amber);">
+        Status: Emergency carrier locked to Deep Space Network Goldstone / Canberra.
+      </div>
+      <button id="btn-close-emergency" class="chassis-btn primary" style="width: 100%;">
+        Acknowledge &amp; Return to Console
+      </button>
+    </div>
+  </div>
 
   <!-- Demo Toast Notification -->
   <aside id="demo-caption-toast" class="demo-caption-toast" role="status" aria-live="polite">
