@@ -1,0 +1,17 @@
+# Normalise line endings: LF in the repo and in working copies, CRLF only for Windows batch files
+* text=auto eol=lf
+*.bat text eol=crlf
+
+# Binary assets
+*.woff2 binary
+*.png binary
+*.jpg binary
+
+# Generated files (collapsed in GitHub diffs, excluded from language stats)
+src/sw-manifest.js linguist-generated
+engine/data.js linguist-generated
+engine/model.js linguist-generated
+engine/model.json linguist-generated
+
+# Third-party code
+assets/vendor/** linguist-vendored

@@ -1,6 +1,22 @@
-# LANDFALL - Git Ignore
+# OS
 .DS_Store
 Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Node
 node_modules/
 *.log
+
+# Python (engine/ml)
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets
 .env
+
+# Evaluation crews are regenerated from the simulator (results/ is committed)
+eval/crews/
