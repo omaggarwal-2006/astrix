@@ -102,9 +102,10 @@ def extract_features_at_day(
     base_exercise = float(baseline_window["exercise_hours"].mean())
     base_balance = float(baseline_window["balance_score"].mean())
 
-    base_hr_std = float(baseline_window["heart_rate"].std()) + 1e-4
-    base_sleep_std = float(baseline_window["sleep_hours"].std()) + 1e-4
-    base_mood_std = float(baseline_window["mood"].std()) + 1e-4
+    # Robust standard deviation denominators with minimum floor to prevent division-by-zero on flat data
+    base_hr_std = max(1.5, float(baseline_window["heart_rate"].std()))
+    base_sleep_std = max(0.3, float(baseline_window["sleep_hours"].std()))
+    base_mood_std = max(0.2, float(baseline_window["mood"].std()))
 
     # 2. Rolling 7-day window
     w7 = df[(df["day"] > max(0, day_d - 7)) & (df["day"] <= day_d)]
@@ -129,9 +130,9 @@ def extract_features_at_day(
     mood_drift_7d = mood_mean_7d - base_mood
     exercise_drift_7d = exercise_mean_7d - base_exercise
 
-    hr_zscore_7d = hr_drift_7d / base_hr_std
-    sleep_zscore_7d = sleep_drift_7d / base_sleep_std
-    mood_zscore_7d = mood_drift_7d / base_mood_std
+    hr_zscore_7d = float(np.clip(hr_drift_7d / base_hr_std, -5.0, 5.0))
+    sleep_zscore_7d = float(np.clip(sleep_drift_7d / base_sleep_std, -5.0, 5.0))
+    mood_zscore_7d = float(np.clip(mood_drift_7d / base_mood_std, -5.0, 5.0))
 
     # 5. CUSUM scores
     # Sleep deficit CUSUM with allowance of 0.25h
