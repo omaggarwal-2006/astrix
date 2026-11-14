@@ -32,13 +32,22 @@
   // Embed production model weights (from /engine/model.json) for 100% offline, zero-CORS reliability
   let MODEL_DATA = null;
 
+  // Check if window.LANDFALL_MODEL was loaded via <script src="engine/model.js">
+  if (typeof window !== 'undefined' && window.LANDFALL_MODEL) {
+    MODEL_DATA = window.LANDFALL_MODEL;
+  } else if (typeof root !== 'undefined' && root.LANDFALL_MODEL) {
+    MODEL_DATA = root.LANDFALL_MODEL;
+  }
+
   // Attempt Node require or set default embedded weights
-  if (typeof require === 'function' && typeof __dirname !== 'undefined') {
+  if (!MODEL_DATA && typeof require === 'function' && typeof __dirname !== 'undefined') {
     try {
       const path = require('path');
       MODEL_DATA = require(path.join(__dirname, 'model.json'));
     } catch (e) {
-      // Handled by embedded fallback
+      try {
+        MODEL_DATA = require(path.join(__dirname, 'model.js'));
+      } catch (err) {}
     }
   }
 
