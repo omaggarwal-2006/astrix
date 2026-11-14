@@ -1,64 +1,55 @@
 # astrix
 
 # LANDFALL &bull; Autonomous Health Architecture
-**NASA Space Apps Challenge 2026** &bull; *Challenge: Health Monitoring Software*
+**NASA Space Apps Challenge 2026** &bull; *Challenge: Health Monitoring Software*  
+**Live Application:** [https://omaggarwal-2006.github.io/astrix/](https://omaggarwal-2006.github.io/astrix/)
 
 > *"The ground can't be in the loop in real time on the way to Mars, so the astronaut has to be. LANDFALL makes every astronaut their own first responder."*
 
 ---
 
-## 1. Quick Start (How to Run)
-LANDFALL is 100% self-contained and operates completely offline with **zero build steps, zero npm packages, and zero CDN calls**.
+## 1. Project Overview
+LANDFALL is an offline-capable web application built for astronauts on a 180-day Mars transit. When communication latencies reach up to 22 minutes one-way (44 minutes round-trip), real-time telemedicine from Earth is physically impossible. 
 
-### In Your Browser
-- **Option A (Localhost server):** Open **[http://localhost:8080](http://localhost:8080)** in Chrome, Edge, or Firefox.
-- **Option B (Direct file opening):** Double-click `index.html` directly from File Explorer.
+LANDFALL gives the crew autonomous medical self-sufficiency by:
+1. **Gathering** daily biomarkers and body map readings evaluated against the astronaut's calibrated personal baseline (not Earth population averages).
+2. **Evaluating** landing-day physiological fitness (bone density, aerobic & muscle power, cardiovascular regulation, balance, and sleep continuity) using published NASA Human Research Program rates.
+3. **Acting** through delay-aware triage that routes health anomalies to Self-Care, the Crew Medical Officer (CMO), or store-and-forward telemetry packets for ground flight surgeons.
 
----
-
-## 2. Team Split & Swapping Placeholders
-This repository is organized so UI and Engine work in parallel without collisions:
-- **UI Files (Om):** `index.html`, `css/style.css`, and `js/*.js`
-- **Engine Files (Tanishk):** Drop into `/engine/` (`data.js`, `forecast.js`, `whatif.js`)
-- **Triage Files (Teammate 3):** Drop into `/triage/` (`triage.js`, `packet.js`)
-- **Placeholders:** Currently in `/placeholders/` adhering to [`CONTRACT.md`](CONTRACT.md).
-
-### How to Swap Placeholders for Real Files:
-When Tanishk and Teammate 3 deliver their files, drop them into `/engine/` and `/triage/`, then change the 4 script tags in `index.html`:
-```html
-<!-- Before (Placeholders) -->
-<script src="placeholders/data.js"></script>
-<script src="placeholders/forecast.js"></script>
-<script src="placeholders/triage.js"></script>
-<script src="placeholders/packet.js"></script>
-
-<!-- After (Real Engine & Triage Modules) -->
-<script src="engine/data.js"></script>
-<script src="engine/forecast.js"></script>
-<script src="triage/triage.js"></script>
-<script src="triage/packet.js"></script>
-```
-
-### How to Pull Teammate Changes Without Losing Your Work:
-Before your teammates push, or before you start editing, pull the latest changes:
-```bash
-git pull --rebase origin main
-```
-Because their code lives in `/engine/` and `/triage/` and your code lives in `/js/` and `/css/`, Git will merge changes cleanly without conflicts.
+*Disclaimer: Illustrative model, not a clinical predictor. Synthetic data.*
 
 ---
 
-## 3. NASA HRP Foundation & Citations
-Every feature in LANDFALL directly reflects the NASA Human Research Program (HRP):
-- **5 Hazards of Human Spaceflight:** Space radiation, Isolation & confinement, Distance from Earth, Gravity fields, and Hostile/closed environments.
-- **10 HRP Clinical Risks:** Immune dysregulation, Sensorimotor/vestibular balance, Cardiovascular adaptation, Bone mineral density, Aerobic fitness, SANS (reporting protocol), Sleep deficiency, Behavioral health, Space radiation carcinogenesis, and System autonomy.
-- **Ongoing HRP Research Mapped:** ARCHeR (Artemis II), Standard Measures, Immune Biomarkers, Tempus Pro (telemedicine gap), and Zero T2 exercise.
-- See `js/sources.js` and the in-app **Sources and Honesty** tab for the complete literature catalog.
+## 2. Team Split & Architecture
+- **Om (UI Lead):** Frontend user interface, instrument-panel chassis styling, Mission Ribbon scrubber, 5-tab views, Chart.js trends, SVG body map, What-If slider, service worker, and adapter integration layer (`index.html`, `css/style.css`, `main.js`, `adapter.js`).
+- **Tanishk (Physiological Engine):** Longitudinal data generator, alert logic, and multi-dimensional landing forecast engine.
+- **Teammate 3 (DTN Queue & Triage):** Telemetry pipeline (`pipeline.js`), triage decision engine (`triage.js`), FNV-1a checksum packet builder (`packet.js`), store-and-forward queue (`queue.js`), and cited research sources (`sources.js`).
 
 ---
 
-## 4. Offline Verification Check
-To verify full offline performance for NASA judges:
-1. Turn off your Wi-Fi or disconnect network cables.
-2. Hard reload `http://localhost:8080` or double-click `index.html`.
-3. All fonts (local Barlow woff2), charts (local Chart.js), dials, body maps, and triage simulators will render seamlessly.
+## 3. How to Run Locally
+
+Because LANDFALL uses modern ES Modules, browsers require an HTTP server (browser security restricts ES module imports over direct `file://` URLs):
+
+1. **Option A (VS Code Live Server - Recommended):**
+   - Open the project folder in VS Code.
+   - Install the **Live Server** extension (by Ritwick Dey).
+   - Right-click `index.html` &rarr; click **"Open with Live Server"**.
+2. **Option B (Python Localhost Server):**
+   - In terminal/PowerShell, run:
+     ```bash
+     python -m http.server 8080
+     ```
+   - Open **[http://localhost:8080](http://localhost:8080)** in your browser.
+
+---
+
+## 4. 100% Offline Capability (Service Worker)
+LANDFALL includes a built-in Service Worker (`sw.js`). After the first visit over HTTP/HTTPS, all assets, local Barlow fonts, and Chart.js bundles are cached locally. You can turn off Wi-Fi or disconnect from the internet and the application will remain fully functional.
+
+---
+
+## 5. Team Contract & Handoff
+All data exchange interfaces and shapes are documented in [`CONTRACT.md`](CONTRACT.md).
+- Teammate logic modules live in the root (`pipeline.js`, `queue.js`, `packet.js`, `triage.js`, `sources.js`).
+- Tanishk's engine outputs are wired cleanly through `adapter.js`.
