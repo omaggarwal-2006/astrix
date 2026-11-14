@@ -9,17 +9,17 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 
 | Area | Built | Partial | Planned | Headline |
 |---|---|---|---|---|
-| Decision loop (L) | 0 | 1 | 2 | Detect, Forecast and Act are still three separate features |
+| Decision loop (L) | 1 | 1 | 1 | `runDay()` chains read → detect → forecast → decide; the Today screen shows the whole loop |
 | Detect (D) | 0 | 4 | 4 | Baseline and alerts are hard-coded in `src/data/sample-data.js` |
 | Forecast (F) | 2 | 2 | 3 | Real engine exists on `origin/engine-ml`, not merged |
-| Triage (T) | 0 | 4 | 6 | Hidden score formula; no emergency, SANS or missing-data rules |
+| Triage (T) | 2 | 4 | 4 | As-built rules shown as a visible table with the fired rule; one 10 s live-call limit; no emergency, SANS or missing-data rules yet |
 | Bundle and queue (Q) | 2 | 5 | 2 | Works end to end; no priority, lifetime or retry limit |
 | Radiation (R) | 0 | 1 | 2 | Cumulative dose is shown; no limit, no SPE |
 | Isolation (W) | 0 | 2 | 2 | Mood is tracked; no stress, social contact or sleep regularity |
 | Evaluation (E) | 0 | 1 | 4 | Engine branch evaluates the forecast model, not detection |
-| UI (U) | 1 | 6 | 1 | Only the delay selector and Reset exist as demo controls |
+| UI (U) | 4 | 3 | 1 | Redesigned around the loop; readiness respects alarms; captions come from data; simulation drawer |
 | Non-functional (N) | 2 | 3 | 2 | Offline works; only the visible tab renders; some visuals still use random numbers |
-| Repo health (H) | 2 | 1 | 0 | Dead code deleted; 33 behaviour tests and CI; the delay selector is not yet an override of the one delay function |
+| Repo health (H) | 3 | 0 | 0 | Dead code deleted; 40 behaviour tests and CI; one delay model |
 
 ## The five things blocking the v2 demo
 
@@ -34,8 +34,8 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### L · Decision loop
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| L1 | Run read → detect → forecast → decide → deliver → explain for the selected day | Partial | Each tab computes its own piece; nothing chains them | Om |
-| L2 | One screen shows the loop result | Planned | Overview shows readiness and alerts, but not the decision | Om |
+| L1 | Run read → detect → forecast → decide → deliver → explain for the selected day | Built | `src/core/run-day.js` returns one result per day; every screen renders from it (Detect and triage are still the as-built versions) | Raghav |
+| L2 | One screen shows the loop result | Built | Today screen: readiness, decision, the five-step loop, alerts and the fired rule | Om |
 | L3 | Plain-words explanation chain | Planned | `decision.why` is a one-line score breakdown | Raghav |
 
 ### D · Detect
@@ -64,14 +64,14 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### T · Triage
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| T1 | Visible decision table, fired rule highlighted | Planned | Hidden score | Raghav + Om |
+| T1 | Visible decision table, fired rule highlighted | Partial | The as-built score rules are shown with the fired rows highlighted; the v2 table (emergency, SANS, missing data) is not built | Raghav + Om |
 | T2 | Cardiac emergency → direct ground link, bypass queue | Planned | `decision.emergency` is computed and unused; the emergency modal is a manual button | Raghav |
 | T3 | Vision change → "Report to the flight surgeon." + SANS monitoring | Planned | — | Raghav |
 | T4 | Headache + CO2 ≥ 4,500 ppm → scrubber hint, then normal routing | Partial | Shown as a Monitor callout, not part of triage | Raghav |
 | T5 | Mild, short, not worsening → self-care, log only | Partial | Score ≤ 1 → `SELF_CARE` | Raghav |
-| T6 | Escalation routing by delay and onboard support | Partial | `onboardSupport` is hard-coded `true` | Raghav |
+| T6 | Escalation routing by delay and onboard support | Built | Delay, link and onboard support are simulation toggles that drive routing live | Raghav |
 | T7 | Missing or uncertain data → escalate one level | Planned | — | Raghav |
-| T8 | One live-call limit used everywhere | Partial | Code uses 300 s; v1 docs used 10 s. Decision D-01 sets 10 s | Raghav |
+| T8 | One live-call limit used everywhere | Built | `liveCallMaxOneWayS = 10` in `src/core/config.js` (D-01) | Raghav |
 | T9 | "What would change this decision" | Planned | — | Raghav |
 | T10 | Astronaut override with audit note | Planned | — | Raghav + Om |
 
@@ -115,14 +115,14 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### U · UI
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| U1 | Demo controls: link, onboard support, delay, failure, emergency, SPE, reset | Partial | Delay selector and Reset only | Om |
-| U2 | Readiness and Go/No-Go reflect active alarms | Partial | Headline averages forecasts and ignores alerts | Om |
-| U3 | Mission scene and demo captions accurate | Partial | Day-54 caption says CMO, triage says flight surgeon; round-trip wrong; "30 s" demo runs 25 s | Om |
+| U1 | Demo controls: link, onboard support, delay, failure, emergency, SPE, reset | Partial | Simulation drawer and Decide & deliver view: distance, link, CMO on board, failure injection, jump to day, reset. No emergency, vision-symptom or SPE injectors yet | Om |
+| U2 | Readiness and Go/No-Go reflect active alarms | Built | `readinessFor()` in `src/core/run-day.js`: an alarm-level alert always shows "At risk on landing day" | Om |
+| U3 | Mission scene and demo captions accurate | Built | Demo captions are written from each step's result; delay comes from `src/core/delay.js` | Om |
 | U4 | Digital twin shows the same data as the alerts, or is cut | Partial | Twin has its own loss model | Om |
-| U5 | XP renamed to "mission readiness score", no escalation names | Partial | Tier III is called "Flight surgeon escalation" | Om |
-| U6 | Constellation and micro-lab moved to Extras or cut | Planned | Both on main tabs | Om |
+| U5 | XP renamed to "mission readiness score", no escalation names | Built | Shown on the Digital twin tab as "Mission readiness score" with Tier I–III only; removed from the app bar | Om |
+| U6 | Constellation and micro-lab moved to Extras or cut | Built | Both live on the Digital twin tab, away from the main flow | Om |
 | U7 | Disclaimer on every screen | Built | — | Om |
-| U8 | Keyboard and screen-reader access | Partial | Rows and regions are keyboard-operable; modals do not trap focus | Om |
+| U8 | Keyboard and screen-reader access | Partial | Tabs follow the ARIA pattern (arrow keys); modal and drawer move focus and close on Escape; role="button" rows respond to Enter and Space. Not screen-reader audited | Om |
 
 ### N · Non-functional
 | ID | Requirement | Status | As-built notes | Owner |
@@ -140,7 +140,7 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 |---|---|---|---|---|
 | H1 | Delete dead code and the orphan React app | Built | Deleted in the restructure (D-12); repo now follows the `src/` layout (D-15) | Om |
 | H2 | Behaviour tests with `node --test` | Built | `npm test`: 33 unit and integration tests for the current modules; CI runs them with the smoke check. v2 modules add their own tests | Raghav |
-| H3 | One delay model | Partial | Header and mission scene use `src/core/delay.js`; docs agree (168 s on Day 40). The Comms link selector still sets its own preset instead of overriding the function | Om |
+| H3 | One delay model | Built | `src/core/delay.js`; the distance presets override it in one place (`effectiveDelayS`) | Om |
 
 ## Already fixed (for the record)
 
@@ -152,6 +152,7 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 | `19fbcdc` | Check-ins override that day's vitals; micro-lab sliders feed the model |
 | `19fbcdc` | Missing `telemetry-remaining` and `scene-environment-hud` elements added; dead suit-map code removed |
 | `19fbcdc` | `test*.mjs` import paths fixed |
+| UI redesign | Views rebuilt around the decision loop (Today, Signals, Forecast, Decide & deliver, Digital twin, Evidence); simulation drawer; `runDay()`; readiness respects alarms; cones start at 100 %; captions from data; live-call limit 10 s |
 | `src/` restructure | Code under `src/`, assets under `assets/`, `main.js` split into 16 modules, dead code deleted, `config.js` and `delay.js`, 33 tests, CI, generated service-worker list ([22-MIGRATION.md](22-MIGRATION.md)) |
 | `3ecac47` | Service worker switched to network-first |
 | `d7075b4` | Inline favicon, no 404 |

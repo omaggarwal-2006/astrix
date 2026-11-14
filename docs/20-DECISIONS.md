@@ -4,7 +4,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 ## D-01 · One live-call limit: 10 s one-way
 
-- **Status:** Proposed
+- **Status:** Accepted, done (14 Nov 2026, UI redesign)
 - **Context:** The as-built code uses 300 s; the v1 specs used 10 s. The v2 demo routes a case at about 3 minutes of delay to the CMO because "a live call isn't possible", which is only true if the limit is below that.
 - **Decision:** `liveCallMaxOneWayS = 10`, defined once in `src/core/config.js`.
 - **Consequences:** Moon (1.3 s) and ISS are live; operational lunar latency at the top of its 3–14 s range and all Mars cases go by bundle. The demo story holds. `sources.js` assumption text changes from 300 s to 10 s.
@@ -48,7 +48,7 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 
 ## D-08 · XP becomes "mission readiness score", or is cut
 
-- **Status:** Proposed
+- **Status:** Accepted, partly done (renamed, neutral Tier I–III labels, moved to the Digital twin tab; the micro-lab scan bonus still adds points)
 - **Context:** "Tier III: Flight surgeon escalation" conflicts with triage; points for slider drags gamify health.
 - **Decision:** Rename, remove tier names that sound like triage, remove interaction points, and make it the same number as the readiness supporting average. If time is short, cut it.
 
@@ -103,3 +103,10 @@ Each decision has a status: **Proposed** (in v2 docs, team to confirm in Phase 0
 - **Context:** Every day change rebuilt all five tabs, including charts and canvases, on every scrubber step (N4).
 - **Decision:** Tabs register a renderer with `src/app/state.js`; a day change renders the header and the visible tab only. A tab renders when it's opened.
 - **Consequences:** Faster scrubbing. Code that needs another tab's content must open that tab first (as the Go/No-Go rows already do).
+
+## D-18 · The UI is organised around the decision loop
+
+- **Status:** Accepted, done (14 Nov 2026)
+- **Context:** The v1 UI spread the idea over five dense tabs; the decision was hard to find and the tabs could disagree.
+- **Decision:** Six views. **Today** shows the whole loop for the selected day (readiness, the decision with why and what would change it, the five steps, the rule that fired). **Signals**, **Forecast** and **Decide & deliver** are the steps in depth. **Digital twin** holds the illustrative visuals. **Evidence** holds how it works, sources and assumptions. A **Simulation** drawer changes distance, link, crew on board and failures from anywhere. Every view renders from one `runDay()` result.
+- **Consequences:** The thesis (distance changes who acts) can be shown in one click. Old URL hashes (`#overview`, `#monitor`, `#triage`, `#sources`) still work. Layout and controls: [19-UI_GUIDE.md](19-UI_GUIDE.md).

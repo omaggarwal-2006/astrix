@@ -2,6 +2,8 @@
 
 What changed when the repo moved to the `src/` layout (14 Nov 2026), how it was checked, and what's left. The target structure is in [06-ARCHITECTURE.md](06-ARCHITECTURE.md).
 
+> **Later the same day, the UI was redesigned around the decision loop (D-18).** `overview.js`, `monitor.js`, `sources.js` and `controls.js` below were replaced by `today.js`, `signals.js`, `evidence.js`, `twin-tab.js` and `simulation.js`. The current view list is in [19-UI_GUIDE.md](19-UI_GUIDE.md#as-built-14-nov-2026).
+
 ## Why
 
 | Problem before | Fix |

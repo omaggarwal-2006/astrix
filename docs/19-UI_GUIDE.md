@@ -3,7 +3,30 @@
 Owner: Om · Requirements: L2, U1–U8, N4, N5
 Every screen exists to show or feed the one decision. If a visual doesn't, it goes to **Extras**.
 
-## Layout
+## As built (14 Nov 2026)
+
+The UI was rebuilt around the decision loop (decision D-18). Every view renders from one `runDay()` result (`src/core/run-day.js`), so the views can't disagree.
+
+| View | File | What it shows |
+|---|---|---|
+| App bar | `index.html`, `src/ui/header.js` | Brand, status chips (day, Earth delay, link, CMO on board), Simulation, Play demo |
+| Mission strip | `src/ui/visuals/mission-scene.js` | Transit scene, day scrubber with clickable milestones |
+| **Today** | `src/ui/tabs/today.js` | Readiness ring and headline (respects alarms), today's decision with *why* and *what would change it*, the five-step loop (click a step to open it), alerts, the as-built triage rules with the fired rows highlighted, Send report |
+| **1 Signals** (Detect) | `src/ui/tabs/signals.js` | Six vitals against baseline, 180-day trend charts, drift alerts, cabin CO₂ / radiation / immune, the check-in form |
+| **2 Forecast** | `src/ui/tabs/forecast.js` | What-if exercise slider and scenarios, GO / WATCH / NO-GO summary, six dimension cards with cones from 100 %, countermeasure checklist |
+| **3 Decide & deliver** | `src/ui/tabs/comms.js` | Situation controls, the routing, the packet preview (fields, JSON, copy, send), the queue with step progress and retry, emergency override |
+| **Digital twin** | `src/ui/tabs/twin-tab.js`, `src/ui/extras/*` | 11-region twin and micro-lab, health constellation, mission readiness score |
+| **Evidence** | `src/ui/tabs/evidence.js` | The loop with source files, design principles, real vs simulated, NASA sources, assumptions, settings in use |
+| Simulation drawer | `src/ui/simulation.js` | Distance (mission day, Moon, Mars near/avg/far), link, CMO on board, transmission failures, jump to day, reset |
+| Guided demo | `src/ui/demo-runner.js` | 10 steps, about 42 s, captions written from each step's result; Stop restores the previous state |
+
+**Visual system** (`assets/css/`): tokens in `tokens.css` (deep navy surfaces, Earthlight blue accent, teal / amber / coral status, Saira headings, Hanken body); glass cards, chips, segmented controls, switches, pills that always pair colour with a shape and a word.
+
+**Motion**: views rise in on open with staggered cards; numbers count up; the readiness ring and meters ease to new values; loop connectors flow; changed decisions flash; new queue packets slide in, and the in-flight step shimmers. All motion is off under `prefers-reduced-motion`.
+
+**Not built yet (from the target below):** Evaluation tab, emergency / vision-symptom / SPE injectors in the drawer, a Today screen driven by the v2 decision table, moving the twin to the shared data (D-09).
+
+## Layout (target)
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐

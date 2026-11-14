@@ -82,10 +82,10 @@ npm run check
 |---|---|
 | `index.html` | App shell: header, mission scene, tabs, modals |
 | `src/main.js` | Bootstrap: wires state, tabs and controls together |
-| `src/core/` | Logic, no DOM: `config.js` (every threshold), `delay.js`, `adapter.js` (the only data entry point; the engine plugs in here), `triage.js`, `packet.js`, `queue.js`, `pipeline.js`, `sources.js` |
+| `src/core/` | Logic, no DOM: `run-day.js` (one day of the decision loop), `config.js` (every threshold), `delay.js`, `adapter.js` (the only data entry point; the engine plugs in here), `triage.js`, `packet.js`, `queue.js`, `pipeline.js`, `sources.js` |
 | `src/data/` | Interim synthetic dataset and the sample alert |
-| `src/app/` | `state.js` and `router.js` (hash routing; renders only the visible tab) |
-| `src/ui/` | Header, `tabs/`, `components/`, `visuals/` (mission scene, cones), `extras/` (digital twin, micro-lab, constellation), demo runner, controls |
+| `src/app/` | `state.js` (day, simulation settings, today's result) and `router.js` (renders only the visible tab) |
+| `src/ui/` | Views in `tabs/` (Today, Signals, Forecast, Decide & deliver, Digital twin, Evidence), the simulation drawer, guided demo, `visuals/` (mission scene, cones), `extras/` (digital twin, micro-lab, constellation) |
 | `assets/` | CSS (11 files), fonts and vendored Chart.js, with license notes |
 | `tests/` | `unit/`, `integration/`, `smoke/` |
 | `scripts/` | Service-worker manifest generator, doc link checker |

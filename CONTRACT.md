@@ -20,6 +20,7 @@ When a module moves from Part A to Part B, update both parts and [`docs/00-STATU
 |---|---|---|
 | `src/core/adapter.js` | Om (Tanishk's engine plugs in here) | `getAlerts(day)`, `getForecast(day, exerciseHours = 1.2)`, `getReadings(day)`, `getBaseline()`, `mapSeverity(severity)` |
 | `src/data/sample-data.js` | Interim (Om) | `generateAlertsForDay`, `generateForecastForDay`, `generateDayReadings`, `BASELINE_READINGS` |
+| `src/core/run-day.js` | Raghav | `runDay(day, env, { exerciseHours })`, `effectiveDelayS`, `readinessFor`, `primaryAlert`, `DEFAULT_ENV` |
 | `src/core/pipeline.js` | Raghav | `handleAlert(alert, ctx, env)`, `peekNextSeq()` |
 | `src/core/triage.js` | Raghav | `triage(alert, ctx)` |
 | `src/core/packet.js` | Raghav | `buildPacket(alert, decision, ctx, seq)`, `verifyPacket(packet)` |
@@ -108,7 +109,7 @@ interface Decision {
 | `score 2–3` | `CREW_MEDICAL_OFFICER` if onboard support, else `FLIGHT_SURGEON` |
 | `score ≥ 4` | `FLIGHT_SURGEON` |
 | Link unavailable | `QUEUE_OFFLINE` |
-| One-way delay < 300 s | `LIVE_CALL` |
+| One-way delay < `liveCallMaxOneWayS` (10 s) | `LIVE_CALL` |
 | Otherwise | `SEND_PACKET` |
 
 ```ts
@@ -149,7 +150,7 @@ interface Packet {
 | `onChange(cb)` | Called with the queue after every change |
 | `setLink({ available, delay_s })` | Sets the link; sends QUEUED packets if available |
 | `clearQueue()` | Empties the in-memory queue and storage |
-| `config` | `{ speedup: 100, failRate: 0.1, retryMs: 2000 }` |
+| `config` | `{ speedup: 100, failRate: 0, retryMs: 2000 }` (the Simulation panel sets `failRate` to 0, 0.3 or 1) |
 
 Acknowledgement arrives after `2 × delay_s × 1000 / speedup` ms. A checksum failure sets FAILED with no auto-retry; a random failure (`failRate`) sets FAILED and re-queues after `retryMs`. On reload, TRANSMITTED and FAILED packets return to QUEUED.
 
@@ -165,6 +166,27 @@ Acknowledgement arrives after `2 × delay_s × 1000 / speedup` ms. A checksum fa
 ### A10. Sources (`sources.js`)
 
 `SOURCES` (7 cited pages), `NUMBERS` (bone, fitness, exercise, neutron share), `LINK_PRESETS` (one-way `delay_s`: Moon 1.3, Mars closest 180, average 750, farthest 1,320), `ASSUMPTIONS`, `DISCLAIMER`. Status of each source: [`docs/13-SOURCES.md`](docs/13-SOURCES.md).
+
+### A11. One day of the loop (`runDay`)
+
+Every view renders from this result (`AppState.view`), never from its own calls.
+
+```ts
+runDay(day, env = { delayMode: "MODEL", linkUp: true, onboardSupport: true }, { exerciseHours = 1.2 }) → {
+  day: number;
+  delayS: number;                 // effectiveDelayS(day, env): mission model or a LINK_PRESETS override
+  env: object;
+  reading: Readings;              // A2
+  baseline: object;
+  alerts: Alert[];                // A3, worst first (severity, then persistence)
+  alert: Alert | null;            // the alert that drives the decision
+  forecast: ForecastDimension[];  // A4
+  decision: Decision & { noAlert?: true };   // A6; no alert means routine self-monitoring, nothing sent
+  breakdown: { severity, persistence, worsening } | null;
+  counterfactuals: { label, path, delivery }[];   // "what would change it": one input changed at a time
+  readiness: { level: "ON_TRACK" | "WATCH" | "AT_RISK", text, score, worstSeverity };   // never ON_TRACK during an alarm
+}
+```
 
 ---
 
@@ -191,7 +213,7 @@ The UI renders a `DayResult` and never builds its own decision.
 | `Forecast.status: nominal/caution/alarm` | `label: GO / CAUTION / NO-GO`, plus `key`, `thresholds`, `source` |
 | Dimensions incl. cardiovascular | `bone`, `muscle`, `aerobic`, `balance`, `sleep`, `mood` (D-06) |
 | `triage(alert, ctx)` score | Decision table with `rules_fired`, `banners`, `what_would_change` ([`docs/07-TRIAGE_SPEC.md`](docs/07-TRIAGE_SPEC.md)) |
-| Live call below 300 s | `liveCallMaxOneWayS = 10` (D-01) |
+| (done) Live call below 300 s | `liveCallMaxOneWayS = 10` (D-01) |
 | `SEND_PACKET` | `SEND_BUNDLE`; new `EMERGENCY_DIRECT` |
 | `Packet`, `PKT-0001`, `priority` | `Bundle`, `LF-D040-0001`, `priority_class` EXPEDITED / NORMAL / BULK, lifetime, receipt |
 | `TRANSMITTED` | `TRANSMITTING` |

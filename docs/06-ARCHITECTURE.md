@@ -30,7 +30,7 @@ astrix/
 │   └── CODEOWNERS             Reviewers per folder
 │
 ├── src/
-│   ├── main.js                Bootstrap: registers tabs, starts canvases and controls, sets Day 40
+│   ├── main.js                Bootstrap: builds the views, registers renderers, starts canvases and controls
 │   ├── sw-manifest.js         GENERATED list of files the service worker caches
 │   ├── core/                  Logic, no DOM
 │   │   ├── config.js          Every threshold and tunable number (frozen)
@@ -39,27 +39,30 @@ astrix/
 │   │   ├── triage.js          Triage decision (as-built score; v2 decision table goes here)
 │   │   ├── packet.js          Packet build and FNV-1a checksum (v2: bundle.js)
 │   │   ├── queue.js           Store-and-forward queue with link state, retries, persistence
-│   │   ├── pipeline.js        handleAlert(): triage → packet → queue (v2: run-day.js)
+│   │   ├── run-day.js         runDay(day, env): read → detect → forecast → decide, readiness, counterfactuals
+│   │   ├── pipeline.js        handleAlert(): triage → packet → queue (used by Send)
 │   │   └── sources.js         Sources, NASA numbers, link presets, assumptions, disclaimer
 │   ├── data/
 │   │   ├── sample-data.js     Interim synthetic 180-day dataset, alerts and forecast
 │   │   └── sample-alert.js    Fixture alert A-001
 │   ├── app/
-│   │   ├── state.js           AppState + registerTab() / setHeaderRenderer() hooks
-│   │   └── router.js          Hash routing; activates a tab and renders only that tab
+│   │   ├── state.js           AppState: day, simulation env, what-if, today's runDay() result; registerTab() / onUpdate()
+│   │   └── router.js          Hash routing (old v1 hashes still work); renders only the visible tab
 │   └── ui/
-│       ├── header.js          Day, delay, downlink status, readiness score pill, scene collapse
-│       ├── banners.js         Emergency ground-link modal
-│       ├── controls.js        Reset
-│       ├── demo-runner.js     Play / pause / stop demo and caption toast
-│       ├── tabs/              overview.js · monitor.js · forecast.js · comms.js · sources.js
+│       ├── dom.js             Shared labels, status pills, icons, count-up animation
+│       ├── header.js          Status chips, scrubber readout, tab badges, scene collapse
+│       ├── report.js          Builds and sends today's report packet (trends computed from data)
+│       ├── simulation.js      Simulation drawer and shared controls: distance, link, CMO, failures, reset
+│       ├── banners.js         Emergency ground-link modal (focus trap, Escape)
+│       ├── demo-runner.js     Guided demo: 10 steps, captions written from each step's result
+│       ├── tabs/              today.js · signals.js · forecast.js · comms.js · twin-tab.js · evidence.js
 │       ├── components/        trend-chart.js (Chart.js wrapper)
 │       ├── visuals/           mission-scene.js · scene-controls.js · cone-renderer.js
 │       └── extras/            twin.js · twin-model.js · micro-lab.js · constellation.js
 │
 ├── assets/
-│   ├── css/                   tokens · base · layout · components · header · title-screen
-│   │                          · tabs/overview · tabs/monitor · tabs/forecast · extras · responsive
+│   ├── css/                   tokens · base · layout · components · title-screen · tabs/today · tabs/signals
+│   │                          · tabs/forecast · tabs/comms · tabs/evidence · extras · responsive
 │   ├── fonts/                 saira-condensed.woff2 · hanken-grotesk.woff2 · README.md (licenses)
 │   └── vendor/                chart.umd.min.js (Chart.js 4.4.4) · README.md (license)
 │
@@ -132,19 +135,18 @@ Used by the header, the mission scene and its HUD. The Comms tab's link selector
 
 ## CSS
 
-Eleven files loaded in a fixed order from `index.html`. The split kept the original cascade: no selector changed relative order with another block that styles the same class (checked when splitting). `responsive.css` must stay last.
+Twelve files loaded in a fixed order from `index.html`; `responsive.css` must stay last. Every colour, size and duration comes from `tokens.css`.
 
 | File | Holds |
 |---|---|
-| `tokens.css` | Custom properties (palette, fonts) |
-| `base.css` | `@font-face`, reset, typography, focus ring |
-| `layout.css` | App shell, panel grid, hull plates |
-| `components.css` | Status shapes and badges, buttons, caption toast |
-| `header.css` | Disclaimer strip, scene header, scrubber, pitch line, nav, score pill, environment select |
+| `tokens.css` | Design tokens: surfaces, text, status colours, type scale, radii, shadows, motion (plus legacy names used by the twin) |
+| `base.css` | `@font-face`, reset, page background, typography, focus ring, skip link |
+| `layout.css` | App bar, mission strip, scrubber, tabs, views, grids, footer |
+| `components.css` | Cards, buttons, chips, status pills and shapes, segmented control, switch, table, meter, modal, drawer, demo caption, keyframes |
 | `title-screen.css` | First-load title screen |
-| `tabs/overview.css`, `tabs/monitor.css`, `tabs/forecast.css` | Per-tab styles |
-| `extras.css` | Digital twin, tissue cards, micro-lab |
-| `responsive.css` | Reduced motion and small-screen overrides |
+| `tabs/today.css` · `signals.css` · `forecast.css` · `comms.css` · `evidence.css` | One file per view |
+| `extras.css` | Digital twin, tissue cards, micro-lab, constellation, readiness score |
+| `responsive.css` | Breakpoints (1180, 1100, 960, 640 px) and reduced motion |
 
 ## Engine integration (next)
 
@@ -174,11 +176,11 @@ See [15-FORECAST_SPEC.md §6](15-FORECAST_SPEC.md#6-model-forecast-engine-adviso
 | Queue v2 | `src/core/queue.js` | [07 §6](07-TRIAGE_SPEC.md#6-the-queue) |
 | Radiation, wellbeing | `src/core/radiation.js`, `src/core/wellbeing.js` | [16](16-RADIATION_AND_ISOLATION.md) |
 | Explanation | `src/core/explain.js` | [07 §4](07-TRIAGE_SPEC.md#4-explanation-t9-l3) |
-| Loop | `src/core/run-day.js` (replaces `pipeline.js`) | [03 L1](03-PRD.md#l--decision-loop) |
+| Loop | `src/core/run-day.js` (built; v2 adds detect, explain and bundles to it) | [03 L1](03-PRD.md#l--decision-loop) |
 | Storage keys and migration | `src/app/storage.js` | [18 §8](18-DATA_MODEL.md#8-storage-keys) |
-| Today screen | `src/ui/tabs/today.js` (from `overview.js`) | [19](19-UI_GUIDE.md#today-screen) |
-| Signals, Comms, Evaluation tabs | `src/ui/tabs/signals.js` (from `monitor.js`), `comms.js`, `evaluation.js` | [19](19-UI_GUIDE.md#other-tabs) |
-| Demo controls drawer | `src/ui/controls.js` | [19](19-UI_GUIDE.md#demo-controls-u1) |
+| Today screen | `src/ui/tabs/today.js` (built; v2 swaps in the decision table) | [19](19-UI_GUIDE.md#today-screen) |
+| Evaluation tab | `src/ui/tabs/evaluation.js` | [19](19-UI_GUIDE.md#other-tabs) |
+| Emergency, vision and SPE injectors | `src/ui/simulation.js` (the drawer exists) | [19](19-UI_GUIDE.md#demo-controls-u1) |
 | Triage table component | `src/ui/components/triage-table.js` | [07 §3](07-TRIAGE_SPEC.md#3-the-decision-table-t1) |
 | Evaluation harness | `eval/run-eval.mjs`, `eval/scenarios.js`, `eval/results/` | [17](17-EVALUATION.md) |
 | Tests | `tests/unit/*.test.mjs`, `tests/integration/*.test.mjs` | [09](09-TEST_PLAN.md) |
