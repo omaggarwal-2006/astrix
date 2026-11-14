@@ -49,6 +49,12 @@
       <span>Illustrative model, not a clinical predictor. Synthetic data.</span>
     </div>
     <div class="disclaimer-controls">
+      <div id="crew-xp-pill" class="crew-xp-pill" title="Crew landing readiness experience points and tier">
+        <span class="shape-circle" id="crew-xp-shape"></span>
+        <span>Crew Readiness:</span>
+        <span id="crew-xp-num" class="crew-xp-val">850 XP</span>
+        <span id="crew-xp-tier" class="crew-tier-badge tier-1">Tier I</span>
+      </div>
       <button id="btn-play-demo" class="chassis-btn primary" title="Run 30-second automated demo (days 35 to 60)">
         Play 30-second demo
       </button>
@@ -75,8 +81,21 @@
         <div class="scene-header-left">
           <span class="scene-title-badge">Ares-VI transit flight path</span>
           <span class="demo-clock-badge" id="demo-clock-rate">Demo clock: 1 s = 1.7 min</span>
+          <label for="scene-env-select" style="font-size: 12px; color: var(--starlight-dim); margin-left: 10px;">Environment:</label>
+          <select id="scene-env-select" class="scene-env-select" title="Switch orbital environment projection">
+            <option value="MARS">Mars Transit / Insertion (Ares-VI)</option>
+            <option value="ISS">Low Earth Orbit (ISS Station)</option>
+            <option value="MOON">Lunar Gateway (Artemis IV)</option>
+            <option value="EVA_SUIT">Deep Space EVA Pressure Suit</option>
+          </select>
         </div>
         <div class="scene-header-right">
+          <button id="btn-replay-entry-zoom" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px; margin-right: 6px;" title="Replay Mars orbital insertion approach zoom">
+            Replay entry zoom
+          </button>
+          <button id="btn-toggle-eva-suit" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px; margin-right: 8px;" title="Toggle mechanical EVA suit shell split">
+            Close suit shell
+          </button>
           <button id="btn-toggle-scene" class="scene-collapse-btn" aria-expanded="true" aria-controls="mission-scene-content" title="Toggle transit visualization visibility">
             Collapse view <span id="scene-toggle-icon">&minus;</span>
           </button>
@@ -338,33 +357,255 @@
             </div>
           </div>
 
-          <!-- Right: Suited Body Map & 3 Trend Charts (6 cols) -->
+          <!-- Right: Digital Twin Engine (Levels 1-3) & 3 Longitudinal Trend Charts (6 cols) -->
           <div class="col-6">
             <div class="hull-plate" style="margin-bottom: 16px;">
               <div class="hull-plate-header">
-                <h2 class="plate-title">Suited Astronaut Body Map</h2>
-                <span class="plate-sub">Click suit part (or keyboard focus) for detail</span>
+                <h2 class="plate-title">4-Level Kinematic Digital Twin Engine</h2>
+                <span class="plate-sub">Personal baseline relative drift</span>
               </div>
 
-              <div class="suited-body-container">
-                <div class="body-svg-housing">
-                  <svg viewBox="0 0 100 200" style="width: 100%; height: 100%;" aria-label="Suited astronaut anatomical overview">
-                    <!-- Suited Helmet -->
-                    <path id="suit-helmet" class="suit-part" role="button" tabindex="0" aria-label="Helmet: Neuro-circadian & cognitive vitals" d="M 50,12 C 38,12 36,24 36,32 C 36,40 40,44 50,44 C 60,44 64,40 64,32 C 64,24 62,12 50,12 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
-                    <!-- Suited Chest Plate -->
-                    <path id="suit-chest" class="suit-part" role="button" tabindex="0" aria-label="Chest: Cardiorespiratory regulation vitals" d="M 34,48 L 66,48 L 70,82 L 30,82 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
-                    <!-- Suited Torso Core -->
-                    <path id="suit-torso" class="suit-part" role="button" tabindex="0" aria-label="Torso: Core temperature and immune state" d="M 30,84 L 70,84 L 66,112 L 34,112 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
-                    <!-- Suited Arms & Gloves -->
-                    <path id="suit-arms" class="suit-part" role="button" tabindex="0" aria-label="Arms: Muscle aerobic endurance and cutaneous checks" d="M 28,49 L 18,88 L 12,122 L 20,124 L 26,92 L 32,72 Z M 72,49 L 82,88 L 88,122 L 80,124 L 74,92 L 68,72 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
-                    <!-- Suited Legs & Boots -->
-                    <path id="suit-legs" class="suit-part" role="button" tabindex="0" aria-label="Legs: Weight-bearing bone density and exercise adherence" d="M 34,114 L 46,114 L 44,162 L 40,192 L 30,192 L 32,156 Z M 54,114 L 66,114 L 68,156 L 70,192 L 60,192 L 56,162 Z" fill="rgba(63, 181, 154, 0.15)" stroke="#3FB59A" stroke-width="1.8" />
+              <!-- Breadcrumb Navigation Bar -->
+              <div id="twin-breadcrumb-bar" class="twin-breadcrumb-bar" role="navigation" aria-label="Digital Twin Navigation Hierarchy">
+                <button class="twin-crumb-btn" data-level="0" id="crumb-level-0">Ares-VI Transit</button>
+                <span class="twin-crumb-sep">&gt;</span>
+                <button class="twin-crumb-btn active" data-level="1" id="crumb-level-1">Full-Body Twin</button>
+                <span class="twin-crumb-sep" id="crumb-sep-2" style="display: none;">&gt;</span>
+                <button class="twin-crumb-btn" data-level="2" id="crumb-level-2" style="display: none;">Region Tissue Layers</button>
+                <span class="twin-crumb-sep" id="crumb-sep-3" style="display: none;">&gt;</span>
+                <button class="twin-crumb-btn" data-level="3" id="crumb-level-3" style="display: none;">Micro-Lab Deep Scan</button>
+                <button id="btn-twin-zoom-out" class="chassis-btn" style="margin-left: auto; font-size: 12px; padding: 2px 8px;" title="Zoom out one level (or press Escape)">
+                  Zoom out (Esc)
+                </button>
+              </div>
+
+              <!-- Astronaut Profile Card -->
+              <div class="twin-profile-card">
+                <div class="twin-profile-left">
+                  <div class="twin-profile-avatar" aria-hidden="true">&#9670;</div>
+                  <div>
+                    <strong class="twin-profile-name">Cmdr. A. Vance</strong>
+                    <span class="twin-profile-tag">(fictional synthetic profile)</span>
+                    <div class="twin-profile-meta">
+                      Age 38 &bull; 178 cm &bull; 74 kg &bull; Day <span id="twin-profile-day">40</span> / 180 &bull; Baseline Calibrated (Days 1–14)
+                    </div>
+                  </div>
+                </div>
+                <button id="btn-toggle-orientation" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px;" title="Rotate twin between anterior and posterior view">
+                  Rotate: Front
+                </button>
+              </div>
+
+              <!-- ==========================================
+                   LEVEL 1: FULL-BODY DIGITAL TWIN SVG
+              =========================================== -->
+              <div id="twin-level1-container">
+                <div class="twin-body-housing">
+                  <svg viewBox="0 0 420 760" class="twin-body-svg" aria-label="11-Region Anatomical Digital Twin SVG">
+                    <defs>
+                      <filter id="glow-twin" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="3" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                    </defs>
+
+                    <!-- Skeletal / Muscular Anatomical Outline Background -->
+                    <g opacity="0.25" stroke="#243044" stroke-width="1.2" fill="none">
+                      <!-- Ribcage / Torso lines -->
+                      <ellipse cx="210" cy="240" rx="65" ry="75" />
+                      <line x1="210" y1="160" x2="210" y2="390" stroke-dasharray="4,4" />
+                      <!-- Pelvis & Lower limbs guides -->
+                      <path d="M 155,385 C 180,410 240,410 265,385 L 255,420 L 165,420 Z" />
+                      <line x1="175" y1="420" x2="160" y2="600" />
+                      <line x1="245" y1="420" x2="260" y2="600" />
+                    </g>
+
+                    <!-- X-Ray Underlay Beating Heart (Pulsing at resting HR) -->
+                    <g id="twin-heart-group" class="twin-heart-pulse">
+                      <circle id="twin-heart-elem" cx="210" cy="245" r="14" fill="rgba(229, 89, 79, 0.45)" stroke="#E5594F" stroke-width="1.8" />
+                      <circle cx="210" cy="245" r="6" fill="#E5594F" />
+                    </g>
+
+                    <!-- 11 Clickable / Focusable Body Regions -->
+                    <!-- 1. Head & Neuro-Ocular -->
+                    <path id="reg-head_neuro" class="twin-region-btn" role="button" tabindex="0" aria-label="Head and Neuro-Ocular Region"
+                          d="M 210,45 C 175,45 168,75 168,105 C 168,135 180,152 210,152 C 240,152 252,135 252,105 C 252,75 245,45 210,45 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 2. Chest & Cardio-Immune -->
+                    <path id="reg-chest_cardio" class="twin-region-btn" role="button" tabindex="0" aria-label="Chest and Cardio-Immune Region"
+                          d="M 155,165 L 265,165 L 278,285 L 142,285 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 3. Core & Lumbar Spine -->
+                    <path id="reg-core_spine" class="twin-region-btn" role="button" tabindex="0" aria-label="Core and Lumbar Spine Region"
+                          d="M 144,290 L 276,290 L 265,390 L 155,390 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 4. Left Arm -->
+                    <path id="reg-left_arm" class="twin-region-btn" role="button" tabindex="0" aria-label="Left Arm Region"
+                          d="M 138,170 L 98,275 L 82,370 L 108,375 L 126,285 L 150,195 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 5. Right Arm -->
+                    <path id="reg-right_arm" class="twin-region-btn" role="button" tabindex="0" aria-label="Right Arm Region"
+                          d="M 282,170 L 322,275 L 338,370 L 312,375 L 294,285 L 270,195 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 6. Left Hand & Wrist -->
+                    <path id="reg-left_hand" class="twin-region-btn" role="button" tabindex="0" aria-label="Left Hand and Wrist"
+                          d="M 80,375 L 65,420 L 88,430 L 106,380 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 7. Right Hand & Wrist -->
+                    <path id="reg-right_hand" class="twin-region-btn" role="button" tabindex="0" aria-label="Right Hand and Wrist"
+                          d="M 340,375 L 355,420 L 332,430 L 314,380 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 8. Left Leg (Femur & Tibia) -->
+                    <path id="reg-left_leg" class="twin-region-btn" role="button" tabindex="0" aria-label="Left Leg Weight-Bearing Region"
+                          d="M 158,396 L 202,396 L 195,540 L 186,655 L 145,655 L 152,535 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 9. Right Leg (Femur & Tibia) -->
+                    <path id="reg-right_leg" class="twin-region-btn" role="button" tabindex="0" aria-label="Right Leg Weight-Bearing Region"
+                          d="M 218,396 L 262,396 L 268,535 L 275,655 L 234,655 L 225,540 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 10. Left Foot & Ankle -->
+                    <path id="reg-left_foot" class="twin-region-btn" role="button" tabindex="0" aria-label="Left Foot and Calcaneus"
+                          d="M 144,660 L 186,660 L 190,710 L 130,710 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
+
+                    <!-- 11. Right Foot & Ankle -->
+                    <path id="reg-right_foot" class="twin-region-btn" role="button" tabindex="0" aria-label="Right Foot and Calcaneus"
+                          d="M 234,660 L 276,660 L 290,710 L 230,710 Z"
+                          fill="rgba(63, 181, 154, 0.18)" stroke="#3FB59A" stroke-width="1.8" />
                   </svg>
                 </div>
-                <div id="suited-body-readout" class="body-readout-box">
-                  <!-- Populated by clicking suit part -->
+
+                <!-- Region Detail Readout & Dual Track Integrity Bar -->
+                <div id="twin-region-detail" class="twin-region-detail-card">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                      <h3 id="twin-detail-title" style="font-family: var(--font-heading); font-size: 18px; color: var(--starlight); margin: 0;">
+                        Head &amp; Neuro-Ocular
+                      </h3>
+                      <p id="twin-detail-systems" style="font-size: 13px; color: #9cb0c9; margin: 2px 0 8px 0;">
+                        Vestibular balance, sleep/circadian rhythm, neuro-ocular (SANS)
+                      </p>
+                    </div>
+                    <span id="twin-detail-badge" class="status-badge status-nominal">
+                      <span class="shape-circle"></span> NOMINAL
+                    </span>
+                  </div>
+
+                  <!-- Dual Track Integrity Bar -->
+                  <div class="twin-dual-bar-wrap">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                      <span id="twin-detail-integ-text" style="color: var(--starlight); font-family: var(--font-mono);">
+                        <strong>98.0%</strong> vs 100.0% baseline (&minus;2.0%)
+                      </span>
+                      <span style="color: var(--starlight-dim);">100% Calibrated Target</span>
+                    </div>
+                    <div class="twin-dual-bar-track">
+                      <div id="twin-detail-bar" class="twin-dual-bar-fill" style="width: 98%;"></div>
+                      <div class="twin-dual-bar-target"></div>
+                    </div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                    <span id="twin-detail-status-note" style="font-size: 13.5px; color: var(--starlight-dim);">
+                      Nominal neuro-circadian function relative to Day 1–14 baseline.
+                    </span>
+                    <button id="btn-zoom-level2" class="chassis-btn primary" style="font-size: 13px; padding: 4px 12px;">
+                      Deep Scan Tissue Micro-Layers &rarr;
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              <!-- ==========================================
+                   LEVEL 2: EXPLODED TISSUE CARDS
+              =========================================== -->
+              <div id="twin-level2-container" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <h3 id="twin-level2-title" style="font-family: var(--font-heading); font-size: 17px; color: var(--starlight); margin: 0;">
+                    Tissue Micro-Architecture &bull; Left Leg (Femur/Tibia)
+                  </h3>
+                  <span style="font-size: 12.5px; color: var(--starlight-dim);">4 Micro-Layers</span>
+                </div>
+                <div id="twin-tissue-grid" class="twin-tissue-grid">
+                  <!-- Populated dynamically: BONE, MUSCLE, SKIN, VASCULAR_NERVE -->
+                </div>
+              </div>
+
+              <!-- ==========================================
+                   LEVEL 3: TISSUE MICRO-LAB
+              =========================================== -->
+              <div id="twin-level3-container" style="display: none;">
+                <div class="micro-lab-panel">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                    <div>
+                      <div class="micro-discovery-badge">
+                        <span class="shape-diamond"></span> Root cause identified &bull; Microstructural drift detected
+                      </div>
+                      <h3 id="micro-lab-title" style="font-family: var(--font-heading); font-size: 18px; color: var(--starlight); margin: 0;">
+                        Trabecular Micro-Architecture &bull; Calcaneus / Femur
+                      </h3>
+                      <p id="micro-lab-subtitle" style="font-size: 13px; color: #9cb0c9; margin: 2px 0 0 0;">
+                        High-resolution ultrasonic acoustic elastography vs Day 1 calibrated baseline
+                      </p>
+                    </div>
+                    <div id="micro-xp-badge" class="micro-reward-badge" style="display: none;">
+                      +15 XP Earned &bull; Protocol Applied
+                    </div>
+                  </div>
+
+                  <!-- Split-View Canvas (Day 1 Healthy vs Transit Deconditioned) -->
+                  <div class="micro-lab-canvas-box">
+                    <canvas id="micro-lab-canvas" class="micro-lab-canvas" width="500" height="200" aria-label="Microstructural tissue split view comparison canvas"></canvas>
+                    <div style="position: absolute; bottom: 8px; left: 12px; font-size: 12px; color: var(--nominal-teal); font-family: var(--font-mono); background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 2px;">
+                      Day 1 Calibrated Baseline
+                    </div>
+                    <div style="position: absolute; bottom: 8px; right: 12px; font-size: 12px; color: var(--signal-amber); font-family: var(--font-mono); background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 2px;">
+                      Current Transit State
+                    </div>
+                  </div>
+
+                  <!-- Tissue Targeted Live Controls -->
+                  <div class="micro-controls-grid">
+                    <div>
+                      <label id="micro-ctrl-1-label" class="hull-label" for="micro-ctrl-1-input">ARED-II Axial Resistance Load:</label>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <input type="range" id="micro-ctrl-1-input" min="50" max="250" value="180" step="10" style="width: 130px; accent-color: var(--nominal-teal);">
+                        <strong id="micro-ctrl-1-val" class="num" style="color: var(--nominal-teal); font-size: 15px;">180 kg</strong>
+                      </div>
+                    </div>
+                    <div>
+                      <label id="micro-ctrl-2-label" class="hull-label" for="micro-ctrl-2-input">Targeted Ergometer Intensity:</label>
+                      <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <input type="range" id="micro-ctrl-2-input" min="50" max="150" value="100" step="5" style="width: 130px; accent-color: var(--nominal-teal);">
+                        <strong id="micro-ctrl-2-val" class="num" style="color: var(--nominal-teal); font-size: 15px;">100%</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Self-Assessment Procedure & Escalation Threshold -->
+                  <div style="background: #090e18; border: 1px solid var(--hull-line); border-radius: 4px; padding: 12px; margin-top: 10px;">
+                    <div style="font-family: var(--font-heading); font-size: 14px; color: var(--starlight); margin-bottom: 4px;">
+                      Autonomous Self-Assessment Protocol:
+                    </div>
+                    <div id="micro-procedure-text" style="font-size: 13px; color: # CAD5D4; line-height: 1.4;">
+                      Perform single-leg heel-rise stability test and verify calcaneal acoustic velocity across three load cycles.
+                    </div>
+                    <div style="border-top: 1px solid var(--hull-line); margin-top: 8px; padding-top: 8px; font-size: 12.5px; color: var(--alarm-coral);">
+                      <strong>Escalation Threshold:</strong> <span id="micro-escalation-text">If regional bone integrity drops &lt; 92.0%, escalate to Crew Medical Officer for ARED-II load recalibration.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <!-- 180-Day Longitudinal Trend Charts (Sleep, Mood, HR) -->

@@ -3,7 +3,7 @@
  * Enables 100% offline functionality after first load over HTTP/HTTPS.
  */
 
-const CACHE_NAME = 'landfall-v3-view-from-ship';
+const CACHE_NAME = 'landfall-v4-kinematic-engine';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -22,6 +22,7 @@ const ASSETS_TO_CACHE = [
   './js/mission-scene.js',
   './js/constellation.js',
   './js/cone-renderer.js',
+  './js/twin-model.js',
   './main.js'
 ];
 

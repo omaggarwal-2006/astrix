@@ -78,17 +78,25 @@ interface ForecastDimension {
 
 ## 3. UI Features & Control Contract (Om)
 The frontend implements the "View From The Ship" mission architecture with verified interactive controls:
-1. **Tabs & Hash Routing:** `#overview`, `#monitor`, `#forecast`, `#triage`, `#sources` (browser back/forward functional).
-2. **Day Scrubber:** Day 1 to 180 transit slider (drag, click, keyboard arrow navigation).
-3. **Mission Scene Toggle:** Collapsible starfield header with preference stored in `localStorage`.
-4. **Automated 30-Second Demo:** Play, Pause, and Stop (restores day to pre-demo state).
-5. **Daily Biomarker Logging:** Validated ranges with inline error reporting, saved to `localStorage`.
-6. **Suited Astronaut Body Map:** Interactive SVG parts with keyboard focus (`role="button" tabindex="0"`), side panel detail, and `Escape` key dismissal.
+1. **Tabs & Hash Routing:** `#overview`, `#monitor`, `#forecast`, `#triage`, `#sources` (browser back/forward functional, with default fallback to `#overview`).
+2. **Day Scrubber:** Day 1 to 180 transit slider (drag, click, keyboard arrow navigation) with milestones.
+3. **Mission Scene & 4-Level Kinematic Visual Engine:**
+   - **Level 0 (Environment approach):** Canvas 3D starfield with 4 environments (`MARS`, `ISS`, `MOON`, `EVA_SUIT`), replay entry zoom, and mechanical EVA suit shell split reveal.
+   - **Level 1 (Full-body digital twin):** 11 anatomical regions in precision SVG (`viewBox="0 0 420 760"`), beating heart x-ray underlay timed to live resting HR, Front/Back rotation toggle, and dual-track baseline comparison bars.
+   - **Level 2 (Region focus & exploded tissue cards):** Exploded 4-layer cards (`BONE`, `MUSCLE`, `SKIN`, `VASCULAR_NERVE`) with spaceflight mechanisms and deep-scan triggers.
+   - **Level 3 (Tissue micro-lab):** Split-view before/after comparison canvas with divider beam, tissue-specific live recalibration controls (ARED load, cycle intensity), +15 XP rewards, discovery badge, and astronaut self-assessment procedure with escalation guidance.
+   - **Hierarchical Breadcrumbs:** Navigational breadcrumb trail (`Ares-VI Transit` > `Full-Body Twin` > `[Region]` > `[Layer]`) and keyboard `Escape` zoom out.
+4. **Sober Gamification XP Engine (`js/twin-model.js`):**
+   - 0–1000 XP point score (60% 6 landing dimensions, 25% countermeasure adherence, 15% completed scans).
+   - Tiers I / II / III with geometric status indicators.
+   - Fictional profile: `Cmdr. A. Vance (fictional synthetic profile)`.
+5. **Automated 30-Second Demo:** Play, Pause, and Stop (restores day to pre-demo state).
+6. **Daily Biomarker Logging:** Validated ranges with inline error reporting, saved to `localStorage`.
 7. **Cross-Tab Routing:** Go/No-Go rows jump directly to Forecast cones; active alerts route directly to Triage.
 8. **What-If Forecast Engine:** 3 scenario buttons (`Adherent 1.5 h/d`, `Nominal 1.2 h/d`, `Zero exercise 0.0 h/d`) and adherence slider reshaping flight cones live.
 9. **Countermeasure Checklist:** Dynamic checklist state saved to `localStorage`.
-10. **Comms & Telemetry Dispatch:** `setLink(preset)` latency selector, `handleAlert()` packet generation, `enqueue()` DTN queue, Copy packet button, Retry failed packet button, and Emergency link bypass modal.
-11. **Scientific Citations:** Official NASA human research links with `target="_blank" rel="noopener noreferrer"`.
+10. **Comms & Telemetry Dispatch:** `setLink({ available: true, delay_s, label })` latency selector, `handleAlert()` packet generation, `enqueue()` DTN queue, Copy packet button, Retry failed packet button, and Emergency link bypass modal.
+11. **Scientific Citations & Honesty:** Official NASA human research links with `target="_blank" rel="noopener noreferrer"`. Honesty statement: *"Illustrative model, not a clinical predictor. Synthetic data."* on every tab.
 12. **Demo State Reset:** Confirmation dialog clearing local cache and restoring Day 40 baseline.
 13. **Offline Operation:** Service worker (`sw.js`) caching all local assets and bundled fonts without remote CDN dependencies.
 
