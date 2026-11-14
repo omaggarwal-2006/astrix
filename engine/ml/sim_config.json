@@ -1,0 +1,99 @@
+{
+  "mission": {
+    "transit_days": 180,
+    "transit_months": 6.0,
+    "description": "Earth-to-Mars Hohmann transit trajectory",
+    "source_type": "illustrative",
+    "note": "Standard reference mission transit time for 2026 Space Apps challenge"
+  },
+  "nasa_published_rates": {
+    "bone_loss_per_month": {
+      "min_percent": 1.0,
+      "max_percent": 1.5,
+      "nominal_percent": 1.25,
+      "source_type": "NASA page",
+      "citation": "NASA HRP Risk of Spaceflight-Induced Bone Changes (1.0 - 1.5% bone density loss per month on 4-6 month missions)",
+      "citation_url": "https://www.nasa.gov/reference/risk-of-spaceflight-induced-bone-changes/"
+    },
+    "fitness_loss_at_full_adherence": {
+      "min_percent": 10.0,
+      "max_percent": 12.0,
+      "nominal_percent": 11.0,
+      "source_type": "NASA page",
+      "citation": "NASA HRP Risk of Reduced Cardiorespiratory and Musculoskeletal Fitness (10-12% average strength and aerobic loss on ISS missions under exercise protocol)",
+      "citation_url": "https://www.nasa.gov/reference/risk-of-reduced-cardiorespiratory-and-musculoskeletal-fitness/"
+    },
+    "exercise_target_hours_per_day": {
+      "value": 1.5,
+      "source_type": "NASA page",
+      "citation": "NASA HRP Standard Countermeasure (ISS crews exercise 1.5 hours a day, 6-7 days/week)",
+      "citation_url": "https://www.nasa.gov/reference/risk-of-reduced-cardiorespiratory-and-musculoskeletal-fitness/"
+    },
+    "inter_individual_variation_high_loss_crew_fraction": {
+      "min_fraction": 0.12,
+      "max_fraction": 0.38,
+      "source_type": "NASA page",
+      "citation": "NASA HRP: Between 12% and 38% of crew lose more than 20% of their pre-mission fitness",
+      "citation_url": "https://www.nasa.gov/reference/risk-of-reduced-cardiorespiratory-and-musculoskeletal-fitness/"
+    }
+  },
+  "illustrative_assumptions": {
+    "zero_exercise_fitness_loss_multiplier": {
+      "value": 2.2,
+      "source_type": "illustrative",
+      "note": "NASA notes fitness loss is mitigated by exercise; without countermeasures, microgravity deconditioning accelerates by an assumed factor of 2.2x"
+    },
+    "zero_exercise_bone_loss_multiplier": {
+      "value": 1.8,
+      "source_type": "illustrative",
+      "note": "Without resistive loading (ARED), bone resorption is uninhibited"
+    },
+    "balance_sensorimotor_decay": {
+      "nominal_loss_percent": 14.0,
+      "source_type": "illustrative",
+      "citation": "NASA Risk of Altered Sensorimotor and Vestibular Function (qualitative risk without published monthly loss percentage)",
+      "citation_url": "https://www.nasa.gov/reference/risk-of-altered-sensorimotor-and-vestibular-function/",
+      "note": "Assumed gradual sensory reweighting in 0g with weekly sensorimotor score checks; lowest-confidence dimension"
+    },
+    "sleep_mood_coupling": {
+      "lag_days": 3,
+      "penalty_per_hour_sleep_debt": 0.28,
+      "source_type": "illustrative",
+      "citation": "NASA HRP Hazards (Hazards feed off one another: sleep debt accumulates and deteriorates mood and cognitive vigilance)",
+      "citation_url": "https://www.nasa.gov/hrp/hazards/"
+    },
+    "environmental_interactions": {
+      "co2_elevation_sleep_penalty_hours": 0.6,
+      "noise_sleep_penalty_hours": 0.4,
+      "source_type": "illustrative",
+      "citation": "NASA HRP Hostile Closed Environment / JSC-66632",
+      "citation_url": "https://www.nasa.gov/hrp/hazards/"
+    },
+    "radiation_environment": {
+      "daily_gcr_dose_msv": 1.45,
+      "gcr_std_msv": 0.15,
+      "spe_storm_probability_per_180d": 0.20,
+      "spe_additional_dose_msv": 18.0,
+      "source_type": "illustrative",
+      "citation": "NASA HRP Space Radiation / CSA Monitoring Radiation (Tracked cumulatively, not forecast via exercise)",
+      "citation_url": "https://www.nasa.gov/hrp/hazards/"
+    }
+  },
+  "astronaut_baseline_distributions": {
+    "heart_rate_bpm": { "mean": 64.0, "std": 5.5, "source_type": "illustrative" },
+    "sbp_mmhg": { "mean": 116.0, "std": 6.0, "source_type": "illustrative" },
+    "dbp_mmhg": { "mean": 76.0, "std": 4.5, "source_type": "illustrative" },
+    "temperature_c": { "mean": 36.6, "std": 0.15, "source_type": "illustrative" },
+    "sleep_hours": { "mean": 7.4, "std": 0.45, "source_type": "illustrative" },
+    "mood_score": { "mean": 4.2, "std": 0.35, "source_type": "illustrative" },
+    "exercise_adherence_mean_hours": { "mean": 1.25, "std": 0.22, "source_type": "illustrative" }
+  },
+  "status_thresholds": {
+    "bone": { "nominal": 93.0, "caution": 88.0, "unit": "% retention" },
+    "muscle": { "nominal": 91.0, "caution": 84.0, "unit": "% retention" },
+    "aerobic": { "nominal": 92.0, "caution": 85.0, "unit": "% retention" },
+    "balance": { "nominal": 86.0, "caution": 80.0, "unit": "% retention" },
+    "sleep": { "nominal": 85.0, "caution": 72.0, "unit": "readiness score (0-100)" },
+    "mood": { "nominal": 82.0, "caution": 72.0, "unit": "readiness score (0-100)" }
+  }
+}
