@@ -219,9 +219,23 @@ def compute_adjusted_landing_targets(
     adj_aerobic = base_targets["aerobic"] + (delta_adherence * 8.2)
     # Balance: Slight benefit from physical activity
     adj_balance = base_targets["balance"] + (delta_adherence * 1.8)
-    # Sleep & Mood: Exercise promotes circadian sleep and stress resilience
-    adj_sleep = base_targets["sleep"] + (delta_adherence * 6.0)
-    adj_mood = base_targets["mood"] + (delta_adherence * 5.5)
+
+    # Sleep & Mood: Acute disruption penalty at day D if unaddressed, mitigated by exercise
+    w7 = df[(df["day"] > max(0, day_d - 7)) & (df["day"] <= day_d)]
+    recent_sleep = float(w7["sleep_hours"].mean())
+    recent_mood = float(w7["mood"].mean())
+    base_sleep_val = float(df["base_sleep"].iloc[0])
+    base_mood_val = float(df["base_mood"].iloc[0])
+
+    sleep_deficit = max(0.0, base_sleep_val - recent_sleep)
+    mood_deficit = max(0.0, base_mood_val - recent_mood)
+
+    # Acute deficit pulls landing readiness into caution/alarm unless countermeasured
+    sleep_debt_penalty = sleep_deficit * 5.2
+    mood_debt_penalty = mood_deficit * 4.8
+
+    adj_sleep = base_targets["sleep"] - sleep_debt_penalty + (delta_adherence * 8.0)
+    adj_mood = base_targets["mood"] - mood_debt_penalty + (delta_adherence * 6.5)
 
     return {
         "target_bone": round(float(np.clip(adj_bone, 80.0, 99.5)), 2),

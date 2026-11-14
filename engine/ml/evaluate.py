@@ -58,8 +58,9 @@ def rule_based_forecast(
     aerobic_retention = 100.0 - actual_fit_loss
     muscle_retention = 100.0 - (actual_fit_loss * 0.95)
 
-    # 3. Balance (Sensorimotor microgravity adaptation heuristic)
-    balance_retention = 99.0 - ((day_d / 180.0) * 14.0)
+    # 3. Balance (Sensorimotor microgravity adaptation projected to Landing Day 180)
+    # Total 6-month Hohmann transit produces ~14% sensory reweighting from 100% pre-flight baseline
+    balance_retention = 86.0 - max(0.0, base_sleep - recent_sleep_7d) * 0.4
 
     # 4. Sleep (Dynamic heuristic rule tracking actual recent sleep deficit, not hardcoded Day 40)
     b_sleep = base_sleep if base_sleep > 0 else 7.4

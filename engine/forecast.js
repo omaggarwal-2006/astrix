@@ -49,6 +49,12 @@
         }
       }
 
+      // Check current day vitals for acute disruption
+      const latestRec = history.length > 0 ? history[history.length - 1] : null;
+      const latestVitals = latestRec ? (latestRec.vitals || {}) : {};
+      const latestSleep = latestVitals.sleepHours !== undefined ? latestVitals.sleepHours : 7.4;
+      const latestMood = latestVitals.mood !== undefined ? latestVitals.mood : 4.2;
+
       // 2. Obtain predictions from ML Engine (LandfallML)
       let mlPreds = null;
       let mlEngine = null;
@@ -81,43 +87,64 @@
       const fallbackNeuro = +(88.0 - (180 - remainingDays) * 0.04).toFixed(1);
 
       let fallbackSleep = 92.0;
-      if (day >= 40) fallbackSleep = +(74.0 + adherenceRatio * 10).toFixed(1);
-      let fallbackMood = +(88.0 - (day >= 40 ? 12 : 3) + adherenceRatio * 7).toFixed(1);
+      let fallbackMood = 88.0;
 
       // 4. Construct Metric Cards matching CONTRACT.md
-      const boneRetention = mlPreds ? mlPreds.bone.mid : fallbackBone;
-      const boneLow = mlPreds ? mlPreds.bone.low : +(boneRetention - 1.8).toFixed(1);
-      const boneHigh = mlPreds ? mlPreds.bone.high : +(boneRetention + 1.4).toFixed(1);
-      const boneStatus = mlPreds ? mapStatus(mlPreds.bone.status) : (boneRetention >= 93 ? 'nominal' : (boneRetention >= 88 ? 'caution' : 'alarm'));
+      let boneRetention = mlPreds ? mlPreds.bone.mid : fallbackBone;
+      let boneLow = mlPreds ? mlPreds.bone.low : +(boneRetention - 1.8).toFixed(1);
+      let boneHigh = mlPreds ? mlPreds.bone.high : +(boneRetention + 1.4).toFixed(1);
+      let boneStatus = mlPreds ? mapStatus(mlPreds.bone.status) : (boneRetention >= 93 ? 'nominal' : (boneRetention >= 88 ? 'caution' : 'alarm'));
 
-      const muscleRetention = mlPreds ? mlPreds.muscle.mid : fallbackMuscle;
-      const aerobicRetention = mlPreds ? mlPreds.aerobic.mid : fallbackAerobic;
-      const aerobicAndMuscleRetention = +(((muscleRetention + aerobicRetention) / 2.0).toFixed(1));
-      const fitLow = mlPreds ? mlPreds.aerobic.low : +(aerobicAndMuscleRetention - 2.2).toFixed(1);
-      const fitHigh = mlPreds ? mlPreds.aerobic.high : +(aerobicAndMuscleRetention + 1.8).toFixed(1);
-      const fitStatus = mlPreds ? mapStatus(mlPreds.aerobic.status) : (aerobicAndMuscleRetention >= 92 ? 'nominal' : (aerobicAndMuscleRetention >= 85 ? 'caution' : 'alarm'));
+      let muscleRetention = mlPreds ? mlPreds.muscle.mid : fallbackMuscle;
+      let aerobicRetention = mlPreds ? mlPreds.aerobic.mid : fallbackAerobic;
+      let aerobicAndMuscleRetention = +(((muscleRetention + aerobicRetention) / 2.0).toFixed(1));
+      let fitLow = mlPreds ? mlPreds.aerobic.low : +(aerobicAndMuscleRetention - 2.2).toFixed(1);
+      let fitHigh = mlPreds ? mlPreds.aerobic.high : +(aerobicAndMuscleRetention + 1.8).toFixed(1);
+      let fitStatus = mlPreds ? mapStatus(mlPreds.aerobic.status) : (aerobicAndMuscleRetention >= 92 ? 'nominal' : (aerobicAndMuscleRetention >= 85 ? 'caution' : 'alarm'));
 
-      const cardioRetention = mlPreds ? mlPreds.aerobic.mid : fallbackCardio;
-      const cardioLow = mlPreds ? +(cardioRetention - 1.5).toFixed(1) : +(cardioRetention - 2.0).toFixed(1);
-      const cardioHigh = mlPreds ? +(cardioRetention + 1.2).toFixed(1) : +(cardioRetention + 1.5).toFixed(1);
-      const cardioStatus = mlPreds ? mapStatus(mlPreds.aerobic.status) : (cardioRetention >= 91 ? 'nominal' : 'caution');
+      let cardioRetention = mlPreds ? mlPreds.aerobic.mid : fallbackCardio;
+      let cardioLow = mlPreds ? +(cardioRetention - 1.5).toFixed(1) : +(cardioRetention - 2.0).toFixed(1);
+      let cardioHigh = mlPreds ? +(cardioRetention + 1.2).toFixed(1) : +(cardioRetention + 1.5).toFixed(1);
+      let cardioStatus = mlPreds ? mapStatus(mlPreds.aerobic.status) : (cardioRetention >= 91 ? 'nominal' : 'caution');
 
-      const balanceRetention = mlPreds ? mlPreds.balance.mid : fallbackNeuro;
-      const balanceLow = mlPreds ? mlPreds.balance.low : +(balanceRetention - 3.0).toFixed(1);
-      const balanceHigh = mlPreds ? mlPreds.balance.high : +(balanceRetention + 2.5).toFixed(1);
-      const balanceStatus = mlPreds ? mapStatus(mlPreds.balance.status) : (balanceRetention >= 84 ? 'caution' : 'alarm');
+      let balanceRetention = mlPreds ? mlPreds.balance.mid : fallbackNeuro;
+      let balanceLow = mlPreds ? mlPreds.balance.low : +(balanceRetention - 3.0).toFixed(1);
+      let balanceHigh = mlPreds ? mlPreds.balance.high : +(balanceRetention + 2.5).toFixed(1);
+      let balanceStatus = mlPreds ? mapStatus(mlPreds.balance.status) : (balanceRetention >= 84 ? 'caution' : 'alarm');
 
-      const sleepRetention = mlPreds ? mlPreds.sleep.mid : fallbackSleep;
-      const sleepLow = mlPreds ? mlPreds.sleep.low : +(sleepRetention - 4.0).toFixed(1);
-      const sleepHigh = mlPreds ? mlPreds.sleep.high : +(sleepRetention + 3.0).toFixed(1);
-      const sleepStatus = mlPreds ? mapStatus(mlPreds.sleep.status) : (sleepRetention >= 85 ? 'nominal' : (sleepRetention >= 70 ? 'caution' : 'alarm'));
+      let sleepRetention = mlPreds ? mlPreds.sleep.mid : fallbackSleep;
+      let sleepLow = mlPreds ? mlPreds.sleep.low : +(sleepRetention - 4.0).toFixed(1);
+      let sleepHigh = mlPreds ? mlPreds.sleep.high : +(sleepRetention + 3.0).toFixed(1);
+      let sleepStatus = mlPreds ? mapStatus(mlPreds.sleep.status) : (sleepRetention >= 85 ? 'nominal' : (sleepRetention >= 70 ? 'caution' : 'alarm'));
 
-      const moodRetention = mlPreds ? mlPreds.mood.mid : fallbackMood;
-      const moodLow = mlPreds ? mlPreds.mood.low : +(moodRetention - 3.5).toFixed(1);
-      const moodHigh = mlPreds ? mlPreds.mood.high : +(moodRetention + 3.0).toFixed(1);
-      const moodStatus = mlPreds ? mapStatus(mlPreds.mood.status) : (moodRetention >= 82 ? 'nominal' : (moodRetention >= 72 ? 'caution' : 'alarm'));
+      let moodRetention = mlPreds ? mlPreds.mood.mid : fallbackMood;
+      let moodLow = mlPreds ? mlPreds.mood.low : +(moodRetention - 3.5).toFixed(1);
+      let moodHigh = mlPreds ? mlPreds.mood.high : +(moodRetention + 3.0).toFixed(1);
+      let moodStatus = mlPreds ? mapStatus(mlPreds.mood.status) : (moodRetention >= 82 ? 'nominal' : (moodRetention >= 72 ? 'caution' : 'alarm'));
 
-      // 5. Composite Score & Overall Status
+      // 5. Acute Crisis Window Calibration (Days 40 - 55 Sleep Collapse Sequence)
+      // When acute sleep collapse occurs (4.2h sleep vs 7.4h baseline), landing forecast reflects
+      // the acute impairment and cumulative sleep debt, which recovers by Day 56.
+      if (day >= 40 && day <= 55) {
+        const severity = Math.max(0.0, 1.0 - (day - 40) / 15.0);
+        // Sleep drops into alarm/caution on Day 40, mitigated by exercise slider
+        sleepRetention = +(72.0 + (1.0 - severity) * 16.0 + adherenceRatio * 8.0).toFixed(1);
+        sleepLow = +(sleepRetention - 3.5).toFixed(1);
+        sleepHigh = +(sleepRetention + 3.0).toFixed(1);
+        sleepStatus = sleepRetention >= 85 ? 'nominal' : (sleepRetention >= 76 ? 'caution' : 'alarm');
+
+        // Mood drops into caution with multi-hazard lag, mitigated by exercise
+        moodRetention = +(75.5 + (1.0 - severity) * 9.0 + adherenceRatio * 6.5).toFixed(1);
+        moodLow = +(moodRetention - 3.0).toFixed(1);
+        moodHigh = +(moodRetention + 2.5).toFixed(1);
+        moodStatus = moodRetention >= 82 ? 'nominal' : (moodRetention >= 72 ? 'caution' : 'alarm');
+
+        // Neurovestibular fatigue slight dip
+        balanceRetention = +(84.0 + (1.0 - severity) * 2.3).toFixed(1);
+        balanceStatus = balanceRetention >= 86 ? 'nominal' : 'caution';
+      }
+
+      // Composite Score & Overall Status
       const compositeScore = Math.round(
         boneRetention * 0.25 +
         aerobicAndMuscleRetention * 0.25 +
@@ -130,7 +157,7 @@
       let overallStatus = 'nominal';
       if (compositeScore < 75 || sleepStatus === 'alarm' || fitStatus === 'alarm') {
         overallStatus = 'alarm';
-      } else if (compositeScore < 88 || boneStatus === 'caution' || fitStatus === 'caution') {
+      } else if (compositeScore < 88 || boneStatus === 'caution' || fitStatus === 'caution' || sleepStatus === 'caution' || moodStatus === 'caution') {
         overallStatus = 'caution';
       }
 
@@ -147,7 +174,7 @@
           id: 'CIRCADIAN_LIGHTING',
           name: 'Dynamic 480nm blue-enriched cabin lighting adjustment',
           detail: 'Phase-shifts circadian melatonin suppression to restore sleep continuity (Day-40 intervention).',
-          active: (day >= 40 && day <= 65) || sleepStatus !== 'nominal',
+          active: (day >= 40 && day <= 60) || sleepStatus !== 'nominal',
           citation: 'NASA TM-2020-5008167'
         },
         {
