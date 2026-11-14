@@ -152,6 +152,7 @@ export const AppState = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTitleScreen();
   // Service Worker Registration for offline use
   if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});

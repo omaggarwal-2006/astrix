@@ -34,11 +34,41 @@
         </div>
       </div>
 
-      <button id="btn-start-mission" class="btn-start-console">
+      <button id="btn-start-mission" class="btn-start-console" onclick="var m=document.getElementById('title-screen-modal');if(m){m.style.display='none';try{m.remove();}catch(err){}}">
         Enter Mission Console (Ares-VI Transit) &rarr;
       </button>
     </div>
   </div>
+
+  <script>
+    (function() {
+      function dismissTitleModal() {
+        var m = document.getElementById('title-screen-modal');
+        if (m) {
+          m.style.display = 'none';
+          try { m.remove(); } catch(err) {}
+        }
+      }
+      var b = document.getElementById('btn-start-mission');
+      if (b) {
+        b.onclick = dismissTitleModal;
+        b.addEventListener('click', dismissTitleModal, { capture: true });
+      }
+      var overlay = document.getElementById('title-screen-modal');
+      if (overlay) {
+        overlay.addEventListener('click', function(ev) {
+          if (ev.target === overlay || (ev.target && ev.target.id === 'btn-start-mission')) {
+            dismissTitleModal();
+          }
+        });
+      }
+      document.addEventListener('keydown', function(ev) {
+        if (ev.key === 'Enter' || ev.key === 'Escape') {
+          dismissTitleModal();
+        }
+      });
+    })();
+  </script>
 
   <!-- Thin Operational Advisory Banner -->
   <header class="disclaimer-strip" role="banner">

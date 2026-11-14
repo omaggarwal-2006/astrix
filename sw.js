@@ -1,9 +1,9 @@
 /**
  * LANDFALL - Service Worker (sw.js)
- * Enables 100% offline functionality after first load over HTTP/HTTPS.
+ * Network-first caching strategy for real-time development and 100% offline fallback.
  */
 
-const CACHE_NAME = 'landfall-v4-kinematic-engine';
+const CACHE_NAME = 'landfall-v5-network-first';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -47,14 +47,25 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
+  // Network first: always fetch fresh from server, fall back to offline cache
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(e.request).catch(() => {
-        if (e.request.destination === 'document') {
-          return caches.match('./index.html');
+    fetch(e.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
         }
-      });
-    })
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) return cachedResponse;
+          if (e.request.destination === 'document') {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });
