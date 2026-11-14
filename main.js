@@ -11,8 +11,10 @@
  */
 
 import { getAlerts, getForecast, getReadings, getBaseline, mapSeverity } from "./adapter.js";
-import { handleAlert } from "./pipeline.js";
-import { getQueue, onChange as onQueueChange, setLink as setQueueLink, enqueue as enqueuePacket, config as queueConfig } from "./queue.js";
+import { handleAlert, peekNextSeq } from "./pipeline.js";
+import { triage } from "./triage.js";
+import { buildPacket } from "./packet.js";
+import { getQueue, onChange as onQueueChange, setLink as setQueueLink, clearQueue, config as queueConfig } from "./queue.js";
 import { SOURCES, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./sources.js";
 import { sampleAlert } from "./sample_alert.js";
 import { MissionScene } from "./js/mission-scene.js";
@@ -35,12 +37,13 @@ export const AppState = {
   activeTrendChart: 'sleep',
   exerciseHours: 1.2,
   activePresetKey: 'MARS_MID',
-  activeBodyPart: 'head_neuro',
   twinLevel: 1,
   selectedRegion: 'head_neuro',
   selectedLayer: 'BONE',
   twinOrientation: 'front',
   completedScansCount: 3,
+  rewardedScans: new Set(),
+  microLabSettings: {},
   whatIf: {
     exerciseHours: 1.2,
     nutritionVitD: false,
@@ -53,6 +56,12 @@ export const AppState = {
   demoInterval: null,
   isDemoRunning: false,
   isDemoPaused: false,
+
+  // Single source of truth for exercise adherence: forecast, twin and XP all read it
+  setExerciseHours(hrs) {
+    this.exerciseHours = hrs;
+    this.whatIf.exerciseHours = hrs;
+  },
 
   setDay(day, notify = true) {
     this.currentDay = Math.max(1, Math.min(this.maxDays, parseInt(day, 10)));
@@ -124,7 +133,7 @@ export const AppState = {
     }
 
     // Crew Readiness XP Pill (Gamification Engine)
-    const forecastList = getForecast(day, (this.whatIf && this.whatIf.exerciseHours) || this.exerciseHours || 1.2);
+    const forecastList = getForecast(day, this.exerciseHours);
     const xpData = calculateCrewReadinessXP(forecastList, this.whatIf, this.completedScansCount);
     const elXpNum = document.getElementById('crew-xp-num');
     const elXpTier = document.getElementById('crew-xp-tier');
@@ -219,8 +228,13 @@ function initNavigation() {
     btn.addEventListener('click', () => {
       const tabId = btn.getAttribute('data-tab');
       if (tabId) {
-        window.location.hash = tabId;
-        activateTab(tabId);
+        // Changing the hash fires 'hashchange', which activates the tab.
+        // Only call activateTab directly when the hash is already this tab.
+        if (window.location.hash === `#${tabId}`) {
+          activateTab(tabId);
+        } else {
+          window.location.hash = tabId;
+        }
       }
     });
   });
@@ -477,7 +491,6 @@ function renderMonitorTab() {
   const alerts = getAlerts(day);
 
   renderTwin(readings, alerts);
-  renderSuitedBodyMap(alerts, readings);
   renderQuietPanels(readings, alerts);
   renderTrendLines(day);
 }
@@ -594,27 +607,43 @@ function initTwinControls() {
   const ctrl2 = document.getElementById('micro-ctrl-2-input');
   const val2 = document.getElementById('micro-ctrl-2-val');
 
-  if (ctrl1 && val1) {
-    ctrl1.addEventListener('input', (e) => {
-      val1.textContent = `${e.target.value} kg`;
-      showMicroReward();
-    });
-  }
-  if (ctrl2 && val2) {
-    ctrl2.addEventListener('input', (e) => {
-      val2.textContent = `${e.target.value}%`;
-      showMicroReward();
-    });
-  }
+  // Slider values feed whatIf.targetedRegionBoost for the selected region,
+  // which getRegionIntegrity() uses as extra countermeasure mitigation.
+  const onMicroInput = () => {
+    if (!ctrl1 || !ctrl2) return;
+    const ared = parseFloat(ctrl1.value);
+    const intensity = parseFloat(ctrl2.value);
+    if (val1) val1.textContent = `${ared} kg`;
+    if (val2) val2.textContent = `${intensity}%`;
+
+    AppState.microLabSettings[AppState.selectedRegion] = { ared, intensity };
+    // 0 at the default 180 kg / 100%; roughly -2 to +2 across the slider ranges
+    const boost = (ared - MICRO_DEFAULTS.ared) / 70 + (intensity - MICRO_DEFAULTS.intensity) / 50;
+    AppState.whatIf.targetedRegionBoost[AppState.selectedRegion] = +boost.toFixed(2);
+
+    renderTwin();
+    AppState.updateTelemetryText();
+  };
+
+  [ctrl1, ctrl2].forEach(ctrl => {
+    if (!ctrl) return;
+    ctrl.addEventListener('input', onMicroInput);
+    // Award the scan reward once per region + layer, when the user releases the slider
+    ctrl.addEventListener('change', showMicroReward);
+  });
 }
 
+const MICRO_DEFAULTS = { ared: 180, intensity: 100 };
+
 function showMicroReward() {
+  const key = `${AppState.selectedRegion}:${AppState.selectedLayer}`;
+  if (AppState.rewardedScans.has(key)) return;
+  AppState.rewardedScans.add(key);
+
   const badge = document.getElementById('micro-xp-badge');
-  if (badge) {
-    badge.style.display = 'inline-flex';
-    AppState.completedScansCount = Math.min(5, AppState.completedScansCount + 1);
-    AppState.updateTelemetryText();
-  }
+  if (badge) badge.style.display = 'inline-flex';
+  AppState.completedScansCount = Math.min(5, AppState.completedScansCount + 1);
+  AppState.updateTelemetryText();
 }
 
 function renderTwin(readings, alerts) {
@@ -789,6 +818,17 @@ function renderTwin(readings, alerts) {
     if (mProc) mProc.textContent = t.procedure;
     if (mEsc) mEsc.textContent = t.escalation;
 
+    // Show this region's saved micro-lab settings
+    const settings = AppState.microLabSettings[regInfo.id] || MICRO_DEFAULTS;
+    const ctrl1 = document.getElementById('micro-ctrl-1-input');
+    const ctrl2 = document.getElementById('micro-ctrl-2-input');
+    const val1 = document.getElementById('micro-ctrl-1-val');
+    const val2 = document.getElementById('micro-ctrl-2-val');
+    if (ctrl1) ctrl1.value = settings.ared;
+    if (ctrl2) ctrl2.value = settings.intensity;
+    if (val1) val1.textContent = `${settings.ared} kg`;
+    if (val2) val2.textContent = `${settings.intensity}%`;
+
     drawMicroLabCanvas(AppState.selectedLayer, t.currentPct);
   }
 }
@@ -924,113 +964,6 @@ function initCheckinForm() {
   }
 }
 
-function renderSuitedBodyMap(alerts, readings) {
-  const hasHead = alerts.some(a => a.metric === 'sleep_h' || a.metric === 'cabin_co2');
-  const hasChest = alerts.some(a => a.metric === 'hr_bpm');
-  const hasLegs = alerts.some(a => a.metric === 'exercise_min');
-
-  const setPart = (id, hasAlert, severity) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    if (hasAlert) {
-      el.style.stroke = severity >= 3 ? '#E5594F' : '#E8A93A';
-      el.style.fill = severity >= 3 ? 'rgba(229, 89, 79, 0.25)' : 'rgba(232, 169, 58, 0.25)';
-    } else {
-      el.style.stroke = '#3FB59A';
-      el.style.fill = 'rgba(63, 181, 154, 0.15)';
-    }
-  };
-
-  setPart('suit-helmet', hasHead, 3);
-  setPart('suit-chest', hasChest, 2);
-  setPart('suit-torso', false, 1);
-  setPart('suit-arms', false, 1);
-  setPart('suit-legs', hasLegs, 2);
-
-  renderBodyReadout(AppState.activeBodyPart, readings, alerts);
-
-  // Bind clicks and keyboard Enter/Space
-  ['helmet', 'chest', 'torso', 'arms', 'legs'].forEach(part => {
-    const el = document.getElementById(`suit-${part}`);
-    if (el && !el.dataset.bound) {
-      el.dataset.bound = "true";
-      const toggle = () => {
-        if (AppState.activeBodyPart === part) {
-          AppState.activeBodyPart = null;
-          const box = document.getElementById('suited-body-readout');
-          if (box) {
-            box.innerHTML = `
-              <div style="padding: 14px; color: var(--starlight-dim); font-size: 14.5px;">
-                Body detail panel closed. Click any suit part to inspect readings.
-              </div>
-            `;
-          }
-        } else {
-          AppState.activeBodyPart = part;
-          renderBodyReadout(part, getReadings(AppState.currentDay), getAlerts(AppState.currentDay));
-        }
-      };
-      el.addEventListener('click', toggle);
-      el.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          toggle();
-        }
-      });
-    }
-  });
-}
-
-function renderBodyReadout(part, readings, alerts) {
-  const box = document.getElementById('suited-body-readout');
-  if (!box || !part) return;
-
-  const v = readings.vitals;
-  const names = {
-    helmet: 'Helmet & Neuro-Circadian (Sleep & CO2)',
-    chest: 'Chest & Autonomic Core (Cardiovascular Tone)',
-    torso: 'Torso (Core Temperature & Visceral Fluid Shift)',
-    arms: 'Upper Limbs (Muscle Endurance & Skin Check)',
-    legs: 'Lower Limbs (Bone Density & Soleus Tone)'
-  };
-
-  let desc = '';
-  let statusBadge = '<span class="status-badge status-nominal"><span class="shape-circle"></span> Nominal</span>';
-
-  if (part === 'helmet') {
-    const alert = alerts.find(a => a.metric === 'sleep_h');
-    if (alert) {
-      statusBadge = '<span class="status-badge status-alarm"><span class="shape-diamond"></span> Alarm</span>';
-      desc = `Active Alert: ${alert.reason}. Spaceflight stress and elevated CO2 contribute to circadian disruption.`;
-    } else {
-      desc = `Sleep duration: ${v.sleep_h} h (within baseline). Pupillary reflexes and circadian alignment stable.`;
-    }
-  } else if (part === 'chest') {
-    desc = `Heart rate: ${v.hr_bpm} bpm. BP: ${v.bp_sys}/${v.bp_dia} mmHg. Autonomic baroreflex regulation nominal.`;
-  } else if (part === 'torso') {
-    desc = `Core temp: ${v.temp_c} °C. Cephalad fluid shift compensated by venous compliance.`;
-  } else if (part === 'arms') {
-    desc = `Grip strength retention: 94%. Upper extremity joint mobility and suit glove dexterity nominal.`;
-  } else if (part === 'legs') {
-    const alert = alerts.find(a => a.metric === 'exercise_min');
-    if (alert) {
-      statusBadge = '<span class="status-badge status-caution"><span class="shape-triangle"></span> Caution</span>';
-      desc = `Active Alert: ${alert.reason}. Ensure 1.5 hrs/day resistive load on ARED-II.`;
-    } else {
-      desc = `Daily exercise: ${v.exercise_min} mins. Heel calcaneus bone load monitored against microgravity resorption.`;
-    }
-  }
-
-  box.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--hull-line); padding-bottom: 8px; margin-bottom: 10px;">
-      <strong style="font-family: var(--font-heading); font-size: 17px; color: var(--starlight);">${names[part] || part}</strong>
-      ${statusBadge}
-    </div>
-    <p style="font-size: 15px; color: #CAD5D4; line-height: 1.5; margin-bottom: 8px;">${desc}</p>
-    <span style="font-size: 12.5px; color: var(--starlight-dim);">Click part again or press Escape to close.</span>
-  `;
-}
-
 function renderQuietPanels(readings, alerts) {
   const c = readings.cabin;
   const im = readings.immune;
@@ -1155,6 +1088,7 @@ function drawRestyledTrend(canvasId, key, baseVal, yMin, yMax, yUnit, activeDay)
   activePoint[activeDay - 1] = values[activeDay - 1];
 
   if (AppState.trendCharts[canvasId]) {
+    AppState.trendCharts[canvasId].data.datasets[0].data = values; // picks up logged check-ins
     AppState.trendCharts[canvasId].data.datasets[2].data = activePoint;
     AppState.trendCharts[canvasId].update('none');
     return;
@@ -1316,7 +1250,7 @@ function initScenarioButtons() {
   const slider = document.getElementById('adherence-slider-input');
 
   const update = (hrs) => {
-    AppState.exerciseHours = hrs;
+    AppState.setExerciseHours(hrs);
     if (slider) slider.value = hrs;
 
     [btn15, btn12, btn00].forEach(b => {
@@ -1329,6 +1263,8 @@ function initScenarioButtons() {
 
     renderForecastTab();
     renderOverviewTab();
+    renderTwin();
+    AppState.updateTelemetryText();
   };
 
   if (btn15) btn15.addEventListener('click', () => update(1.5));
@@ -1336,27 +1272,15 @@ function initScenarioButtons() {
   if (btn00) btn00.addEventListener('click', () => update(0.0));
 
   if (slider) {
-    slider.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      AppState.exerciseHours = val;
-
-      [btn15, btn12, btn00].forEach(b => {
-        if (b) b.classList.remove('active');
-      });
-      if (val === 1.5 && btn15) btn15.classList.add('active');
-      if (val === 1.2 && btn12) btn12.classList.add('active');
-      if (val === 0.0 && btn00) btn00.classList.add('active');
-
-      renderForecastTab();
-      renderOverviewTab();
-    });
+    slider.addEventListener('input', (e) => update(parseFloat(e.target.value)));
   }
 }
 
 // -------------------------------------------------------------
 // STEP 5: TRIAGE & COMMS
 // -------------------------------------------------------------
-function renderTriageTab() {
+// Shared inputs for the triage preview and the Send button
+function buildTriageInputs() {
   const day = AppState.currentDay;
   const readings = getReadings(day);
   const alerts = getAlerts(day);
@@ -1378,8 +1302,20 @@ function renderTriageTab() {
     countermeasure: "Enforce circadian sleep hygiene protocol."
   };
 
-  const result = handleAlert(alert, ctx, env);
-  const decision = result.decision;
+  return { alert, ctx, env };
+}
+
+function renderTriageTab() {
+  const { alert, ctx, env } = buildTriageInputs();
+
+  // Preview only: evaluate triage and build the packet WITHOUT enqueueing it.
+  // Packets are enqueued only when the user presses "Send packet".
+  const decision = triage(alert, env);
+  const needsPacket = decision.delivery === "SEND_PACKET" || decision.delivery === "QUEUE_OFFLINE";
+  const result = {
+    decision,
+    packet: needsPacket ? buildPacket(alert, decision, ctx, peekNextSeq()) : null
+  };
 
   const pathEl = document.getElementById('triage-path-display');
   const whyEl = document.getElementById('triage-why-display');
@@ -1443,30 +1379,17 @@ function initTriageControls() {
 
   if (btnSend) {
     btnSend.addEventListener('click', () => {
-      const day = AppState.currentDay;
-      const alerts = getAlerts(day);
-      const alert = alerts.length > 0 ? alerts[0] : sampleAlert;
-      const readings = getReadings(day);
+      const { alert, ctx, env } = buildTriageInputs();
 
-      const preset = LINK_PRESETS[AppState.activePresetKey] || LINK_PRESETS.MARS_MID;
-      const env = { onboardSupport: true, link: { available: true, delay_s: preset.delay_s } };
-      const ctx = {
-        missionDay: day,
-        current: readings.vitals,
-        baseline: getBaseline(),
-        trend7: [6.8, 6.5, 6.0, 5.8, 5.5, 5.3, 5.1],
-        trend30: [7.4, 7.3, 7.4, 7.2, 6.9, 6.1, 5.1],
-        cabin: readings.cabin,
-        countermeasure: "Enforce circadian sleep hygiene protocol."
-      };
-
+      // handleAlert() already enqueues the packet; do not enqueue it a second time.
       const res = handleAlert(alert, ctx, env);
       if (res.packet) {
-        enqueuePacket(res.packet);
         renderQueueTable(getQueue());
         showCaption(`Telemetry packet ${res.packet.packet_id} queued and dispatched to Earth DSN downlink.`);
-        setTimeout(hideCaption, 4000);
+      } else {
+        showCaption(`No packet needed: ${res.decision.path} via ${res.decision.delivery}.`);
       }
+      setTimeout(hideCaption, 4000);
     });
   }
 
@@ -1748,10 +1671,12 @@ function startDemo() {
       activateTab('forecast');
       showCaption("Day 44 (Evaluate): Flight-path cones widen and turn red as cumulative sleep debt impacts landing readiness.");
     } else if (step === 48) {
-      AppState.exerciseHours = 1.5;
+      AppState.setExerciseHours(1.5);
       const slider = document.getElementById('adherence-slider-input');
       if (slider) slider.value = 1.5;
       renderForecastTab();
+      renderTwin();
+      AppState.updateTelemetryText();
       showCaption("Day 48: Raising What-If exercise adherence to 1.5 hrs/day reshapes flight cones and stabilizes landing readiness.");
     } else if (step === 54) {
       activateTab('triage');
@@ -1820,8 +1745,14 @@ function initResetDemoButton() {
     if (ok) {
       localStorage.removeItem('landfall_custom_checkins');
       localStorage.removeItem('landfall_countermeasures');
-      localStorage.removeItem('landfall_queue');
-      AppState.exerciseHours = 1.2;
+      clearQueue(); // clears the in-memory queue too, not just the stored copy
+      AppState.setExerciseHours(1.2);
+      AppState.whatIf.targetedRegionBoost = {};
+      AppState.microLabSettings = {};
+      AppState.rewardedScans.clear();
+      AppState.completedScansCount = 3;
+      const slider = document.getElementById('adherence-slider-input');
+      if (slider) slider.value = 1.2;
       AppState.setDay(40);
       activateTab('overview');
       alert("Demo state successfully reset to Day 40 baseline.");

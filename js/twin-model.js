@@ -8,8 +8,6 @@
  * 5. Fictional Astronaut Profile: "Cmdr. A. Vance (fictional synthetic profile)"
  */
 
-import { BASELINE_READINGS, generateDayReadings, generateForecastForDay } from "../sample/sample_data.js";
-
 export const ASTRONAUT_PROFILE = {
   name: "Cmdr. A. Vance",
   type: "Fictional synthetic astronaut profile",
@@ -197,7 +195,7 @@ export function calculateCrewReadinessXP(forecastList, whatIf, completedScansCou
   const avgMid = forecastList.reduce((acc, f) => acc + f.landing.mid, 0) / forecastList.length;
   const dimsScore = (avgMid / 100) * 600; // 0 to 600 points (60%)
 
-  const adherenceFraction = Math.min(1.0, (whatIf.exerciseHours || 1.2) / 1.5);
+  const adherenceFraction = Math.min(1.0, (whatIf.exerciseHours ?? 1.2) / 1.5);
   const adherenceScore = adherenceFraction * 250; // 0 to 250 points (25%)
 
   const scansFraction = Math.min(1.0, completedScansCount / 5);

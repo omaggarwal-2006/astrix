@@ -1,4 +1,4 @@
-import { SOURCES, NUMBERS, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./src/sources.js";
+import { SOURCES, NUMBERS, LINK_PRESETS, ASSUMPTIONS, DISCLAIMER } from "./sources.js";
 
 console.log("Sources:", SOURCES.length);
 console.log("Bone loss:", NUMBERS.bone_loss_pct_per_month);

@@ -36,6 +36,12 @@ export function enqueue(packet) {
   processQueue();
 }
 
+// Reset ke liye: queue khaali karo (in-flight timers purane entries par chalte rahenge, queue par asar nahi)
+export function clearQueue() {
+  queue = [];
+  save();
+}
+
 export function setLink(newLink) {
   link = newLink;
   processQueue();

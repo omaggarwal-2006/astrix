@@ -1,7 +1,7 @@
-import { sampleAlert } from "./src/sample_alert.js";
-import { handleAlert } from "./src/pipeline.js";
-import { onChange, setLink, config } from "./src/queue.js";
-import { LINK_PRESETS } from "./src/sources.js";
+import { sampleAlert } from "./sample_alert.js";
+import { handleAlert } from "./pipeline.js";
+import { onChange, setLink, config } from "./queue.js";
+import { LINK_PRESETS } from "./sources.js";
 
 config.failRate = 0;
 config.speedup = 600;

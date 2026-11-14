@@ -1,7 +1,7 @@
-import { sampleAlert } from "./src/sample_alert.js";
-import { triage } from "./src/triage.js";
-import { buildPacket } from "./src/packet.js";
-import { enqueue, setLink, onChange, config } from "./src/queue.js";
+import { sampleAlert } from "./sample_alert.js";
+import { triage } from "./triage.js";
+import { buildPacket } from "./packet.js";
+import { enqueue, setLink, onChange, config } from "./queue.js";
 
 config.failRate = 0;        // pehle bina failure ke dekho
 config.speedup = 600;       // 600 s delay ~ 2 s ka ACK

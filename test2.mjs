@@ -1,6 +1,6 @@
-import { sampleAlert } from "./src/sample_alert.js";
-import { triage } from "./src/triage.js";
-import { buildPacket, verifyPacket } from "./src/packet.js";
+import { sampleAlert } from "./sample_alert.js";
+import { triage } from "./triage.js";
+import { buildPacket, verifyPacket } from "./packet.js";
 
 const ctx = {
   missionDay: 40,

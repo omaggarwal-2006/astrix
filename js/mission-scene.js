@@ -164,6 +164,7 @@ export class MissionScene {
     if (triggerCallback && typeof this.onDayChange === 'function') {
       this.onDayChange(this.currentDay);
     }
+    this.updateHudTags();
     this.draw();
   }
 

@@ -26,7 +26,35 @@ export function getForecast(day, exerciseHours = 1.2) {
  * Returns daily telemetry vitals, symptoms, cabin, immune, and radiation
  */
 export function getReadings(day) {
-  return generateDayReadings(day);
+  const readings = generateDayReadings(day);
+  const logged = getLoggedCheckin(day);
+  if (logged) {
+    // Crew-logged values (Monitor tab check-in form) override the synthetic vitals for that day
+    readings.vitals = {
+      ...readings.vitals,
+      hr_bpm: logged.hr,
+      bp_sys: logged.sys,
+      bp_dia: logged.dia,
+      temp_c: logged.temp,
+      sleep_h: logged.sleep,
+      mood: logged.mood,
+      exercise_min: logged.exercise
+    };
+    readings.logged = true;
+  }
+  return readings;
+}
+
+const CHECKIN_KEY = "landfall_custom_checkins";
+
+function getLoggedCheckin(day) {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+  try {
+    const all = JSON.parse(window.localStorage.getItem(CHECKIN_KEY) || "{}");
+    return all[day] || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
