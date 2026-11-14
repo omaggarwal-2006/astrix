@@ -64,22 +64,65 @@
     <!-- =========================================================
          STEP 1: THE MISSION SCENE (Top Canvas & Scrubber)
     ========================================================== -->
-    <section class="mission-scene-wrapper" aria-label="Interplanetary Flight Scene">
-      <canvas id="mission-scene-canvas" class="mission-scene-canvas" aria-label="Earth to Mars transit starfield and trajectory arc"></canvas>
-    </section>
-
-    <!-- Slim Scrubber Bar directly under Mission Scene -->
-    <div class="mission-scrubber-bar">
-      <label for="mission-scrubber-slider" class="scrubber-label">Mission transit scrubber:</label>
-      <input type="range" id="mission-scrubber-slider" class="mission-scrubber-slider" min="1" max="180" value="40" aria-label="Transit day slider 1 to 180" step="1">
-      <div class="scrubber-telemetry">
-        <strong id="telemetry-day" class="num">Day 40 / 180</strong>
-        <span style="color: var(--hull-line);">&bull;</span>
-        <span id="telemetry-distance" class="num">38.4 M km</span>
-        <span style="color: var(--hull-line);">&bull;</span>
-        <span id="telemetry-remaining" class="num">140 days to landing</span>
+    <section class="mission-header-panel" aria-label="Mission Flight Header">
+      <div class="scene-header-bar">
+        <div class="scene-header-left">
+          <span class="scene-title-badge">Ares-VI transit flight path</span>
+          <span class="demo-clock-badge" id="demo-clock-rate">Demo clock: 1 s = 1.7 min</span>
+        </div>
+        <div class="scene-header-right">
+          <button id="btn-toggle-scene" class="scene-collapse-btn" aria-expanded="true" aria-controls="mission-scene-content" title="Toggle transit visualization visibility">
+            Collapse view <span id="scene-toggle-icon">&minus;</span>
+          </button>
+        </div>
       </div>
-    </div>
+
+      <div id="mission-scene-content" class="mission-scene-content">
+        <div class="scene-main-row">
+          <div class="scene-canvas-box">
+            <canvas id="mission-scene-canvas" class="mission-scene-canvas" aria-label="Earth to Mars transit starfield and trajectory arc"></canvas>
+          </div>
+          <div class="scene-readouts-sidebar" aria-label="Real-time transit metrics">
+            <div class="scene-readout-card">
+              <span class="scene-readout-label">Mission elapsed</span>
+              <div class="scene-readout-value" id="scene-day-readout">Day 40 <span class="readout-sub">of 180</span></div>
+            </div>
+            <div class="scene-readout-card">
+              <span class="scene-readout-label">Arrival countdown</span>
+              <div class="scene-readout-value" id="scene-arrival-readout">140 <span class="readout-sub">days to landing</span></div>
+            </div>
+            <div class="scene-readout-card">
+              <span class="scene-readout-label">One-way light time</span>
+              <div class="scene-readout-value delay-highlight" id="scene-delay-readout">Earth is 2 min 48 s away</div>
+              <span class="scene-readout-note">(source pending)</span>
+            </div>
+            <div class="scene-readout-card packet-status-card">
+              <span class="scene-readout-label">Telemetry downlink</span>
+              <div class="packet-status-text" id="scene-packet-status"><span class="shape-circle"></span> Link nominal</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slim Scrubber Bar directly under Mission Scene (drag, click, arrow keys 1 to 180) -->
+      <div class="mission-scrubber-bar">
+        <label for="mission-scrubber-slider" class="scrubber-label">Transit scrubber:</label>
+        <div class="scrubber-track-wrap">
+          <input type="range" id="mission-scrubber-slider" class="mission-scrubber-slider" min="1" max="180" value="40" aria-label="Transit day slider 1 to 180" step="1">
+          <div class="scrubber-milestones">
+            <span class="milestone">Day 1 (Earth)</span>
+            <span class="milestone event-marker">Day 40 (Sleep collapse)</span>
+            <span class="milestone">Day 90 (Midway)</span>
+            <span class="milestone">Day 180 (Mars landing)</span>
+          </div>
+        </div>
+        <div class="scrubber-telemetry">
+          <strong id="telemetry-day" class="num">Day 40 / 180</strong>
+          <span style="color: var(--hull-line);">&bull;</span>
+          <span id="telemetry-distance" class="num">38.4 M km</span>
+        </div>
+      </div>
+    </section>
 
     <!-- Pitch Line Banner -->
     <div class="mission-pitch-row">
