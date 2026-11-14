@@ -24,16 +24,20 @@ export class HealthConstellation {
   }
 
   resize() {
+    if (!this.canvas) return;
     const parent = this.canvas.parentElement;
     this.width = parent ? parent.clientWidth : 500;
     this.height = 360;
 
-    this.canvas.width = this.width * this.dpr;
-    this.canvas.height = this.height * this.dpr;
+    this.canvas.width = Math.floor(this.width * this.dpr);
+    this.canvas.height = Math.floor(this.height * this.dpr);
     this.canvas.style.width = `${this.width}px`;
     this.canvas.style.height = `${this.height}px`;
 
-    this.ctx.scale(this.dpr, this.dpr);
+    if (this.ctx) {
+      this.ctx.resetTransform();
+      this.ctx.scale(this.dpr, this.dpr);
+    }
     this.draw();
   }
 
@@ -158,9 +162,10 @@ export class HealthConstellation {
       ctx.textAlign = Math.cos(pt.angle) > 0.3 ? 'left' : (Math.cos(pt.angle) < -0.3 ? 'right' : 'center');
       ctx.fillText(`${pt.dim.dimension}`, lx, ly - 4);
 
-      ctx.font = '13px "Hanken Grotesk", sans-serif';
+      const statusWord = status === 'nominal' ? 'GO' : (status === 'caution' ? 'WATCH' : 'NO-GO');
+      ctx.font = '13.5px "Hanken Grotesk", sans-serif';
       ctx.fillStyle = color;
-      ctx.fillText(`${pt.dim.landing.mid}% (${status})`, lx, ly + 14);
+      ctx.fillText(`${pt.dim.landing.mid}% \u2022 ${statusWord}`, lx, ly + 14);
     });
   }
 }

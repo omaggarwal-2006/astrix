@@ -155,57 +155,78 @@
     <main>
 
       <!-- =========================================================
-           TAB 1: OVERVIEW (HEALTH CONSTELLATION & READINESS)
+           TAB 1: OVERVIEW (HERO READINESS, GO/NO-GO POLL & CONSTELLATION)
       ========================================================== -->
       <section id="panel-overview" class="tab-panel active" role="tabpanel">
+        
+        <!-- Hero: Landing Readiness Number at 72px with Plain Sentence -->
+        <div class="readiness-hero-plate">
+          <div class="readiness-hero-left">
+            <div style="position: relative; width: 92px; height: 92px; flex-shrink: 0;" aria-hidden="true">
+              <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#243044" stroke-width="8"></circle>
+                <circle id="mars-progress-ring" cx="50" cy="50" r="45" fill="none" stroke="#3FB59A" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="40"></circle>
+              </svg>
+              <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 30px; height: 30px; border-radius: 50%; background: #C4623A; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);"></div>
+            </div>
+            <div class="readiness-hero-meta">
+              <div id="readiness-number" class="readiness-hero-val num">84%</div>
+              <div id="readiness-sentence" class="readiness-hero-sentence">Fit for landing operations on Mars.</div>
+              <div class="readiness-hero-sub">Mission landing fitness index &bull; Evaluated against personal baseline &bull; Day 180 arrival model</div>
+            </div>
+          </div>
+          <div class="readiness-hero-badge" style="text-align: right;">
+            <span class="status-badge status-nominal" id="readiness-badge">
+              <span class="shape-circle"></span> Nominally cleared
+            </span>
+          </div>
+        </div>
+
         <div class="panel-row">
           
-          <!-- Left: Constellation & Mars Glyph (5 cols) -->
+          <!-- Left: The Go / No-Go Poll (7 cols) -->
+          <div class="col-7">
+            <div class="hull-plate" style="height: 100%;">
+              <div class="hull-plate-header">
+                <h2 class="plate-title">Mission-Control Go / No-Go Poll</h2>
+                <span class="plate-sub">Click any dimension to inspect in forecast &rarr;</span>
+              </div>
+              <div id="gonogo-poll-container" class="gonogo-poll-card">
+                <!-- Dynamically rendered 6 rows -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Health Constellation (5 cols) -->
           <div class="col-5">
             <div class="hull-plate" style="height: 100%;">
               <div class="hull-plate-header">
-                <h2 class="plate-title">Landing Readiness &amp; Constellation</h2>
+                <h2 class="plate-title">Health Constellation</h2>
                 <span class="plate-sub">Personal baseline ring (1.0)</span>
               </div>
-
-              <div class="readiness-hero-display">
-                <!-- Mars Progress Ring Glyph -->
-                <div style="position: relative; width: 88px; height: 88px; flex-shrink: 0;">
-                  <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                    <circle cx="50" cy="50" r="45" fill="none" stroke="#243044" stroke-width="8"></circle>
-                    <circle id="mars-progress-ring" cx="50" cy="50" r="45" fill="none" stroke="#3FB59A" stroke-width="8" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="40"></circle>
-                  </svg>
-                  <!-- Mars silhouette glyph in center -->
-                  <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: 50%; background: #C4623A; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.4);"></div>
-                </div>
-
-                <div>
-                  <div id="readiness-number" class="readiness-big-num num">84%</div>
-                  <div id="readiness-sentence" style="font-size: 16px; font-weight: 600; margin-top: 4px;">Fit for landing operations on Mars.</div>
-                </div>
-              </div>
-
-              <!-- Health Constellation Canvas -->
               <div class="constellation-wrapper">
                 <canvas id="health-constellation-canvas" class="constellation-canvas" aria-label="Health constellation showing drift of 6 dimensions from baseline ring"></canvas>
               </div>
             </div>
           </div>
 
-          <!-- Right: Active Alerts List (7 cols) -->
-          <div class="col-7">
-            <div class="hull-plate" style="height: 100%;">
+        </div>
+
+        <!-- Bottom: Active Health & Telemetry Alerts -->
+        <div class="panel-row" style="margin-top: 10px;">
+          <div class="col-12">
+            <div class="hull-plate">
               <div class="hull-plate-header">
                 <h2 class="plate-title">Active Health &amp; Telemetry Alerts</h2>
-                <span class="plate-sub">Real-time physiological alerts</span>
+                <span class="plate-sub">Click an alert to route to triage &amp; comms &rarr;</span>
               </div>
               <div id="active-alerts-container">
                 <!-- Populated dynamically -->
               </div>
             </div>
           </div>
-
         </div>
+
       </section>
 
       <!-- =========================================================
