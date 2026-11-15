@@ -126,6 +126,11 @@ export function initMilestones() {
 export function initAudioToggle() {
   const btn = document.getElementById('btn-toggle-audio');
   if (!btn) return;
+  const initialOn = isAudioEnabled();
+  btn.setAttribute('aria-pressed', initialOn ? 'true' : 'false');
+  btn.classList.toggle('is-muted', !initialOn);
+  btn.innerHTML = `<span id="audio-icon">${initialOn ? '🔊' : '🔇'}</span> <span class="btn-label">${initialOn ? 'Audio FX' : 'Muted'}</span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>`;
+
   btn.addEventListener('click', () => {
     const on = toggleAudio();
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');

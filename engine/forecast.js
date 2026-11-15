@@ -8,13 +8,16 @@
  * adaptive countermeasure recommendations.
  */
 
+const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this);
 (function(root, factory) {
-  if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.ForecastEngine = factory();
+  const instance = factory();
+  if (root) {
+    root.ForecastEngine = instance;
   }
-}(typeof self !== 'undefined' ? self : this, function() {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = instance;
+  }
+}(_root, function() {
   'use strict';
 
   function mapStatus(status) {
@@ -267,3 +270,7 @@
 
   return ForecastEngine;
 }));
+
+const ForecastEngine = (typeof globalThis !== 'undefined' && globalThis.ForecastEngine) || (typeof module === 'object' && module.exports);
+export default ForecastEngine;
+export { ForecastEngine };

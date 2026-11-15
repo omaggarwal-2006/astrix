@@ -109,3 +109,63 @@
 .form-msg { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); font-size: var(--fs-sm); display: none; }
 .form-msg.error { display: block; background: var(--bad-soft); color: #FFD7D2; border: 1px solid rgba(238, 100, 88, 0.45); }
 .form-msg.success { display: block; background: var(--ok-soft); color: #C5F2E5; border: 1px solid rgba(69, 194, 162, 0.4); }
+
+/* NASA LSDS-7 & LSDS-8 Hematology Panel */
+.biomarker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.biomarker-item {
+  padding: 14px 16px;
+  background: rgba(7, 18, 28, 0.7);
+  border: 1px solid rgba(70, 227, 255, 0.18);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.biomarker-item:hover {
+  border-color: rgba(70, 227, 255, 0.45);
+  transform: translateY(-2px);
+}
+.biomarker-item.is-alert {
+  border-color: rgba(255, 91, 79, 0.5);
+  background: rgba(255, 91, 79, 0.08);
+}
+.biomarker-item.is-watch {
+  border-color: rgba(255, 184, 77, 0.5);
+  background: rgba(255, 184, 77, 0.08);
+}
+.biomarker-name {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.biomarker-val {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  color: var(--text);
+  line-height: 1.1;
+}
+.biomarker-val small {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  margin-left: 4px;
+  font-family: var(--font-body);
+}
+.biomarker-meta {
+  font-size: 11px;
+  color: var(--text-2);
+}
+.biomarker-ref {
+  font-size: 10.5px;
+  color: var(--cyan);
+  opacity: 0.85;
+}

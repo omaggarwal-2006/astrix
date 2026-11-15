@@ -413,8 +413,13 @@
   if (typeof window !== 'undefined') {
     window.LANDFALL_MODEL = modelData;
   }
+  if (typeof globalThis !== 'undefined') {
+    globalThis.LANDFALL_MODEL = modelData;
+  }
 
   if (typeof module === 'object' && module.exports) {
     module.exports = modelData;
   }
-}(typeof self !== 'undefined' ? self : this));
+}(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this)));
+
+export default (typeof globalThis !== 'undefined' ? globalThis.LANDFALL_MODEL : null);

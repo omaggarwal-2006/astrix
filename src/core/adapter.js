@@ -6,6 +6,7 @@
 
 import { generateAlertsForDay, generateForecastForDay, generateDayReadings, BASELINE_READINGS } from "../data/sample-data.js";
 import { predictReadings, getEngineMetadata } from "../../engine/api.js";
+import ForecastEngine from "../../engine/forecast.js";
 
 /**
  * Returns active health alerts for a specific transit day
@@ -16,10 +17,68 @@ export function getAlerts(day) {
 }
 
 /**
- * Returns landing-day physiological forecast dimensions
+ * Returns landing-day physiological forecast dimensions driven by the ML Engine
  * Shape: Forecast: { dimension, landing: { low, mid, high }, status, confidence, assumptions[] }
  */
 export function getForecast(day, exerciseHours = 1.2) {
+  try {
+    const res = ForecastEngine.calculateLandingReadiness(day, exerciseHours);
+    if (res && res.metrics) {
+      const m = res.metrics;
+      return [
+        {
+          dimension: "Bone mineral density",
+          landing: { low: m.boneDensity.low, mid: m.boneDensity.projectedRetention, high: m.boneDensity.high },
+          status: m.boneDensity.status,
+          confidence: "High (NASA HRP published rate 1.0-1.5%/mo)",
+          citationUrl: m.boneDensity.citationUrl,
+          assumptions: ["Assumes ARED resistive exercise load mitigates ~70% of cancellous bone resorption."]
+        },
+        {
+          dimension: "Aerobic & muscle power",
+          landing: { low: m.aerobicAndMuscle.low, mid: m.aerobicAndMuscle.projectedRetention, high: m.aerobicAndMuscle.high },
+          status: m.aerobicAndMuscle.status,
+          confidence: "High (NASA HRP published rate 10-12% loss)",
+          citationUrl: m.aerobicAndMuscle.citationUrl,
+          assumptions: ["Assumes 1.5 h/day exercise represents 100% countermeasure adherence."]
+        },
+        {
+          dimension: "Cardiovascular regulation",
+          landing: { low: m.cardiovascular.low, mid: m.cardiovascular.projectedRetention, high: m.cardiovascular.high },
+          status: m.cardiovascular.status,
+          confidence: "Moderate",
+          citationUrl: m.cardiovascular.citationUrl,
+          assumptions: ["Landing-day orthostatic intolerance mitigated by fluid loading and g-suit."]
+        },
+        {
+          dimension: "Neurovestibular balance",
+          landing: { low: m.neurovestibularBalance.low, mid: m.neurovestibularBalance.projectedRetention, high: m.neurovestibularBalance.high },
+          status: m.neurovestibularBalance.status,
+          confidence: "Moderate",
+          citationUrl: m.neurovestibularBalance.citationUrl,
+          assumptions: ["Post-landing 0.38g otolith recalibration curve extrapolated from lunar returns."]
+        },
+        {
+          dimension: "Circadian sleep debt",
+          landing: { low: m.sleepDebt.low, mid: m.sleepDebt.projectedRetention, high: m.sleepDebt.high },
+          status: m.sleepDebt.status,
+          confidence: "High (ML Ridge calibration with cumulative CUSUM debt)",
+          citationUrl: m.sleepDebt.citationUrl,
+          assumptions: ["Restoration requires 480nm circadian lighting phase-shift + workload cap."]
+        },
+        {
+          dimension: "Cognitive vigilance",
+          landing: { low: m.cognitiveMood.low, mid: m.cognitiveMood.projectedRetention, high: m.cognitiveMood.high },
+          status: m.cognitiveMood.status,
+          confidence: "Moderate",
+          citationUrl: m.cognitiveMood.citationUrl,
+          assumptions: ["Correlated with cumulative sleep debt and autonomous workload stress."]
+        }
+      ];
+    }
+  } catch (err) {
+    console.warn("LANDFALL: ForecastEngine runtime error, falling back to sample generator:", err);
+  }
   return generateForecastForDay(day, exerciseHours);
 }
 

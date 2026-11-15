@@ -9,7 +9,7 @@ import { CONFIG } from "../../core/config.js";
 import { formatDelay } from "../../core/delay.js";
 import { $, esc, PATH, DELIVERY, METRIC, ICON, pill, flash } from "../dom.js";
 import { envControlsHTML, bindEnvControls } from "../simulation.js";
-import { previewPacket, needsPacket, sendReport } from "../report.js";
+import { previewPacket, needsPacket, sendReport, exportPacketJSON } from "../report.js";
 
 export function mountComms() {
   const panel = document.getElementById('panel-comms');
@@ -69,6 +69,9 @@ export function mountComms() {
       navigator.clipboard?.writeText(text).then(() => {
         const b = $('#btn-copy-packet'); b.innerHTML = 'Copied'; setTimeout(() => { b.innerHTML = `${ICON.copy} Copy JSON`; }, 1600);
       }).catch(() => {});
+    } else if (e.target.closest('#btn-export-packet')) {
+      const pkt = previewPacket(AppState.view);
+      if (pkt) exportPacketJSON(pkt);
     } else if (e.target.closest('.retry-packet-btn')) {
       const idx = parseInt(e.target.closest('.retry-packet-btn').dataset.index, 10);
       const q = getQueue();
@@ -126,6 +129,7 @@ export function renderTriageTab() {
       <div class="packet-actions">
         <button class="btn btn-primary" id="btn-send-packet">${ICON.send} ${d.delivery === 'QUEUE_OFFLINE' ? 'Queue packet for next contact' : 'Send packet to Earth'}</button>
         <button class="btn" id="btn-copy-packet">${ICON.copy} Copy JSON</button>
+        <button class="btn" id="btn-export-packet">📥 Export JSON</button>
       </div>`;
   }
   renderQueueTable(getQueue());

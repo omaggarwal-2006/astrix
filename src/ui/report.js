@@ -84,3 +84,23 @@ export function sendReport() {
   AppState.renderCurrentTab();
   return res.packet;
 }
+
+/** Downloads the packet as a standalone RFC/DTN JSON bundle file. */
+export function exportPacketJSON(packet) {
+  if (!packet) return;
+  try {
+    const jsonStr = JSON.stringify(packet, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DTN_BUNDLE_${packet.packet_id || 'EXPORT'}_DAY${packet.mission_ts || 0}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    playSound('click');
+  } catch (err) {
+    console.warn("Failed to export packet JSON:", err);
+  }
+}

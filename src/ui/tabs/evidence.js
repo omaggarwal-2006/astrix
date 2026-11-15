@@ -57,7 +57,7 @@ export function renderEvidence() {
           <tbody>
             <tr><td>Triage, packets, checksums, store-and-forward queue, the decision loop</td><td>${pill('ok', 'shape-circle', 'Working code')}</td></tr>
             <tr><td>180-day astronaut data, alerts and forecast</td><td>${pill('warn', 'shape-triangle', 'Synthetic sample')}</td></tr>
-            <tr><td>Forecast model (ridge regression, separate branch)</td><td>${pill('info', 'shape-circle', 'Built, not merged')}</td></tr>
+            <tr><td>Forecast model (7.5 KB Ridge regression, 100% offline in-browser)</td><td>${pill('ok', 'shape-circle', 'Integrated & active')}</td></tr>
             <tr><td>Link to Earth and ground replies</td><td>${pill('neutral', 'shape-circle', `Simulated, ${CONFIG.queue.speedup}× faster`)}</td></tr>
             <tr><td>Thresholds and the exercise response curve</td><td>${pill('neutral', 'shape-circle', 'Team assumptions')}</td></tr>
           </tbody>

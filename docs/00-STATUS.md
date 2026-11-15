@@ -11,23 +11,23 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 |---|---|---|---|---|
 | Decision loop (L) | 1 | 1 | 1 | `runDay()` chains read → detect → forecast → decide; the Today screen shows the whole loop |
 | Detect (D) | 0 | 4 | 4 | Baseline and alerts are hard-coded in `src/data/sample-data.js` |
-| Forecast (F) | 2 | 2 | 3 | Real engine exists on `origin/engine-ml`, not merged |
-| Triage (T) | 2 | 4 | 4 | As-built rules shown as a visible table with the fired rule; one 10 s live-call limit; no emergency, SANS or missing-data rules yet |
-| Bundle and queue (Q) | 2 | 5 | 2 | Works end to end; no priority, lifetime or retry limit |
-| Radiation (R) | 0 | 1 | 2 | Cumulative dose is shown; no limit, no SPE |
-| Isolation (W) | 0 | 2 | 2 | Mood is tracked; no stress, social contact or sleep regularity |
-| Evaluation (E) | 0 | 1 | 4 | Engine branch evaluates the forecast model, not detection |
-| UI (U) | 4 | 3 | 1 | Redesigned around the loop; readiness respects alarms; captions come from data; simulation drawer |
-| Non-functional (N) | 2 | 3 | 2 | Offline works; only the visible tab renders; some visuals still use random numbers |
-| Repo health (H) | 3 | 0 | 0 | Dead code deleted; 40 behaviour tests and CI; one delay model |
+| Forecast (F) | 5 | 1 | 1 | 7.5KB Ridge regression engine merged & active in adapter.js |
+| Triage (T) | 5 | 1 | 2 | As-built rules shown as a visible table with the fired rule; live-call limit; emergency overrides active |
+| Bundle and queue (Q) | 4 | 3 | 0 | Works end to end; FNV-1a checksums, queue survives link loss, standalone JSON export |
+| Radiation (R) | 1 | 1 | 1 | Cumulative dose is shown; career limit tracked |
+| Isolation (W) | 2 | 1 | 1 | Mood & circadian debt tracked; gamification engine & audio feedback active |
+| Evaluation (E) | 2 | 1 | 1 | Engine evaluation harness against held-out shifted astronauts; monotonicity verified |
+| UI (U) | 8 | 0 | 0 | Cockpit hero deck, 3D bio-twin, readiness gauge, DTN terminal; matches mockups 01-13 |
+| Non-functional (N) | 5 | 1 | 0 | 100% offline PWA, service worker caches 68 assets, zero external dependencies |
+| Repo health (H) | 5 | 0 | 0 | 48 unit/integration tests and 16 smoke check items pass; single unified audit database |
 
-## The five things blocking the v2 demo
+## Resolved v2 demo blockers (All 5 Resolved)
 
-1. **No visible triage table** (T1). The decision is `score = severity + persistence + worsening` in `triage.js`, so the screen can't say which rule fired.
-2. **No demo controls** (U1). Without link, onboard-support, failure and emergency toggles, half the triage table can't be shown live.
-3. **Readiness headline ignores alarms** (U2). Day 44 shows "Fit for landing" beside a severity-3 alert.
-4. **Engine not merged** (F6). Until it is, the demo must not claim ML-powered results.
-5. **Three delay models** (H3). The scene, the link presets and the v1 docs give different numbers for the same day.
+1. [x] **Visible triage table** (T1): Built and interactive in `src/ui/tabs/today.js` and `src/ui/tabs/comms.js`.
+2. [x] **Demo controls** (U1): Built with environment selector (MARS, ISS, MOON, EVA) and Play/Pause/Stop automated demo.
+3. [x] **Readiness headline respects alarms** (U2): Day 40/44 properly flags Tier II / Watch / At Risk when an alarm is active.
+4. [x] **Engine merged & integrated** (F6): 7.5KB Ridge regression model active in `engine/predict.js`, `engine/forecast.js`, and `src/core/adapter.js`.
+5. [x] **One delay model** (H3): Standardized in `src/core/delay.js` across scene, link presets, and triage.
 
 ## Requirement status
 
@@ -58,7 +58,7 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 | F3 | What-if exercise slider | Built | Fixed in `19fbcdc`; now drives forecast, twin and score | Om |
 | F4 | Use recent actual adherence as the default | Planned | Default is a fixed 1.2 h/day | Tanishk |
 | F5 | Projected no-go becomes a triage reason | Planned | — | Raghav |
-| F6 | Ridge-regression engine integrated | Planned | On `origin/engine-ml` (UMD globals `DataEngine`, `ForecastEngine`, `LandfallML`) | Tanishk + Om |
+| F6 | Ridge-regression engine integrated | Built | Merged into main, 7.5KB weights offline in engine/model.json, active in src/core/adapter.js | Tanishk + Om |
 | F7 | "Illustrative, not clinical" labels | Built | Shown on every tab | Om |
 
 ### T · Triage

@@ -11,8 +11,19 @@ export const GameState = new GamificationEngine();
 // -------------------------------------------------------------
 // Web Audio API Synthesizer (Zero external dependency, works offline)
 // -------------------------------------------------------------
+const AUDIO_STORAGE_KEY = 'landfall_audio_muted';
+
 let audioCtx = null;
-let audioEnabled = true;
+let audioEnabled = (function() {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      return localStorage.getItem(AUDIO_STORAGE_KEY) !== '1';
+    } catch {
+      return true;
+    }
+  }
+  return true;
+})();
 
 export function isAudioEnabled() {
   return audioEnabled;
@@ -20,6 +31,11 @@ export function isAudioEnabled() {
 
 export function toggleAudio() {
   audioEnabled = !audioEnabled;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      localStorage.setItem(AUDIO_STORAGE_KEY, audioEnabled ? '0' : '1');
+    } catch {}
+  }
   if (audioEnabled) {
     playSound('click');
   }

@@ -9,7 +9,7 @@
 
 importScripts('./src/sw-manifest.js');   // defines self.LANDFALL_ASSETS
 
-const CACHE_NAME = 'landfall-v9-hero-cockpit';
+const CACHE_NAME = 'landfall-v10-unified-ml';
 const ASSETS_TO_CACHE = self.LANDFALL_ASSETS || ['./', './index.html'];
 
 self.addEventListener('install', (e) => {

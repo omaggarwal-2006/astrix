@@ -26,51 +26,111 @@ export function drawMicroLabCanvas(layer, integPct) {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
-  // Deep void background
-  ctx.fillStyle = '#030509';
+  // Deep cyber-physical space background
+  ctx.fillStyle = '#03070d';
   ctx.fillRect(0, 0, w, h);
 
   const mid = w / 2;
 
-  // Left half: Calibrated Healthy Baseline (Day 1)
-  ctx.strokeStyle = 'rgba(63, 181, 154, 0.45)';
-  ctx.lineWidth = 1.4;
-  for (let x = 20; x < mid - 20; x += 22) {
-    for (let y = 20; y < h - 20; y += 22) {
+  // Background radar/ultrasonic concentric arcs
+  ctx.strokeStyle = 'rgba(70, 227, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for (let r = 30; r < w; r += 45) {
+    ctx.beginPath();
+    ctx.arc(mid, h / 2, r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Left half: Calibrated Healthy Baseline (Day 1 - Dense, ordered lattice)
+  ctx.strokeStyle = 'rgba(62, 230, 168, 0.4)';
+  ctx.lineWidth = 1.2;
+  const leftNodes = [];
+  for (let x = 24; x < mid - 24; x += 24) {
+    for (let y = 24; y < h - 20; y += 22) {
+      leftNodes.push({ x, y });
       ctx.beginPath();
-      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
       ctx.stroke();
+    }
+  }
+  // Connect adjacent nodes with healthy structural struts
+  ctx.strokeStyle = 'rgba(62, 230, 168, 0.2)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < leftNodes.length - 1; i++) {
+    const p1 = leftNodes[i];
+    const p2 = leftNodes[i + 1];
+    if (Math.abs(p1.x - p2.x) <= 24 && Math.abs(p1.y - p2.y) <= 24) {
       ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 18, y + 8);
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
       ctx.stroke();
     }
   }
 
-  // Right half: Current Transit Deconditioning State
+  // Right half: Current Transit Deconditioning State (Micro-fractures, thinned trabeculae)
   const lossRatio = Math.max(0, (100 - integPct) / 25);
-  ctx.strokeStyle = integPct < 92 ? 'rgba(229, 89, 79, 0.5)' : 'rgba(232, 169, 58, 0.5)';
+  const toneColor = integPct < 90 ? 'rgba(255, 91, 79, ' : integPct < 95 ? 'rgba(255, 184, 77, ' : 'rgba(70, 227, 255, ';
+  ctx.strokeStyle = toneColor + '0.5)';
   ctx.lineWidth = Math.max(0.6, 1.4 - lossRatio * 0.7);
-  for (let x = mid + 20; x < w - 20; x += 26) {
-    for (let y = 20; y < h - 20; y += 26) {
-      if (Math.random() > lossRatio * 0.35) {
+
+  const rightNodes = [];
+  // Use deterministic seed based on layer and integPct to prevent jitter
+  let seed = Math.round(integPct * 10);
+  const pseudoRandom = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
+  for (let x = mid + 24; x < w - 20; x += 26) {
+    for (let y = 24; y < h - 20; y += 24) {
+      if (pseudoRandom() > lossRatio * 0.38) {
+        const dx = (pseudoRandom() * 6 - 3) * (lossRatio + 0.2);
+        const dy = (pseudoRandom() * 6 - 3) * (lossRatio + 0.2);
+        const nx = x + dx;
+        const ny = y + dy;
+        rightNodes.push({ x: nx, y: ny });
         ctx.beginPath();
-        ctx.arc(x + (Math.random() * 4 - 2), y + (Math.random() * 4 - 2), Math.max(2, 5 - lossRatio * 2.5), 0, Math.PI * 2);
+        ctx.arc(nx, ny, Math.max(1.8, 4.5 - lossRatio * 2.2), 0, Math.PI * 2);
         ctx.stroke();
       }
     }
   }
 
-  // Center comparison beam
-  ctx.strokeStyle = '#5FA8D3';
+  // Struts on right half with micro-voids
+  ctx.strokeStyle = toneColor + '0.22)';
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < rightNodes.length - 1; i++) {
+    const p1 = rightNodes[i];
+    const p2 = rightNodes[i + 1];
+    if (Math.abs(p1.x - p2.x) <= 28 && Math.abs(p1.y - p2.y) <= 28) {
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    }
+  }
+
+  // Center comparison beam with glow
+  ctx.strokeStyle = 'rgba(70, 227, 255, 0.7)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(mid, 0);
   ctx.lineTo(mid, h);
   ctx.stroke();
 
-  // Beam label
-  ctx.fillStyle = '#E8E4D8';
-  ctx.font = '11px sans-serif';
-  ctx.fillText('COMPARISON BEAM', mid - 52, 16);
+  // Reticle indicators on center beam
+  ctx.fillStyle = '#46e3ff';
+  ctx.fillRect(mid - 3, h / 2 - 1, 6, 2);
+  ctx.fillRect(mid - 3, 28, 6, 2);
+  ctx.fillRect(mid - 3, h - 30, 6, 2);
+
+  // Tactical HUD Headers
+  ctx.fillStyle = '#3ee6a8';
+  ctx.font = '10px monospace';
+  ctx.fillText('DAY 001 · 100% NOMINAL', 20, 18);
+
+  ctx.fillStyle = integPct < 90 ? '#ff5b4f' : integPct < 95 ? '#ffb84d' : '#46e3ff';
+  ctx.fillText(`TRANSIT · ${integPct.toFixed(1)}% INTEGRITY`, mid + 16, 18);
+
+  // Sub-beam label
+  ctx.fillStyle = 'rgba(163, 188, 203, 0.7)';
+  ctx.font = '9px monospace';
+  ctx.fillText('SHEAR ELASTOGRAPHY PROBE', mid - 68, h - 10);
 }

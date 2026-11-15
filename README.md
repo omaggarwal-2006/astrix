@@ -30,11 +30,11 @@ The repo is moving from the v1 build to the **v2 design** in [`docs/`](docs/READ
 | | Today (v1 build) | v2 target |
 |---|---|---|
 | Alerts | Scripted sample alerts | Computed personal baseline, EWMA drift, signal fusion, missing-data alerts |
-| Forecast | Sample formulas | Ranges with go/no-go; feeds triage; ML engine (on `origin/engine-ml`) advisory |
+| Forecast | Sample formulas | Live ML Ridge-regression engine (`engine/forecast.js`) with ranges, go/no-go, countermeasure exercise adherence |
 | Triage | Hidden score | Visible decision table with emergency, SANS and CO2 rules |
-| Queue | FIFO with retries | Priority, lifetime, retry limit, receipts |
-| Radiation and isolation | Cumulative dose; mood | Dose limit, solar-particle-event alert, 3-question check-in |
-| Evidence | — | Evaluation harness against fixed thresholds |
+| Queue | FIFO with retries | Priority, lifetime, retry limit, receipts, RFC JSON export |
+| Biomarkers & LSDS | Baseline metrics | NASA LSDS-7 / LSDS-8 spaceflight hematology & metabolic panel (WBC, Calcium, BUN, Hematocrit, Platelets, IL-6) |
+| Evidence | — | Evaluation harness against fixed thresholds & live dataset evidence |
 
 Requirement-by-requirement status: [`docs/00-STATUS.md`](docs/00-STATUS.md).
 
@@ -74,7 +74,7 @@ npm run test:smoke
 npm run check
 ```
 
-`npm test` runs 33 unit and integration tests (triage, packets, queue and link recovery, adapter shapes, delay, config). `test:smoke` checks that the 16 UI features exist in the source. `check` verifies the service worker's file list and every doc link. CI runs all three on every push and pull request. Test plan: [`docs/09-TEST_PLAN.md`](docs/09-TEST_PLAN.md).
+`npm test` runs 48 unit and integration tests (triage, packets, queue and link recovery, adapter shapes, delay, config, ML engine, gamification, and LSDS hematology). `test:smoke` checks that the 16 UI features exist in the source. `check` verifies the service worker's file list (68 pre-cached assets) and every doc link. CI runs all three on every push and pull request. Test plan: [`docs/09-TEST_PLAN.md`](docs/09-TEST_PLAN.md).
 
 ## Repo layout
 

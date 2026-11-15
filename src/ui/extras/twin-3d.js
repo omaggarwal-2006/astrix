@@ -744,6 +744,20 @@ export function init3DTwin(containerEl) {
   renderer.domElement.id = 'twin-3d-canvas';
   renderer.domElement.setAttribute('aria-label', 'Interactive 3D astronaut digital twin. Drag to orbit, scroll to zoom, click a body region to inspect it.');
   renderer.domElement.setAttribute('role', 'img');
+  
+  // Context-loss resilience
+  renderer.domElement.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    console.warn('LANDFALL: WebGL context lost. Pausing 3D animation loop.');
+    cancelAnimationFrame(animFrameId);
+    isAnimating = false;
+  }, false);
+
+  renderer.domElement.addEventListener('webglcontextrestored', () => {
+    console.log('LANDFALL: WebGL context restored. Rebuilding 3D digital twin.');
+    init3DTwin(containerRef);
+  }, false);
+
   containerEl.appendChild(renderer.domElement);
 
   if (THREE.OrbitControls) {

@@ -18,15 +18,16 @@
  *   - modelInfo()
  */
 
+const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this);
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) {
-    // Node.js environment
-    module.exports = factory();
-  } else {
-    // Browser environment
-    root.LandfallML = factory();
+  const instance = factory();
+  if (root) {
+    root.LandfallML = instance;
   }
-}(typeof self !== 'undefined' ? self : this, function () {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = instance;
+  }
+}(_root, function () {
   'use strict';
 
   // Embed production model weights (from /engine/model.json) for 100% offline, zero-CORS reliability
@@ -410,3 +411,7 @@
     modelInfo
   };
 }));
+
+const LandfallML = (typeof globalThis !== 'undefined' && globalThis.LandfallML) || (typeof module === 'object' && module.exports);
+export default LandfallML;
+export { LandfallML };
