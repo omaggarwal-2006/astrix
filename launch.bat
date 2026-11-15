@@ -3,16 +3,24 @@ setlocal EnableDelayedExpansion
 title LANDFALL 2.0 - Local Server
 cd /d "%~dp0"
 
-rem ---- Pick a free port (8080-8090) ----
+rem ---- Pick a free port (3000-3010, then 8080-8090) ----
 set PORT=
-for /L %%P in (8080,1,8090) do (
+for /L %%P in (3000,1,3010) do (
     if not defined PORT (
         netstat -ano | findstr /R /C:":%%P .*LISTENING" >nul
         if errorlevel 1 set PORT=%%P
     )
 )
 if not defined PORT (
-    echo [ERROR] No free port found between 8080 and 8090.
+    for /L %%P in (8080,1,8090) do (
+        if not defined PORT (
+            netstat -ano | findstr /R /C:":%%P .*LISTENING" >nul
+            if errorlevel 1 set PORT=%%P
+        )
+    )
+)
+if not defined PORT (
+    echo [ERROR] No free port found between 3000-3010 or 8080-8090.
     pause
     exit /b 1
 )

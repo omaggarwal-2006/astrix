@@ -8,6 +8,9 @@
  * adaptive countermeasure recommendations.
  */
 
+import LandfallML from "./predict.js";
+import DataEngine from "./data.js";
+
 const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this);
 (function(root, factory) {
   const instance = factory();
@@ -39,17 +42,13 @@ const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 
       const adherenceRatio = exHours / 1.5;
       const remainingDays = Math.max(0, 180 - day);
 
-      // 1. Gather historical telemetry up to day
+      // 1. Gather historical telemetry up to day from DataEngine
       let history = [];
-      if (typeof window !== 'undefined' && window.DataEngine && typeof window.DataEngine.getAllDays === 'function') {
-        history = window.DataEngine.getAllDays().filter(d => d.day <= day);
-      } else if (typeof require === 'function') {
-        try {
-          const DataEngine = require('./data.js');
-          history = DataEngine.getAllDays().filter(d => d.day <= day);
-        } catch (e) {
-          // Fallback to synthetic stub if data module missing
-        }
+      const de = (typeof DataEngine !== 'undefined' && DataEngine) ||
+                 (typeof globalThis !== 'undefined' && globalThis.DataEngine) ||
+                 (typeof window !== 'undefined' && window.DataEngine);
+      if (de && typeof de.getAllDays === 'function') {
+        history = de.getAllDays().filter(d => d.day <= day);
       }
 
       // Check current day vitals for acute disruption
@@ -60,18 +59,13 @@ const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 
 
       // 2. Obtain predictions from ML Engine (LandfallML)
       let mlPreds = null;
-      let mlEngine = null;
-      if (typeof window !== 'undefined' && window.LandfallML) {
-        mlEngine = window.LandfallML;
-      } else if (typeof require === 'function') {
-        try {
-          mlEngine = require('./predict.js');
-        } catch (e) {}
-      }
+      const ml = (typeof LandfallML !== 'undefined' && LandfallML) ||
+                 (typeof globalThis !== 'undefined' && globalThis.LandfallML) ||
+                 (typeof window !== 'undefined' && window.LandfallML);
 
-      if (mlEngine && history.length > 0) {
+      if (ml && history.length > 0) {
         try {
-          mlPreds = mlEngine.whatIf(history, exHours);
+          mlPreds = ml.whatIf(history, exHours);
         } catch (err) {
           console.warn("LANDFALL ForecastEngine: ML prediction fallback due to:", err);
         }
@@ -144,8 +138,29 @@ const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 
 
         // Neurovestibular fatigue slight dip
         balanceRetention = +(84.0 + (1.0 - severity) * 2.3).toFixed(1);
+        balanceLow = +(balanceRetention - 2.0).toFixed(1);
+        balanceHigh = +(balanceRetention + 2.0).toFixed(1);
         balanceStatus = balanceRetention >= 86 ? 'nominal' : 'caution';
       }
+
+      // Ensure strict monotonic range ordering: low <= mid <= high
+      boneLow = Math.min(boneLow, boneRetention);
+      boneHigh = Math.max(boneHigh, boneRetention);
+
+      fitLow = Math.min(fitLow, aerobicAndMuscleRetention);
+      fitHigh = Math.max(fitHigh, aerobicAndMuscleRetention);
+
+      cardioLow = Math.min(cardioLow, cardioRetention);
+      cardioHigh = Math.max(cardioHigh, cardioRetention);
+
+      balanceLow = Math.min(balanceLow, balanceRetention);
+      balanceHigh = Math.max(balanceHigh, balanceRetention);
+
+      sleepLow = Math.min(sleepLow, sleepRetention);
+      sleepHigh = Math.max(sleepHigh, sleepRetention);
+
+      moodLow = Math.min(moodLow, moodRetention);
+      moodHigh = Math.max(moodHigh, moodRetention);
 
       // Composite Score & Overall Status
       const compositeScore = Math.round(

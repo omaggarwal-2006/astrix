@@ -422,4 +422,6 @@
   }
 }(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this)));
 
-export default (typeof globalThis !== 'undefined' ? globalThis.LANDFALL_MODEL : null);
+const LANDFALL_MODEL = typeof globalThis !== 'undefined' ? globalThis.LANDFALL_MODEL : null;
+export default LANDFALL_MODEL;
+export { LANDFALL_MODEL };

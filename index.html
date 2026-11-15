@@ -56,6 +56,12 @@
         var m = document.getElementById('title-screen-modal');
         if (m) { m.style.display = 'none'; try { m.remove(); } catch (err) {} }
       }
+      var modal = document.getElementById('title-screen-modal');
+      if (modal) {
+        modal.addEventListener('click', function(ev) {
+          if (ev.target === modal) dismiss();
+        });
+      }
       ['btn-start-mission', 'btn-start-demo'].forEach(function (id) {
         var b = document.getElementById(id);
         if (b) b.addEventListener('click', dismiss, { capture: true });
@@ -63,6 +69,10 @@
       document.addEventListener('keydown', function (ev) {
         if ((ev.key === 'Enter' || ev.key === 'Escape') && document.getElementById('title-screen-modal')) dismiss();
       });
+      setTimeout(function() {
+        var startBtn = document.getElementById('btn-start-mission');
+        if (startBtn) startBtn.focus();
+      }, 100);
     })();
   </script>
 
@@ -543,9 +553,9 @@
   <script src="./assets/vendor/chart.umd.min.js"></script>
   <script src="./assets/vendor/three.min.js"></script>
   <script src="./assets/vendor/OrbitControls.js"></script>
-  <script src="./engine/model.js"></script>
-  <script src="./engine/predict.js"></script>
-  <script src="./engine/forecast.js"></script>
+  <script type="module" src="./engine/model.js"></script>
+  <script type="module" src="./engine/predict.js"></script>
+  <script type="module" src="./engine/forecast.js"></script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

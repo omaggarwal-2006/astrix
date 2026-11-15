@@ -1,6 +1,6 @@
 # 00 · Status: v2 Target vs As-Built
 
-Last reviewed: 14 Nov 2026, against `main` at commit `8b24eef` plus the `src/` restructure ([22-MIGRATION.md](22-MIGRATION.md)), and the unmerged branch `origin/engine-ml`.
+Last reviewed: 15 Nov 2026, against `main` with `engine/` (Ridge regression engine) fully merged and integrated into `src/core/adapter.js`.
 Update this file in the same pull request as any code change that moves a requirement.
 
 Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirmed in [08-TEAM_AND_PLAN.md](08-TEAM_AND_PLAN.md).

@@ -12,7 +12,7 @@
   } else {
     root.DataEngine = factory();
   }
-}(typeof self !== 'undefined' ? self : this, function() {
+}(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this), function() {
   'use strict';
 
   const ASTRONAUT_BASELINE = {
@@ -7010,3 +7010,7 @@
 
   return DataEngine;
 }));
+
+const DataEngine = (typeof globalThis !== 'undefined' && globalThis.DataEngine) || (typeof module === 'object' && module.exports);
+export default DataEngine;
+export { DataEngine };

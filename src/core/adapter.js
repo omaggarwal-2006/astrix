@@ -1,7 +1,7 @@
 /**
  * LANDFALL - Adapter Layer (src/core/adapter.js)
  * Isolates sample and engine data from the UI.
- * When the engine (origin/engine-ml) is merged into engine/, only this file changes.
+ * Integrates the engine/ ML inference models directly into the core decision loop with fallback.
  */
 
 import { generateAlertsForDay, generateForecastForDay, generateDayReadings, BASELINE_READINGS } from "../data/sample-data.js";

@@ -18,6 +18,8 @@
  *   - modelInfo()
  */
 
+import LANDFALL_MODEL from "./model.js";
+
 const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this);
 (function (root, factory) {
   const instance = factory();
@@ -31,7 +33,7 @@ const _root = typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 
   'use strict';
 
   // Embed production model weights (from /engine/model.json) for 100% offline, zero-CORS reliability
-  let MODEL_DATA = null;
+  let MODEL_DATA = LANDFALL_MODEL || (typeof globalThis !== 'undefined' ? globalThis.LANDFALL_MODEL : null);
 
   // Check if window.LANDFALL_MODEL was loaded via <script src="engine/model.js">
   if (typeof window !== 'undefined' && window.LANDFALL_MODEL) {

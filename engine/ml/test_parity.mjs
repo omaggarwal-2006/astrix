@@ -14,10 +14,8 @@ const __dirname = path.dirname(__filename);
 const predictPath = path.join(__dirname, '..', 'predict.js');
 const modelJsonPath = path.join(__dirname, '..', 'model.json');
 
-// Import CommonJS predict.js into ESM
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const LandfallML = require(predictPath);
+// Import predict.js via ESM
+import LandfallML from '../predict.js';
 
 const modelData = JSON.parse(fs.readFileSync(modelJsonPath, 'utf8'));
 LandfallML.setModelData(modelData);
