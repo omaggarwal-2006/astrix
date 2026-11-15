@@ -19,7 +19,13 @@ export const SOURCES = [
       supports: "Lunar one-way latency 3-14 s; Mars up to 44 min round trip" },
     { id: "nasa_ascend", title: "NASA NTRS: Communication Delays, Disruptions and Blackouts for Crewed Mars Missions",
       url: "https://ntrs.nasa.gov/api/citations/20220013418/downloads/ASCEND-Communication%20Delays%2C%20Disruptions%2C%20and%20Blackouts%20for%20Crewed%20Mars%20Missions.pdf",
-      supports: "Delay = Earth-body distance / speed of light, over the Earth-Mars synodic cycle" }
+      supports: "Delay = Earth-body distance / speed of light, over the Earth-Mars synodic cycle" },
+    { id: "nasa_lsds7", title: "NASA LSDA / OSDR: LSDS-7 Complete Blood Count",
+      url: "https://osdr.nasa.gov/",
+      supports: "Longitudinal astronaut hematology, WBC shifts, and red cell indices in microgravity" },
+    { id: "nasa_lsds8", title: "NASA LSDA / OSDR: LSDS-8 Comprehensive Metabolic Panel & Cytokines",
+      url: "https://osdr.nasa.gov/",
+      supports: "Serum electrolytes, calcium resorption, BUN renal markers, and EvePanel cytokine assays" }
   ];
   
   export const NUMBERS = {
