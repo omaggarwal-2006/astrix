@@ -10,6 +10,7 @@ import { CONFIG } from "../../core/config.js";
 import { formatDelay } from "../../core/delay.js";
 import { $, esc, PATH, DELIVERY, METRIC, ICON, READINESS, severityPill, pill, countUp, flash } from "../dom.js";
 import { needsPacket, packetForToday, sendReport } from "../report.js";
+import { playSound } from "../extras/gamification.js";
 
 const RING_C = 2 * Math.PI * 58;
 
@@ -25,7 +26,7 @@ export function mountToday() {
     </div>
 
     <div class="today-hero">
-      <article class="card readiness-card reveal" id="readiness-card" style="--i:0">
+      <article class="card readiness-card hud-chassis reveal" id="readiness-card" style="--i:0">
         <div class="ring" aria-hidden="true">
           <svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="58" fill="none" stroke-width="10"/>
             <circle class="bar" id="readiness-ring" cx="66" cy="66" r="58" fill="none" stroke-width="10" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"/></svg>
@@ -38,7 +39,7 @@ export function mountToday() {
         </div>
       </article>
 
-      <article class="card decision-card reveal" id="decision-card" style="--i:1">
+      <article class="card decision-card hud-chassis reveal" id="decision-card" style="--i:1">
         <span class="eyebrow">Today's decision</span>
         <div class="decision-main">
           <div class="path-icon" id="decision-icon"></div>
@@ -74,6 +75,7 @@ export function mountToday() {
   panel.addEventListener('click', (e) => {
     const step = e.target.closest('[data-goto]');
     if (step) {
+      playSound('click');
       if (step.dataset.goto === 'rules') document.getElementById('rules-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
       else goTo(step.dataset.goto);
       return;

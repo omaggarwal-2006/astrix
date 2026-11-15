@@ -7,6 +7,7 @@ import { AppState } from "../../app/state.js";
 import { CONFIG } from "../../core/config.js";
 import { $, esc, METRIC, severityPill, pill, flash } from "../dom.js";
 import { renderTrendLines, initTrendChartButtons } from "../components/trend-chart.js";
+import { GameState, playSound, showUnlockToast } from "../extras/gamification.js";
 
 const KPIS = [
   { key: 'sleep_h', label: 'Sleep', unit: 'h', base: 'sleep_h', dec: 1, alert: 'sleep_h', lowBad: true },
@@ -192,6 +193,11 @@ function initCheckinForm() {
       sleep: val['monitor-sleep'], mood: val['monitor-mood'], exercise: val['monitor-exercise'], timestamp: Date.now()
     };
     localStorage.setItem(key, JSON.stringify(existing));
+    playSound('success');
+    const xpRes = GameState.awardXP(50, 'Daily Telemetry Check-in');
+    if (xpRes && xpRes.leveledUp) {
+      showUnlockToast('Promoted!', `Rank advanced to ${xpRes.rank.title} (Level ${xpRes.rank.level})`, '⭐');
+    }
     okBox.textContent = `Check-in for day ${AppState.currentDay} saved. Today's vitals now use your values.`;
     okBox.className = 'form-msg success';
     setTimeout(() => { okBox.className = 'form-msg'; }, 5000);

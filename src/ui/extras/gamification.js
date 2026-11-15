@@ -12,6 +12,19 @@ export const GameState = new GamificationEngine();
 // Web Audio API Synthesizer (Zero external dependency, works offline)
 // -------------------------------------------------------------
 let audioCtx = null;
+let audioEnabled = true;
+
+export function isAudioEnabled() {
+  return audioEnabled;
+}
+
+export function toggleAudio() {
+  audioEnabled = !audioEnabled;
+  if (audioEnabled) {
+    playSound('click');
+  }
+  return audioEnabled;
+}
 
 function getAudioContext() {
   if (!audioCtx && typeof window !== 'undefined') {
@@ -27,6 +40,7 @@ function getAudioContext() {
 }
 
 export function playSound(type) {
+  if (!audioEnabled) return;
   try {
     const ctx = getAudioContext();
     if (!ctx) return;

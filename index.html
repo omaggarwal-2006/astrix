@@ -82,8 +82,12 @@
         <span class="chip" id="chip-delay"><span class="muted">Earth</span> <b>2 min 48 s</b> <span class="muted">one way</span></span>
         <span class="chip" id="chip-link"><span class="dot"></span> <b>Link up</b></span>
         <span class="chip opt" id="chip-support"><span class="muted">Onboard</span> <b>CMO</b></span>
+        <span class="chip" id="chip-rank"><span class="muted">Rank</span> <b>LVL 2</b> <span class="muted">750 XP</span></span>
       </div>
       <div class="appbar-actions">
+        <button id="btn-toggle-audio" class="btn btn-ghost btn-sm" title="Toggle Sound FX" aria-pressed="true">
+          <span id="audio-icon">🔊</span> <span class="btn-label">Audio ON</span>
+        </button>
         <button id="btn-open-sim" class="btn" aria-haspopup="dialog" aria-controls="sim-drawer">
           <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
           <span class="btn-label">Simulation</span>
@@ -444,6 +448,10 @@
               <div class="card-head"><div><h3 class="card-title">Mission readiness score</h3><p class="card-sub">0–1000: 60 % landing dimensions, 25 % exercise adherence, 15 % completed scans</p></div><span class="pill neutral" id="score-tier">Tier I</span></div>
               <div class="score-value"><span id="score-num">0</span><small>/ 1000</small></div>
               <div class="score-parts" id="score-parts"></div>
+            </div>
+            <div class="card" id="twin-gamification-hud-card">
+              <div class="card-head"><div><h3 class="card-title">Astronaut Career &amp; Standing</h3><p class="card-sub">Gamified XP progression, achievements &amp; crew leaderboard</p></div></div>
+              <div id="twin-gamification-hud"></div>
             </div>
           </div>
         </div>

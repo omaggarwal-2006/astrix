@@ -6,6 +6,7 @@
 import { AppState } from "../../app/state.js";
 import { $, esc, forecastPill, pill, countUp } from "../dom.js";
 import { renderTrajectoryCone } from "../visuals/cone-renderer.js";
+import { GameState, playSound, showUnlockToast } from "../extras/gamification.js";
 
 export const COUNTERMEASURES_LIST = [
   { id: 'cm_ared', label: 'Resistive exercise on ARED, 1.5 h/day' },
@@ -83,6 +84,13 @@ export function mountForecast() {
     const cur = JSON.parse(localStorage.getItem('landfall_countermeasures') || '{}');
     cur[id] = e.target.checked;
     localStorage.setItem('landfall_countermeasures', JSON.stringify(cur));
+    if (e.target.checked) {
+      playSound('click');
+      const xpRes = GameState.awardXP(25, 'Countermeasure Checklist Completed');
+      if (xpRes && xpRes.leveledUp) {
+        showUnlockToast('Promoted!', `Rank advanced to ${xpRes.rank.title} (Level ${xpRes.rank.level})`, '⭐');
+      }
+    }
   });
 }
 

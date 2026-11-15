@@ -8,6 +8,7 @@ import { getReadings } from "../core/adapter.js";
 import { buildPacket } from "../core/packet.js";
 import { handleAlert, peekNextSeq } from "../core/pipeline.js";
 import { getQueue } from "../core/queue.js";
+import { GameState, playSound, showUnlockToast } from "./extras/gamification.js";
 
 const COUNTERMEASURE = {
   sleep_h: 'Protect an 8 h sleep window; dim cabin lighting; reduce evening workload.',
@@ -72,6 +73,13 @@ export function sendReport() {
     onboardSupport: AppState.env.onboardSupport,
     link: { available: AppState.env.linkUp, delay_s: v.delayS },
   });
+  if (res && res.packet) {
+    playSound('telemetry');
+    const xpRes = GameState.awardXP(100, 'Deep Space Telemetry Packet Transmission');
+    if (xpRes && xpRes.leveledUp) {
+      showUnlockToast('Promoted!', `Rank advanced to ${xpRes.rank.title} (Level ${xpRes.rank.level})`, '⭐');
+    }
+  }
   AppState.updateTelemetryText();
   AppState.renderCurrentTab();
   return res.packet;

@@ -1,57 +1,78 @@
 /* LANDFALL · Page layout: app bar, mission strip, tabs, views, grids, footer */
 
-.container { width: min(var(--page), 100% - 40px); margin-inline: auto; }
+.container { width: min(var(--page), 100% - 56px); margin-inline: auto; }
 
-/* ---------- App bar (Frosted Cosmic Glass) ---------- */
+/* ---------- App bar (Frosted Cosmic Glass & Tactile Command Deck) ---------- */
 .appbar {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(8, 13, 22, 0.84);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: rgba(8, 14, 24, 0.88);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), inset 0 -1px 0 rgba(108, 180, 228, 0.15);
 }
-.appbar-inner { display: flex; align-items: center; gap: 18px; min-height: 68px; padding-block: 10px; }
-.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text); margin-right: auto; }
+.appbar-inner { display: flex; align-items: center; gap: 20px; min-height: 72px; padding-block: 12px; }
+.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--text); margin-right: auto; }
 .brand:hover { text-decoration: none; }
-.brand-mark { width: 34px; height: 34px; flex: none; }
-.brand-name { font-family: var(--font-heading); font-size: 21px; letter-spacing: 0.16em; line-height: 1; }
-.brand-tag { display: block; font-size: 11.5px; color: var(--text-3); letter-spacing: 0.04em; margin-top: 4px; }
-.status-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.appbar-actions { display: flex; align-items: center; gap: 8px; }
+.brand-mark { width: 36px; height: 36px; flex: none; filter: drop-shadow(0 0 8px rgba(108, 180, 228, 0.4)); }
+.brand-name { font-family: var(--font-heading); font-size: 23px; letter-spacing: 0.18em; line-height: 1; text-shadow: 0 0 16px rgba(108, 180, 228, 0.3); }
+.brand-tag { display: block; font-size: 11.5px; color: var(--text-3); letter-spacing: 0.05em; margin-top: 4px; }
+.status-chips { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.appbar-actions { display: flex; align-items: center; gap: 10px; }
 
-/* ---------- Mission strip ---------- */
-.mission-strip { margin-top: 18px; padding: 0; overflow: hidden; }
-.mission-strip-head {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
+/* ---------- Mission strip (Tactile Cockpit HUD Housing) ---------- */
+.mission-strip {
+  margin-top: 26px; padding: 0; overflow: hidden;
+  background: linear-gradient(145deg, rgba(14, 22, 36, 0.85), rgba(7, 12, 20, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 18px 44px -14px rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
 }
-.mission-strip-head .title { font-family: var(--font-heading); font-size: var(--fs-md); letter-spacing: 0.06em; }
+.mission-strip-head {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+.mission-strip-head .title { font-family: var(--font-heading); font-size: var(--fs-md); letter-spacing: 0.08em; text-transform: uppercase; }
 .mission-strip-head .spacer { flex: 1; }
 .scene-env-select {
-  background: rgba(0, 0, 0, 0.3); color: var(--text-2); border: 1px solid var(--border-strong);
-  border-radius: 8px; padding: 6px 8px; font: 400 var(--fs-xs) var(--font-body);
+  background: rgba(3, 6, 12, 0.7); color: var(--text); border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px; padding: 7px 12px; font: 600 var(--fs-xs) var(--font-body);
+  box-shadow: inset 1px 1px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
 }
-.scene-hud { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); }
+.scene-hud { font-family: var(--font-mono); font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
 .mission-scene-content { position: relative; transition: max-height 420ms var(--ease), opacity 300ms var(--ease); max-height: 420px; }
 .mission-scene-content.collapsed { max-height: 0; opacity: 0; }
-.mission-scene-canvas { display: block; width: 100%; height: 220px; cursor: crosshair; }
-.scrubber { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 18px; padding: 14px 18px 16px; border-top: 1px solid var(--border); }
-.scrubber-label { font-family: var(--font-heading); font-size: 11.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); }
-.scrubber-track { position: relative; }
-.mission-scrubber-slider { width: 100%; height: 28px; }
-.scrubber-milestones { position: relative; height: 18px; font-size: 11.5px; color: var(--text-3); }
-.scrubber-milestones button {
-  position: absolute; transform: translateX(-50%); background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0 4px; white-space: nowrap;
+.mission-scene-canvas { display: block; width: 100%; height: 230px; cursor: crosshair; }
+.scrubber {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 24px; padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
 }
-.scrubber-milestones button:hover { color: var(--text); }
-.scrubber-milestones button.event { color: var(--warn); }
+.scrubber-label { font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.scrubber-track { position: relative; }
+.mission-scrubber-slider {
+  width: 100%; height: 32px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.scrubber-milestones { position: relative; height: 20px; font-size: 12px; color: var(--text-3); font-family: var(--font-mono); }
+.scrubber-milestones button {
+  position: absolute; transform: translateX(-50%); background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 2px 6px; white-space: nowrap;
+  border-radius: 4px; transition: all 180ms var(--ease);
+}
+.scrubber-milestones button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.scrubber-milestones button.event { color: var(--warn); font-weight: 700; text-shadow: 0 0 8px rgba(237, 177, 74, 0.4); }
 .scrubber-readout { text-align: right; line-height: 1.3; }
-.scrubber-readout strong { font-family: var(--font-heading); font-size: var(--fs-lg); display: block; }
-.scrubber-readout span { font-size: var(--fs-xs); color: var(--text-3); }
+.scrubber-readout strong { font-family: var(--font-heading); font-size: 20px; display: block; color: var(--text); }
+.scrubber-readout span { font-size: var(--fs-xs); color: var(--text-3); font-family: var(--font-mono); }
 
 /* ---------- Tabs (Tactile Glass & Neumorphic Bar) ---------- */
-.tabs-bar { position: sticky; top: 68px; z-index: 40; margin-top: 18px; background: linear-gradient(var(--bg) 70%, transparent); padding-bottom: 10px; }
+.tabs-bar { position: sticky; top: 72px; z-index: 40; margin-top: 24px; background: linear-gradient(var(--bg) 75%, transparent); padding-bottom: 14px; }
 .tabs {
   display: flex; gap: 6px; padding: 6px;
   background: rgba(14, 21, 34, 0.72);

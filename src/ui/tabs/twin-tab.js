@@ -8,7 +8,7 @@ import { AppState } from "../../app/state.js";
 import { renderTwin } from "../extras/twin.js";
 import { resize3DTwin } from "../extras/twin-3d.js";
 import { calculateCrewReadinessXP } from "../extras/twin-model.js";
-import { GameState, showUnlockToast } from "../extras/gamification.js";
+import { GameState, showUnlockToast, renderGamificationHUD } from "../extras/gamification.js";
 import { $, countUp } from "../dom.js";
 
 export function renderTwinTab() {
@@ -23,6 +23,7 @@ export function renderTwinTab() {
     AppState.constellation.setData(v.forecast);
   }
   renderScore();
+  renderGamificationHUD(document.getElementById('twin-gamification-hud'));
 
   // Evaluate gamification achievements
   const newBadges = GameState.checkNewBadges({

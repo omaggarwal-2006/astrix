@@ -11,7 +11,7 @@
 import { AppState, registerTab, onUpdate } from "./app/state.js";
 import { initNavigation } from "./app/router.js";
 import { getQueue, onChange as onQueueChange } from "./core/queue.js";
-import { updateHeader, initSceneCollapse, initMilestones } from "./ui/header.js";
+import { updateHeader, initSceneCollapse, initMilestones, initAudioToggle } from "./ui/header.js";
 import { initMissionSceneControls } from "./ui/visuals/scene-controls.js";
 import { MissionScene } from "./ui/visuals/mission-scene.js";
 import { HealthConstellation } from "./ui/extras/constellation.js";
@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Controls
   initSceneCollapse();
   initMilestones();
+  initAudioToggle();
   initMissionSceneControls();
   initTwinControls();
   initSimulation();
