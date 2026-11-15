@@ -14,6 +14,17 @@ import { $, countUp } from "../dom.js";
 export function renderTwinTab() {
   const v = AppState.view;
   if (!v) return;
+
+  // Reparent 3D viewport if in 3D mode in Twin tab
+  const btn3D = document.getElementById('btn-twin-mode-3d');
+  const is3D = btn3D ? btn3D.classList.contains('active') : true;
+  const container = document.getElementById('twin-level1-container');
+  const vp = document.getElementById('twin-3d-viewport');
+  if (is3D && container && vp && vp.parentElement !== container) {
+    container.prepend(vp);
+    vp.style.display = 'block';
+  }
+
   renderTwin(v.reading, v.alerts);
   resize3DTwin();
   const day = document.getElementById('twin-profile-day');

@@ -1,9 +1,144 @@
 /* LANDFALL · Today: readiness, the decision, the loop, how triage decided */
 
-/* ---------- Hero row ---------- */
-.today-hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--gap); }
+/* ---------- 3-Column Cockpit Hero Row ---------- */
+.today-hero {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(360px, 1.4fr) minmax(310px, 1.2fr);
+  gap: var(--gap);
+  align-items: stretch;
+}
 
-.readiness-card { display: flex; gap: 22px; align-items: center; overflow: hidden; }
+@media (max-width: 1200px) {
+  .today-hero {
+    grid-template-columns: 1fr 1fr;
+  }
+  .today-hero-center {
+    grid-column: span 2;
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .today-hero {
+    grid-template-columns: 1fr;
+  }
+  .today-hero-center {
+    grid-column: span 1;
+  }
+}
+
+/* Left Cockpit Bio-Monitors */
+.cockpit-monitors-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+}
+.cockpit-monitors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.cockpit-monitor-tile {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  transition: all 220ms var(--ease);
+  cursor: pointer;
+}
+.cockpit-monitor-tile:hover {
+  border-color: rgba(108, 180, 228, 0.45);
+  background: rgba(108, 180, 228, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(108, 180, 228, 0.2);
+}
+.cockpit-monitor-tile.is-alert {
+  border-color: rgba(238, 100, 88, 0.55);
+  background: linear-gradient(180deg, rgba(238, 100, 88, 0.2), rgba(238, 100, 88, 0.04));
+  box-shadow: 0 0 14px rgba(238, 100, 88, 0.25);
+}
+.cockpit-monitor-tile.is-watch {
+  border-color: rgba(237, 177, 74, 0.5);
+  background: linear-gradient(180deg, rgba(237, 177, 74, 0.16), rgba(237, 177, 74, 0.03));
+  box-shadow: 0 0 12px rgba(237, 177, 74, 0.2);
+}
+.cockpit-tile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cockpit-tile-value {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  color: var(--text);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.cockpit-tile-value small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-left: 3px;
+}
+.cockpit-tile-base {
+  font-size: 10.5px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+/* Center Stage 3D Holo-Bay */
+.today-hero-center {
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.today-hero-center .twin-viewport-3d {
+  height: 100%;
+  min-height: 480px;
+}
+
+/* Right Stack (Readiness + Decision) */
+.today-hero-right {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* Today Career Bar */
+.today-career-card {
+  margin-top: var(--gap);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.today-career-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.today-career-badges {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.readiness-card { display: flex; gap: 20px; align-items: center; overflow: hidden; padding: 18px 22px; }
 .readiness-card::before {
   content: ""; position: absolute; inset: -40% auto auto -20%; width: 70%; height: 140%; pointer-events: none;
   background: radial-gradient(closest-side, var(--glow, rgba(69, 194, 162, 0.16)), transparent);
@@ -11,7 +146,7 @@
 }
 .readiness-card[data-level="WATCH"] { --glow: rgba(237, 177, 74, 0.16); }
 .readiness-card[data-level="AT_RISK"] { --glow: rgba(238, 100, 88, 0.2); }
-.ring { position: relative; width: 136px; height: 136px; flex: none; }
+.ring { position: relative; width: 110px; height: 110px; flex: none; }
 .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); filter: drop-shadow(0 0 8px rgba(69, 194, 162, 0.35)); }
 .ring .track { stroke: rgba(255, 255, 255, 0.08); }
 .ring .bar { stroke: var(--ok); stroke-linecap: round; transition: stroke-dashoffset 900ms var(--ease), stroke 400ms var(--ease); }
@@ -20,29 +155,29 @@
 .readiness-card[data-level="AT_RISK"] .ring .bar { stroke: var(--bad); }
 .readiness-card[data-level="AT_RISK"] .ring svg { filter: drop-shadow(0 0 12px rgba(238, 100, 88, 0.5)); }
 .ring-value { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
-.ring-value b { font-family: var(--font-heading); font-size: 42px; line-height: 1; text-shadow: 0 0 16px rgba(255, 255, 255, 0.2); }
-.ring-value span { display: block; font-size: 11px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 4px; }
-.readiness-text h2 { font-size: var(--fs-xl); margin: 8px 0 6px; }
-.readiness-text p { font-size: var(--fs-sm); }
+.ring-value b { font-family: var(--font-heading); font-size: 34px; line-height: 1; text-shadow: 0 0 16px rgba(255, 255, 255, 0.2); }
+.ring-value span { display: block; font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.readiness-text h2 { font-size: var(--fs-lg); margin: 4px 0 4px; }
+.readiness-text p { font-size: var(--fs-xs); line-height: 1.45; }
 
-.decision-card { display: grid; gap: 16px; }
-.decision-main { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-.decision-path { font-family: var(--font-heading); font-size: var(--fs-2xl); line-height: 1.05; }
-.decision-path small { display: block; font-family: var(--font-body); font-size: var(--fs-sm); color: var(--text-2); margin-top: 6px; font-weight: 400; }
+.decision-card { display: grid; gap: 14px; padding: 20px 22px; }
+.decision-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.decision-path { font-family: var(--font-heading); font-size: var(--fs-xl); line-height: 1.05; }
+.decision-path small { display: block; font-family: var(--font-body); font-size: var(--fs-xs); color: var(--text-2); margin-top: 4px; font-weight: 400; }
 .path-icon {
-  width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; flex: none;
+  width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; flex: none;
   background: var(--accent-soft); border: 1px solid rgba(108, 180, 228, 0.35); color: var(--accent);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
-.path-icon svg { width: 30px; height: 30px; }
-.decision-card[data-path="SELF_CARE"] .path-icon { background: var(--ok-soft); border-color: rgba(69, 194, 162, 0.4); color: var(--ok); box-shadow: 0 0 16px rgba(69, 194, 162, 0.25); }
-.decision-card[data-path="FLIGHT_SURGEON"] .path-icon { background: var(--bad-soft); border-color: rgba(238, 100, 88, 0.4); color: var(--bad); box-shadow: 0 0 20px rgba(238, 100, 88, 0.3); }
-.decision-facts { display: flex; gap: 8px; flex-wrap: wrap; }
-.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.why-grid h4 { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
-.why-list { list-style: none; display: grid; gap: 8px; font-size: var(--fs-sm); color: var(--text-2); }
-.why-list li { display: flex; gap: 9px; align-items: flex-start; }
-.why-list li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 8px; flex: none; box-shadow: 0 0 6px var(--accent); }
+.path-icon svg { width: 26px; height: 26px; }
+.decision-card[data-path="SELF_CARE"] .path-icon { background: var(--ok-soft); border-color: rgba(69, 194, 162, 0.4); color: var(--ok); box-shadow: 0 0 14px rgba(69, 194, 162, 0.25); }
+.decision-card[data-path="FLIGHT_SURGEON"] .path-icon { background: var(--bad-soft); border-color: rgba(238, 100, 88, 0.4); color: var(--bad); box-shadow: 0 0 18px rgba(238, 100, 88, 0.3); }
+.decision-facts { display: flex; gap: 6px; flex-wrap: wrap; }
+.why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.why-grid h4 { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+.why-list { list-style: none; display: grid; gap: 6px; font-size: var(--fs-xs); color: var(--text-2); }
+.why-list li { display: flex; gap: 8px; align-items: flex-start; }
+.why-list li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex: none; box-shadow: 0 0 6px var(--accent); }
 .why-list.alt li::before { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
 .why-list b { color: var(--text); }
 

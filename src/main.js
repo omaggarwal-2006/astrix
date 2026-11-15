@@ -51,6 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
   mountForecast();
   mountComms();
 
+  // Host 3D WebGL viewport on Today homepage hero row
+  const todayHolder = document.getElementById('today-3d-holder');
+  const twinVP = document.getElementById('twin-3d-viewport');
+  if (todayHolder && twinVP) {
+    todayHolder.appendChild(twinVP);
+  }
+
   // Canvases
   AppState.missionScene = new MissionScene('mission-scene-canvas', 'mission-scrubber-slider', (day) => AppState.setDay(day));
   AppState.constellation = new HealthConstellation('health-constellation-canvas');

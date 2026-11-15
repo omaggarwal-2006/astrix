@@ -10,51 +10,83 @@ import { CONFIG } from "../../core/config.js";
 import { formatDelay } from "../../core/delay.js";
 import { $, esc, PATH, DELIVERY, METRIC, ICON, READINESS, severityPill, pill, countUp, flash } from "../dom.js";
 import { needsPacket, packetForToday, sendReport } from "../report.js";
-import { playSound } from "../extras/gamification.js";
+import { GameState, playSound } from "../extras/gamification.js";
+import { resize3DTwin } from "../extras/twin-3d.js";
 
 const RING_C = 2 * Math.PI * 58;
+
+export function ensure3DInToday() {
+  const holder = document.getElementById('today-3d-holder');
+  const vp = document.getElementById('twin-3d-viewport');
+  if (holder && vp && vp.parentElement !== holder) {
+    holder.appendChild(vp);
+    vp.style.display = 'block';
+    resize3DTwin();
+  }
+}
 
 export function mountToday() {
   const panel = document.getElementById('panel-today');
   panel.innerHTML = `
     <div class="view-head">
       <div>
-        <span class="eyebrow" id="today-eyebrow">Day 40 · Today's decision loop</span>
-        <h1>Who should act, given how far Earth is?</h1>
-        <p>LANDFALL compares today's readings with this astronaut's own baseline, projects landing-day readiness, and routes the case for the current communication delay.</p>
+        <span class="eyebrow" id="today-eyebrow">Day 40 · Ares Flight Command Deck</span>
+        <h1>Ares-VI Tactical Medical Command Console</h1>
+        <p>Real-time autonomous telemetry, 3D biometric digital twin, and delay-aware decision loop for the 180-day transit to Mars.</p>
       </div>
     </div>
 
     <div class="today-hero">
-      <article class="card readiness-card hud-chassis reveal" id="readiness-card" style="--i:0">
-        <div class="ring" aria-hidden="true">
-          <svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="58" fill="none" stroke-width="10"/>
-            <circle class="bar" id="readiness-ring" cx="66" cy="66" r="58" fill="none" stroke-width="10" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"/></svg>
-          <div class="ring-value"><div><b id="readiness-number">0</b><span>readiness</span></div></div>
+      <!-- Left Column: Cockpit Bio-Monitors -->
+      <article class="card cockpit-monitors-card hud-chassis reveal" style="--i:0">
+        <div class="card-head">
+          <div><h3 class="card-title">Cockpit Bio-Monitors</h3><p class="card-sub">Telemetry vs. personal baseline</p></div>
         </div>
-        <div class="readiness-text">
-          <span class="eyebrow">Landing-day outlook</span>
-          <h2 id="readiness-headline">On track for landing</h2>
-          <p id="readiness-detail"></p>
+        <div class="cockpit-monitors-grid" id="today-cockpit-monitors"></div>
+        <div style="margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
+          <span class="muted small">Baseline Calibrated (D 1–14)</span>
+          <button class="btn btn-ghost btn-sm" id="btn-goto-signals">All Signals ↗</button>
         </div>
       </article>
 
-      <article class="card decision-card hud-chassis reveal" id="decision-card" style="--i:1">
-        <span class="eyebrow">Today's decision</span>
-        <div class="decision-main">
-          <div class="path-icon" id="decision-icon"></div>
-          <div class="decision-path" id="decision-path">Self-care</div>
-        </div>
-        <div class="decision-facts" id="decision-facts"></div>
-        <div class="why-grid">
-          <div><h4>Why</h4><ul class="why-list" id="decision-why"></ul></div>
-          <div><h4>What would change it</h4><ul class="why-list alt" id="decision-cf"></ul></div>
-        </div>
-        <div class="row" id="decision-actions"></div>
-      </article>
+      <!-- Center Stage: 3D Holographic Bio-Bay -->
+      <div class="today-hero-center reveal" style="--i:1" id="today-3d-holder"></div>
+
+      <!-- Right Column: Readiness Gauge & Tactical Decision Engine -->
+      <div class="today-hero-right reveal" style="--i:2">
+        <article class="card readiness-card hud-chassis" id="readiness-card">
+          <div class="ring" aria-hidden="true">
+            <svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="58" fill="none" stroke-width="10"/>
+              <circle class="bar" id="readiness-ring" cx="66" cy="66" r="58" fill="none" stroke-width="10" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"/></svg>
+            <div class="ring-value"><div><b id="readiness-number">0</b><span>readiness</span></div></div>
+          </div>
+          <div class="readiness-text">
+            <span class="eyebrow">Landing-day outlook</span>
+            <h2 id="readiness-headline">On track for landing</h2>
+            <p id="readiness-detail"></p>
+          </div>
+        </article>
+
+        <article class="card decision-card hud-chassis" id="decision-card">
+          <span class="eyebrow">Today's decision</span>
+          <div class="decision-main">
+            <div class="path-icon" id="decision-icon"></div>
+            <div class="decision-path" id="decision-path">Self-care</div>
+          </div>
+          <div class="decision-facts" id="decision-facts"></div>
+          <div class="why-grid">
+            <div><h4>Why</h4><ul class="why-list" id="decision-why"></ul></div>
+            <div><h4>What would change it</h4><ul class="why-list alt" id="decision-cf"></ul></div>
+          </div>
+          <div class="row" id="decision-actions"></div>
+        </article>
+      </div>
     </div>
 
-    <article class="card loop-card reveal" style="--i:2">
+    <!-- Career Progress & Adherence Streak Bar -->
+    <article class="card today-career-card reveal" style="--i:3" id="today-career-bar"></article>
+
+    <article class="card loop-card reveal" style="--i:4">
       <div class="card-head">
         <div><h3 class="card-title">The decision loop, for this day</h3><p class="card-sub">Each step feeds the next. Select a step to see the detail.</p></div>
       </div>
@@ -62,11 +94,11 @@ export function mountToday() {
     </article>
 
     <div class="grid g-12 mt">
-      <article class="card span-5 reveal" style="--i:3">
+      <article class="card span-5 reveal" style="--i:5">
         <div class="card-head"><div><h3 class="card-title">Active alerts</h3><p class="card-sub">Drift from this astronaut's baseline, worst first</p></div></div>
         <div class="alert-list" id="today-alerts"></div>
       </article>
-      <article class="card span-7 reveal" id="rules-card" style="--i:4">
+      <article class="card span-7 reveal" id="rules-card" style="--i:6">
         <div class="card-head"><div><h3 class="card-title">How triage decided</h3><p class="card-sub">The rules as built today (<code>src/core/triage.js</code>). Thresholds are team assumptions.</p></div></div>
         <div id="today-rules"></div>
       </article>
@@ -85,6 +117,8 @@ export function mountToday() {
       return;
     }
     if (e.target.closest('#btn-today-queue')) goTo('comms');
+    if (e.target.closest('#btn-goto-signals')) goTo('signals');
+    if (e.target.closest('#btn-goto-career')) goTo('twin');
   });
 }
 
@@ -92,7 +126,66 @@ export function renderToday() {
   const v = AppState.view;
   if (!v) return;
   const d = v.decision;
-  $('#today-eyebrow').textContent = `Day ${v.day} · Today's decision loop`;
+  $('#today-eyebrow').textContent = `Day ${v.day} · Ares Flight Command Deck`;
+
+  // Host 3D viewport on Today Homepage
+  ensure3DInToday();
+
+  // ---- Cockpit Bio-Monitors
+  const r = v.reading.vitals;
+  const base = v.baseline;
+  const c = v.reading.cabin;
+  const alertBy = Object.fromEntries(v.alerts.map(a => [a.metric, a]));
+  
+  const monitors = [
+    { label: 'Sleep Score', val: `${r.sleep_h} h`, base: `Base ${base.sleep_h} h`, tone: alertBy['sleep_h'] ? 'is-alert' : '', goto: 'signals' },
+    { label: 'Heart Rate', val: `${r.hr_bpm} bpm`, base: `Base ${base.hr_bpm} bpm`, tone: r.hr_bpm > 75 ? 'is-watch' : '', goto: 'signals' },
+    { label: 'Blood Press.', val: `${r.bp_sys}/${r.bp_dia}`, base: `Base ${base.bp_sys}/${base.bp_dia}`, tone: '', goto: 'signals' },
+    { label: 'Mood Index', val: `${r.mood} / 5`, base: `Base ${base.mood}`, tone: alertBy['mood'] ? 'is-watch' : '', goto: 'signals' },
+    { label: 'Cabin CO₂', val: `${c.co2.toLocaleString()} ppm`, base: `Limit ${CONFIG.co2HintPpm} ppm`, tone: c.co2 >= CONFIG.co2HintPpm ? 'is-alert' : '', goto: 'signals' },
+    { label: 'Core Temp', val: `${r.temp_c} °C`, base: `Base ${base.temp_c} °C`, tone: '', goto: 'signals' },
+  ];
+  const monEl = $('#today-cockpit-monitors');
+  if (monEl) {
+    monEl.innerHTML = monitors.map(m => `
+      <div class="cockpit-monitor-tile ${m.tone}" data-goto="${m.goto}">
+        <div class="cockpit-tile-head"><span>${m.label}</span>${m.tone === 'is-alert' ? '<span class="shape-diamond" style="color:var(--bad)">●</span>' : m.tone === 'is-watch' ? '<span class="shape-triangle" style="color:var(--warn)">▲</span>' : '<span class="shape-circle" style="color:var(--ok)">●</span>'}</div>
+        <div class="cockpit-tile-value">${m.val}</div>
+        <div class="cockpit-tile-base">${m.base}</div>
+      </div>
+    `).join('');
+  }
+
+  // ---- Career & Streak Bar
+  const careerEl = $('#today-career-bar');
+  if (careerEl && GameState) {
+    const rk = GameState.getRank();
+    const b = GameState.getBadgeStatus();
+    const unlocked = b.filter(x => x.unlocked).length;
+    careerEl.innerHTML = `
+      <div class="today-career-left">
+        <div class="game-level-badge" style="width:42px;height:42px;">
+          <span class="game-level-num" style="font-size:16px;">${rk.level}</span>
+          <span class="game-level-lbl" style="font-size:8px;">LVL</span>
+        </div>
+        <div>
+          <div style="font-family:var(--font-heading);font-size:14px;color:var(--text);font-weight:700;">${rk.title} · <span style="color:var(--accent);">${rk.xp} / ${rk.maxXP} XP</span></div>
+          <div class="game-xp-bar-outer" style="width:200px;height:6px;margin-top:5px;">
+            <div class="game-xp-bar-inner" style="width:${rk.progressPct}%;"></div>
+          </div>
+        </div>
+        <div class="game-streak-pill" style="margin-left:8px;" title="40-Day Flight Protocol Adherence">
+          <span class="game-streak-flame">🔥</span>
+          <span>${GameState.streak}d Streak</span>
+        </div>
+      </div>
+      <div class="today-career-badges">
+        <span style="font-size:12px;color:var(--text-3);margin-right:6px;">Badges: <b>${unlocked}/${b.length}</b></span>
+        ${b.slice(0, 5).map(x => `<span style="font-size:18px;opacity:${x.unlocked ? 1 : 0.25};" title="${x.name}">${x.icon}</span>`).join('')}
+        <button class="btn btn-ghost btn-sm" id="btn-goto-career" style="margin-left:12px;">View Ares-VI Standing ➔</button>
+      </div>
+    `;
+  }
 
   // ---- Readiness
   const card = $('#readiness-card');
