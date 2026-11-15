@@ -1,6 +1,7 @@
 /**
- * LANDFALL - Digital twin: levels 1-3, breadcrumbs, regions, tissue cards (src/ui/extras/twin.js)
- * Moved from main.js unchanged during the repo restructure (docs/22-MIGRATION.md).
+ * LANDFALL v3.0 - Digital Twin Engine (src/ui/extras/twin.js)
+ * Coordinates the 3D WebGL anatomical model, 2D blueprint fallback,
+ * multi-level breadcrumb drill-down, micro-lab elastography, and gamification HUD.
  */
 
 import { activateTab } from "../../app/router.js";
@@ -8,6 +9,11 @@ import { AppState } from "../../app/state.js";
 import { getAlerts, getReadings } from "../../core/adapter.js";
 import { MICRO_DEFAULTS, showMicroReward, drawMicroLabCanvas } from "./micro-lab.js";
 import { BODY_REGIONS, TISSUE_LAYERS, getRegionIntegrity, getTissueIntegrity } from "./twin-model.js";
+import { init3DTwin, focusOnRegion, resetCamera, rotateTwin180, cycleViewMode, isWebGLAvailable } from "./twin-3d.js";
+import { GameState, renderGamificationHUD, playSound } from "./gamification.js";
+
+let is3DActive = true;
+let is3DInitialized = false;
 
 // -------------------------------------------------------------
 // 4-LEVEL KINEMATIC DIGITAL TWIN ENGINE (Levels 1-3 + controls)
@@ -41,11 +47,53 @@ export function initTwinControls() {
       if (AppState.twinLevel > 1) {
         AppState.twinLevel--;
         renderTwin();
+      } else if (is3DActive) {
+        resetCamera();
       }
     });
   }
 
-  // Front/Back orientation toggle
+  // 3D / 2D View Mode Toggle buttons
+  const btnMode3D = document.getElementById('btn-twin-mode-3d');
+  const btnMode2D = document.getElementById('btn-twin-mode-2d');
+  const view3D = document.getElementById('twin-3d-viewport');
+  const view2D = document.getElementById('twin-2d-housing');
+
+  function setViewMode(mode3d) {
+    is3DActive = mode3d;
+    if (btnMode3D) btnMode3D.classList.toggle('active', mode3d);
+    if (btnMode2D) btnMode2D.classList.toggle('active', !mode3d);
+    if (view3D) view3D.style.display = mode3d ? 'block' : 'none';
+    if (view2D) view2D.style.display = mode3d ? 'none' : 'block';
+
+    if (mode3d && !is3DInitialized && isWebGLAvailable()) {
+      is3DInitialized = init3DTwin(document.getElementById('twin-3d-container'));
+    }
+  }
+
+  if (btnMode3D) btnMode3D.addEventListener('click', () => setViewMode(true));
+  if (btnMode2D) btnMode2D.addEventListener('click', () => setViewMode(false));
+
+  // 3D HUD action buttons
+  const btnResetCam = document.getElementById('btn-3d-reset-cam');
+  const btnRotate180 = document.getElementById('btn-3d-rotate');
+  const btn3DMode = document.getElementById('btn-3d-mode');
+
+  if (btnResetCam) btnResetCam.addEventListener('click', resetCamera);
+  if (btnRotate180) btnRotate180.addEventListener('click', rotateTwin180);
+  if (btn3DMode) btn3DMode.addEventListener('click', cycleViewMode);
+
+  // Initialize 3D Twin if WebGL supported
+  if (isWebGLAvailable()) {
+    const c3d = document.getElementById('twin-3d-container');
+    if (c3d && !is3DInitialized) {
+      is3DInitialized = init3DTwin(c3d);
+    }
+  } else {
+    setViewMode(false);
+  }
+
+  // Front/Back orientation toggle for 2D view
   const btnOrient = document.getElementById('btn-toggle-orientation');
   if (btnOrient) {
     btnOrient.addEventListener('click', () => {
@@ -64,14 +112,16 @@ export function initTwinControls() {
     });
   }
 
-  // Bind 11 SVG region clicks and keyboard focus
+  // Bind 11 SVG region clicks and keyboard focus (for 2D Blueprint mode)
   BODY_REGIONS.forEach(reg => {
     const el = document.getElementById('reg-' + reg.id);
     if (el && !el.dataset.bound) {
       el.dataset.bound = "true";
       const select = () => {
         AppState.selectedRegion = reg.id;
+        GameState.recordRegionVisit(reg.id);
         renderTwin();
+        if (is3DActive) focusOnRegion(reg.id);
       };
       el.addEventListener('click', select);
       el.addEventListener('keydown', (e) => {
@@ -89,8 +139,6 @@ export function initTwinControls() {
   const ctrl2 = document.getElementById('micro-ctrl-2-input');
   const val2 = document.getElementById('micro-ctrl-2-val');
 
-  // Slider values feed whatIf.targetedRegionBoost for the selected region,
-  // which getRegionIntegrity() uses as extra countermeasure mitigation.
   const onMicroInput = () => {
     if (!ctrl1 || !ctrl2) return;
     const ared = parseFloat(ctrl1.value);
@@ -99,7 +147,6 @@ export function initTwinControls() {
     if (val2) val2.textContent = `${intensity}%`;
 
     AppState.microLabSettings[AppState.selectedRegion] = { ared, intensity };
-    // 0 at the default 180 kg / 100%; roughly -2 to +2 across the slider ranges
     const boost = (ared - MICRO_DEFAULTS.ared) / 70 + (intensity - MICRO_DEFAULTS.intensity) / 50;
     AppState.whatIf.targetedRegionBoost[AppState.selectedRegion] = +boost.toFixed(2);
 
@@ -110,8 +157,10 @@ export function initTwinControls() {
   [ctrl1, ctrl2].forEach(ctrl => {
     if (!ctrl) return;
     ctrl.addEventListener('input', onMicroInput);
-    // Award the scan reward once per region + layer, when the user releases the slider
-    ctrl.addEventListener('change', showMicroReward);
+    ctrl.addEventListener('change', () => {
+      showMicroReward();
+      GameState.recordScan();
+    });
   });
 }
 
@@ -132,6 +181,12 @@ export function renderTwin(readings, alerts) {
   const sep2 = document.getElementById('crumb-sep-2');
   const sep3 = document.getElementById('crumb-sep-3');
 
+  // Render Gamification HUD
+  const gameHud = document.getElementById('twin-gamification-hud');
+  if (gameHud) {
+    renderGamificationHUD(gameHud);
+  }
+
   if (AppState.twinLevel === 1) {
     if (l1Cont) l1Cont.style.display = 'block';
     if (l2Cont) l2Cont.style.display = 'none';
@@ -144,14 +199,14 @@ export function renderTwin(readings, alerts) {
     if (sep3) sep3.style.display = 'none';
 
     // Heartbeat pulse rate keyed to live resting HR
-    const hr = readings.vitals.hr_bpm || 64;
+    const hr = (readings && readings.vitals && readings.vitals.hr_bpm) || 64;
     const pulseDuration = (60 / hr).toFixed(2);
     const heartElem = document.getElementById('twin-heart-group');
     if (heartElem) {
       heartElem.style.animationDuration = `${pulseDuration}s`;
     }
 
-    // Update 11 regions visual status
+    // Update 11 regions visual status in 2D SVG
     BODY_REGIONS.forEach(reg => {
       const el = document.getElementById('reg-' + reg.id);
       if (!el) return;
@@ -228,7 +283,7 @@ export function renderTwin(readings, alerts) {
         const t = getTissueIntegrity(regInfo.id, layer, AppState.currentDay, AppState.whatIf);
         const shapeClass = t.shape === 'diamond' ? 'shape-diamond' : t.shape === 'triangle' ? 'shape-triangle' : 'shape-circle';
         html += `
-          <div class="twin-tissue-card">
+          <div class="twin-tissue-card clay-card" style="padding: 14px;">
             <div>
               <div class="twin-tissue-header">
                 <span class="twin-tissue-name">${layer}</span>
@@ -241,7 +296,7 @@ export function renderTwin(readings, alerts) {
               </div>
               <p class="twin-tissue-mech">${t.mechanism}</p>
             </div>
-            <button class="chassis-btn primary btn-deep-scan" data-layer="${layer}" style="font-size: 13px; width: 100%;">
+            <button class="chassis-btn primary btn-deep-scan" data-layer="${layer}" style="font-size: 13px; width: 100%; margin-top: 8px;">
               Deep scan micro-lab \u2192
             </button>
           </div>

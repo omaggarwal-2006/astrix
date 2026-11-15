@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="./assets/css/base.css">
   <link rel="stylesheet" href="./assets/css/layout.css">
   <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/morphisms.css">
+  <link rel="stylesheet" href="./assets/css/twin-3d.css">
+  <link rel="stylesheet" href="./assets/css/gamification.css">
   <link rel="stylesheet" href="./assets/css/title-screen.css">
   <link rel="stylesheet" href="./assets/css/tabs/today.css">
   <link rel="stylesheet" href="./assets/css/tabs/signals.css">
@@ -22,6 +25,7 @@
   <link rel="stylesheet" href="./assets/css/responsive.css">
 </head>
 <body>
+  <div class="aurora-mesh" aria-hidden="true"></div>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- ===================== Title screen ===================== -->
@@ -158,6 +162,10 @@
             <p>An 11-region model of the astronaut, drilled down to tissue layers. Illustrative: it uses its own loss model and is not part of the triage decision.</p>
           </div>
         </div>
+
+        <!-- Gamification HUD (XP, Level, Streak, Achievements) -->
+        <div id="twin-gamification-hud"></div>
+
         <div class="twin-layout">
           <div class="card">
               <!-- Breadcrumb Navigation Bar -->
@@ -186,16 +194,42 @@
                     </div>
                   </div>
                 </div>
-                <button id="btn-toggle-orientation" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px;" title="Rotate twin between anterior and posterior view">
-                  Rotate: Front
-                </button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <div class="twin-mode-switch-pill" role="tablist" aria-label="Digital Twin View Mode">
+                    <button id="btn-twin-mode-3d" class="twin-mode-switch-btn active" role="tab" aria-selected="true">3D Hologram</button>
+                    <button id="btn-twin-mode-2d" class="twin-mode-switch-btn" role="tab" aria-selected="false">2D Blueprint</button>
+                  </div>
+                  <button id="btn-toggle-orientation" class="chassis-btn" style="font-size: 12.5px; padding: 3px 8px; display: none;" title="Rotate twin between anterior and posterior view">
+                    Rotate: Front
+                  </button>
+                </div>
               </div>
 
               <!-- ==========================================
-                   LEVEL 1: FULL-BODY DIGITAL TWIN SVG
+                   LEVEL 1: FULL-BODY DIGITAL TWIN 3D & 2D
               =========================================== -->
               <div id="twin-level1-container">
-                <div class="twin-body-housing">
+                <!-- 3D WebGL Hologram Viewport -->
+                <div id="twin-3d-viewport" class="twin-viewport-3d">
+                  <div id="twin-3d-container" style="width: 100%; height: 100%;"></div>
+                  <div class="twin-3d-hud">
+                    <div class="twin-3d-controls-group">
+                      <button id="btn-3d-reset-cam" class="twin-hud-btn" title="Reset Camera to Full Body">Reset View</button>
+                      <button id="btn-3d-rotate" class="twin-hud-btn" title="Rotate 180 Degrees">Rotate 180°</button>
+                      <button id="btn-3d-mode" class="twin-hud-btn" title="Toggle Render Mode">Mode: HOLOGRAM</button>
+                    </div>
+                  </div>
+                  <!-- Floating Region Telemetry HUD Card -->
+                  <div id="twin-3d-floating-card" class="twin-3d-floating-card hidden"></div>
+                  <!-- Rotating Compass & Elevation Indicator -->
+                  <div class="twin-compass-indicator" aria-hidden="true">
+                    <div class="twin-compass-dial"></div>
+                    <span>3D BIOTEXTURE · 60 FPS</span>
+                  </div>
+                </div>
+
+                <!-- 2D SVG Blueprint Housing -->
+                <div id="twin-2d-housing" class="twin-body-housing" style="display: none;">
                   <svg viewBox="0 0 420 760" class="twin-body-svg" aria-label="11-Region Anatomical Digital Twin SVG">
                     <defs>
                       <filter id="glow-twin" x="-20%" y="-20%" width="140%" height="140%">
@@ -459,6 +493,8 @@
   </aside>
 
   <script src="./assets/vendor/chart.umd.min.js"></script>
+  <script src="./assets/vendor/three.min.js"></script>
+  <script src="./assets/vendor/OrbitControls.js"></script>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

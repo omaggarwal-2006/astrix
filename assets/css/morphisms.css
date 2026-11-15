@@ -1,0 +1,253 @@
+/* ==========================================================================
+   LANDFALL v3.0 · Multi-Morphism Design System
+   Combines Glassmorphism, Aerospace Neumorphism, Tactile Claymorphism, and
+   Ambient Aurora Cosmic Depth for an immersive 3D mission console.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Morphism Design Tokens & Utility Variables
+   -------------------------------------------------------------------------- */
+:root {
+  /* Glassmorphism Tokens */
+  --glass-blur-xs: blur(4px);
+  --glass-blur-sm: blur(8px);
+  --glass-blur-md: blur(16px);
+  --glass-blur-lg: blur(28px);
+  --glass-bg-subtle: rgba(255, 255, 255, 0.03);
+  --glass-bg-card: rgba(255, 255, 255, 0.055);
+  --glass-bg-floating: rgba(14, 21, 34, 0.72);
+  --glass-bg-active: rgba(255, 255, 255, 0.1);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.09);
+  --glass-border-strong: 1px solid rgba(255, 255, 255, 0.18);
+  --glass-border-glow: 1px solid rgba(108, 180, 228, 0.28);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* Neumorphic Cockpit Tokens (Aerospace Dark Relief) */
+  --neo-light: rgba(255, 255, 255, 0.055);
+  --neo-dark: rgba(0, 0, 0, 0.55);
+  --neo-dark-deep: rgba(0, 0, 0, 0.75);
+  --neo-raised-shadow:
+    -3px -3px 8px var(--neo-light),
+    4px 4px 12px var(--neo-dark);
+  --neo-raised-shadow-sm:
+    -2px -2px 6px var(--neo-light),
+    3px 3px 8px var(--neo-dark);
+  --neo-recessed-shadow:
+    inset 2px 2px 5px var(--neo-dark-deep),
+    inset -2px -2px 5px var(--neo-light);
+  --neo-well-shadow:
+    inset 3px 3px 8px var(--neo-dark-deep),
+    inset -1px -1px 3px var(--neo-light);
+
+  /* Claymorphism Tokens (Soft Tactile 3D Inflated Cushion) */
+  --clay-bg-primary: linear-gradient(135deg, rgba(30, 48, 72, 0.85), rgba(16, 26, 42, 0.92));
+  --clay-bg-ok: linear-gradient(135deg, rgba(35, 78, 68, 0.9), rgba(18, 48, 42, 0.95));
+  --clay-bg-warn: linear-gradient(135deg, rgba(82, 65, 30, 0.9), rgba(46, 35, 15, 0.95));
+  --clay-bg-bad: linear-gradient(135deg, rgba(86, 38, 36, 0.9), rgba(50, 20, 20, 0.95));
+  --clay-shadow:
+    6px 6px 18px rgba(0, 0, 0, 0.65),
+    -3px -3px 10px rgba(255, 255, 255, 0.035),
+    inset 0 3px 6px rgba(255, 255, 255, 0.12),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.35);
+  --clay-shadow-pop:
+    10px 14px 28px rgba(0, 0, 0, 0.7),
+    -4px -4px 12px rgba(255, 255, 255, 0.05),
+    inset 0 4px 8px rgba(255, 255, 255, 0.16),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.45);
+
+  /* Aurora Mesh Depth */
+  --aurora-cyan: rgba(108, 180, 228, 0.12);
+  --aurora-mars: rgba(208, 112, 63, 0.09);
+  --aurora-teal: rgba(69, 194, 162, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   2. Glassmorphism Utilities
+   -------------------------------------------------------------------------- */
+.glass-panel {
+  background: var(--glass-bg-card);
+  backdrop-filter: var(--glass-blur-md) saturate(180%);
+  -webkit-backdrop-filter: var(--glass-blur-md) saturate(180%);
+  border: var(--glass-border);
+  box-shadow: var(--glass-rim), 0 12px 36px -12px rgba(0, 0, 0, 0.75);
+  border-radius: var(--radius);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: var(--glass-rim), 0 16px 44px -12px rgba(0, 0, 0, 0.85);
+}
+
+.glass-floating {
+  background: var(--glass-bg-floating);
+  backdrop-filter: var(--glass-blur-lg) saturate(190%);
+  -webkit-backdrop-filter: var(--glass-blur-lg) saturate(190%);
+  border: var(--glass-border-strong);
+  box-shadow: var(--glass-rim), 0 20px 50px -15px rgba(0, 0, 0, 0.9);
+  border-radius: var(--radius-lg);
+}
+
+.glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: var(--glass-blur-sm);
+  -webkit-backdrop-filter: var(--glass-blur-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* --------------------------------------------------------------------------
+   3. Neumorphism Utilities (Aerospace Instrument Relieved Feel)
+   -------------------------------------------------------------------------- */
+.neo-well {
+  background: rgba(4, 7, 13, 0.7) !important;
+  box-shadow: var(--neo-well-shadow) !important;
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+  border-radius: var(--radius-sm);
+}
+
+.neo-raised {
+  background: linear-gradient(145deg, #121a29, #090e18) !important;
+  box-shadow: var(--neo-raised-shadow) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: var(--radius-sm);
+  transition: box-shadow 180ms var(--ease), transform 180ms var(--ease);
+}
+
+.neo-raised:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    -3px -3px 9px var(--neo-light),
+    5px 5px 15px var(--neo-dark) !important;
+}
+
+.neo-raised:active,
+.neo-raised.active {
+  transform: translateY(1px) !important;
+  box-shadow: var(--neo-recessed-shadow) !important;
+  background: #090e18 !important;
+}
+
+.neo-slider-track {
+  background: rgba(2, 4, 8, 0.85);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.8), inset -1px -1px 2px rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  height: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   4. Claymorphism Utilities (Soft Inflated 3D Tactile Elements)
+   -------------------------------------------------------------------------- */
+.clay-card {
+  background: var(--clay-bg-primary);
+  box-shadow: var(--clay-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  transition: transform 300ms var(--ease), box-shadow 300ms var(--ease);
+}
+
+.clay-card:hover {
+  transform: translateY(-3px) scale(1.008);
+  box-shadow: var(--clay-shadow-pop);
+}
+
+.clay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-family: var(--font-heading);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  box-shadow:
+    3px 3px 8px rgba(0, 0, 0, 0.5),
+    -1px -1px 4px rgba(255, 255, 255, 0.06),
+    inset 0 2px 3px rgba(255, 255, 255, 0.18),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clay-badge.ok {
+  background: var(--clay-bg-ok);
+  color: #7ef2d3;
+  border-color: rgba(69, 194, 162, 0.3);
+}
+
+.clay-badge.warn {
+  background: var(--clay-bg-warn);
+  color: #fed47e;
+  border-color: rgba(237, 177, 74, 0.3);
+}
+
+.clay-badge.bad {
+  background: var(--clay-bg-bad);
+  color: #ffa199;
+  border-color: rgba(238, 100, 88, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   5. Aurora Ambient Cosmic Background
+   -------------------------------------------------------------------------- */
+.aurora-mesh {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.aurora-mesh::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 75vw;
+  height: 65vh;
+  background: radial-gradient(ellipse, var(--aurora-cyan) 0%, transparent 68%);
+  filter: blur(55px);
+  animation: auroraFloat1 24s ease-in-out infinite alternate;
+}
+
+.aurora-mesh::after {
+  content: "";
+  position: absolute;
+  top: 10%;
+  right: -10%;
+  width: 65vw;
+  height: 55vh;
+  background: radial-gradient(ellipse, var(--aurora-mars) 0%, transparent 65%);
+  filter: blur(50px);
+  animation: auroraFloat2 28s ease-in-out infinite alternate;
+}
+
+@keyframes auroraFloat1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, 8%) scale(1.08); }
+  100% { transform: translate(-4%, 4%) scale(0.96); }
+}
+
+@keyframes auroraFloat2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-7%, -6%) scale(1.06); }
+  100% { transform: translate(5%, 3%) scale(0.94); }
+}
+
+/* Respect user's motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-mesh::before,
+  .aurora-mesh::after {
+    animation: none !important;
+  }
+}

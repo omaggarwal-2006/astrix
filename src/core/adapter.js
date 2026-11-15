@@ -5,6 +5,7 @@
  */
 
 import { generateAlertsForDay, generateForecastForDay, generateDayReadings, BASELINE_READINGS } from "../data/sample-data.js";
+import { predictReadings, getEngineMetadata } from "../../engine/api.js";
 
 /**
  * Returns active health alerts for a specific transit day
@@ -27,6 +28,15 @@ export function getForecast(day, exerciseHours = 1.2) {
  */
 export function getReadings(day) {
   const readings = generateDayReadings(day);
+  try {
+    const ml = predictReadings(day);
+    if (ml && ml.biomarkers) {
+      readings.biomarkers = ml.biomarkers;
+      readings.mlEngine = getEngineMetadata();
+    }
+  } catch {
+    // Graceful fallback if engine is offline
+  }
   const logged = getLoggedCheckin(day);
   if (logged) {
     // Crew-logged values (Monitor tab check-in form) override the synthetic vitals for that day
@@ -107,3 +117,6 @@ export function mapSeverity(severity) {
     };
   }
 }
+
+export { getEngineMetadata };
+

@@ -1,0 +1,268 @@
+/* ==========================================================================
+   LANDFALL v3.0 · Gamification System Styles
+   ========================================================================== */
+
+/* Astronaut Rank / Level Bar */
+.game-rank-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  box-shadow: var(--shadow);
+}
+
+.game-level-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1b2c45, #0c1524);
+  border: 1.5px solid var(--accent);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.game-level-num {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.game-level-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.game-xp-track-wrap {
+  flex: 1;
+}
+
+.game-xp-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: var(--fs-xs);
+}
+
+.game-rank-name {
+  font-family: var(--font-heading);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-xp-val {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.game-xp-bar-outer {
+  height: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.game-xp-bar-inner {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #45C2A2, #6CB4E4);
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(108, 180, 228, 0.6);
+  transition: width 600ms var(--ease);
+}
+
+/* Streak Pill with Orbital Flame */
+.game-streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(208, 112, 63, 0.2), rgba(237, 177, 74, 0.15));
+  border: 1px solid rgba(208, 112, 63, 0.4);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: #ffb885;
+  box-shadow: 0 0 10px rgba(208, 112, 63, 0.2);
+}
+
+.game-streak-flame {
+  display: inline-block;
+  animation: flamePulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes flamePulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px #d0703f); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 6px #edb14a); }
+}
+
+/* Badges Showcase Grid */
+.game-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.game-badge-card {
+  background: var(--clay-bg-primary);
+  box-shadow: var(--clay-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 12px 10px;
+  text-align: center;
+  position: relative;
+  transition: all 240ms var(--ease);
+}
+
+.game-badge-card.locked {
+  opacity: 0.38;
+  filter: grayscale(0.85);
+  box-shadow: none;
+  background: rgba(14, 21, 34, 0.4);
+}
+
+.game-badge-card:not(.locked):hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: var(--clay-shadow-pop);
+  border-color: rgba(108, 180, 228, 0.4);
+}
+
+.game-badge-icon {
+  font-size: 26px;
+  line-height: 1;
+  margin-bottom: 6px;
+  display: inline-block;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+
+.game-badge-name {
+  font-family: var(--font-heading);
+  font-size: 12.5px;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.game-badge-desc {
+  font-size: 10.5px;
+  color: var(--text-3);
+  line-height: 1.25;
+}
+
+/* Crew Cooperative Leaderboard */
+.game-leaderboard-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  margin-top: 10px;
+}
+
+.game-leaderboard-row {
+  background: rgba(255, 255, 255, 0.025);
+  transition: background 180ms var(--ease);
+}
+
+.game-leaderboard-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.game-leaderboard-row.active-crew {
+  background: linear-gradient(90deg, rgba(108, 180, 228, 0.12), rgba(69, 194, 162, 0.06));
+  border-left: 3px solid var(--accent);
+}
+
+.game-leaderboard-row td {
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+}
+
+.game-leaderboard-row td:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.game-leaderboard-row td:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  text-align: right;
+}
+
+/* Celebratory Toast (Achievement Unlocked / Level Up) */
+.game-unlock-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  background: linear-gradient(135deg, rgba(18, 32, 54, 0.94), rgba(8, 14, 24, 0.96));
+  border: 1.5px solid var(--accent);
+  backdrop-filter: blur(20px);
+  padding: 12px 20px;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    0 0 24px rgba(108, 180, 228, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 360ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.game-unlock-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.game-unlock-icon {
+  font-size: 32px;
+  animation: badgePop 600ms ease;
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0.4) rotate(-15deg); }
+  60% { transform: scale(1.25) rotate(5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.game-unlock-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.game-unlock-title {
+  font-family: var(--font-heading);
+  font-size: 14px;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.game-unlock-name {
+  font-size: var(--fs-sm);
+  color: var(--text);
+  font-weight: 600;
+}
