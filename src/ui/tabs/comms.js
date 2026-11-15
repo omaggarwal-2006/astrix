@@ -22,6 +22,8 @@ export function mountComms() {
       </div>
     </div>
 
+    <div class="dtn-linkbar reveal" id="comms-linkbar" style="--i:0"></div>
+
     <div class="grid g-12">
       <article class="card span-4 reveal" style="--i:0">
         <div class="card-head"><div><h3 class="card-title">Situation</h3><p class="card-sub">Simulation inputs (shared with the Simulation panel)</p></div></div>
@@ -42,6 +44,7 @@ export function mountComms() {
         <div class="card-head">
           <div><h3 class="card-title">Store-and-forward queue</h3><p class="card-sub">Survives reloads · demo clock: 1 s on screen ≈ <span class="num" id="queue-clock-speedup">1.7 min</span></p></div>
         </div>
+        <div class="custody-pipe" id="custody-pipe"></div>
         <div class="queue-list" id="queue-items-container"></div>
       </article>
 
@@ -83,6 +86,13 @@ export function renderTriageTab() {
   if (!v) return;
   const d = v.decision;
   const live = CONFIG.liveCallMaxOneWayS;
+  const au = (0.38 + (v.day / 180) * 1.12).toFixed(2);   // illustrative Earth distance, matches the header model
+  const m = Math.floor(v.delayS / 60), sec = Math.round(v.delayS % 60);
+  $('#comms-linkbar').innerHTML = `
+    <span>Earth distance: <b>${au} AU</b></span><i>·</i>
+    <span>One-way radio latency: <b>${String(m).padStart(2, '0')}m ${String(sec).padStart(2, '0')}s</b></span><i>·</i>
+    <span>Link: <b class="${v.env.linkUp ? 't-ok' : 't-bad'}">${v.env.linkUp ? 'Active' : 'Down'}</b></span>
+    <svg viewBox="0 0 24 24" class="dtn-linkbar-ico ${v.env.linkUp ? '' : 'is-down'}" aria-hidden="true"><path d="M12 13v8M9 21h6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="11" r="2" fill="currentColor"/><path d="M8 7a5.6 5.6 0 0 0 0 8M16 7a5.6 5.6 0 0 1 0 8M5 4a10 10 0 0 0 0 14M19 4a10 10 0 0 1 0 14" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
   const dec = $('#comms-decision');
   const changed = dec.dataset.key !== d.path + d.delivery;
   dec.dataset.key = d.path + d.delivery;
@@ -129,6 +139,7 @@ export function renderQueueTable(queue) {
   if (!box) return;
   const speed = document.getElementById('queue-clock-speedup');
   if (speed) speed.textContent = `${(100 / 60).toFixed(1)} min`;
+  renderCustodyPipe(queue);
   if (!queue.length) {
     box.innerHTML = `<div class="empty"><span class="shape-circle"></span> No packets yet. Send today's report to see it travel.</div>`;
     return;
@@ -156,6 +167,25 @@ export function renderQueueTable(queue) {
       </div>`;
   }).join('');
   queue.forEach(e => seen.add(e.packet.packet_id));
+}
+
+/** Three custody stages from design_mockups/09: local cache -> Ka-band uplink -> Earth DSN. */
+function renderCustodyPipe(queue) {
+  const el = document.getElementById('custody-pipe');
+  if (!el) return;
+  const by = (st) => queue.filter(e => e.packet.status === st);
+  const cache = [...by('QUEUED'), ...by('FAILED')];
+  const flight = by('TRANSMITTED');
+  const acked = by('ACKNOWLEDGED');
+  const box = (e, cls) => `<span class="cp-pkt ${cls}" title="${esc(e.packet.packet_id)} · ${esc(e.packet.status)}">${esc(e.packet.packet_id.replace('PKT-', ''))}</span>`;
+  const empty = `<span class="cp-pkt is-empty">DATA</span>`;
+  el.innerHTML = `
+    <div class="cp-stage"><span class="cp-cap">1. Local cache <em class="t-ok">(queued)</em></span>
+      <div class="cp-row">${cache.length ? cache.map(e => box(e, e.packet.status === 'FAILED' ? 'is-fail' : '')).join('') : empty}</div></div>
+    <div class="cp-stage"><span class="cp-cap">2. Ka-band uplink <em class="t-warn">(transmitting)</em></span>
+      <div class="cp-row cp-beam ${flight.length ? 'is-live' : ''}"><i></i>${flight.map(e => box(e, 'is-flight')).join('')}</div></div>
+    <div class="cp-stage"><span class="cp-cap">3. Earth DSN acknowledged <em class="t-ok">(Canberra / Goldstone)</em></span>
+      <div class="cp-row">${acked.length ? acked.slice(-8).map(e => box(e, 'is-ack')).join('') : empty}</div></div>`;
 }
 
 export { needsPacket };

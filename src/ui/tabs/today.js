@@ -12,8 +12,14 @@ import { $, esc, PATH, DELIVERY, METRIC, ICON, READINESS, severityPill, pill, co
 import { needsPacket, packetForToday, sendReport } from "../report.js";
 import { GameState, playSound } from "../extras/gamification.js";
 import { resize3DTwin } from "../extras/twin-3d.js";
+import { calculateCrewReadinessXP } from "../extras/twin-model.js";
+import { getReadings } from "../../core/adapter.js";
+import { getQueue } from "../../core/queue.js";
+import { verifyPacket } from "../../core/packet.js";
+import { latencyClock } from "../header.js";
+import { sparkSVG, ecgSVG, statusRing, gaugeSVG, arcDash, hexBadge } from "../components/hud.js";
 
-const RING_C = 2 * Math.PI * 58;
+const HISTORY_DAYS = 14;
 
 export function ensure3DInToday() {
   const holder = document.getElementById('today-3d-holder');
@@ -28,78 +34,100 @@ export function ensure3DInToday() {
 export function mountToday() {
   const panel = document.getElementById('panel-today');
   panel.innerHTML = `
-    <div class="view-head">
+    <div class="view-head deck-view-head">
       <div>
         <span class="eyebrow" id="today-eyebrow">Day 40 · Ares Flight Command Deck</span>
-        <h1>Ares-VI Tactical Medical Command Console</h1>
-        <p>Real-time autonomous telemetry, 3D biometric digital twin, and delay-aware decision loop for the 180-day transit to Mars.</p>
+        <h1>Deep-space telemetry &amp; Mars transit deck</h1>
+        <p>Cockpit bio-monitors, a 3D bio-twin, mission readiness and the delay-aware decision for the 180-day transit to Mars.</p>
       </div>
+      <div class="deck-sysstat" id="today-sysstat"></div>
     </div>
 
-    <div class="today-hero">
-      <!-- Left Column: Cockpit Bio-Monitors -->
-      <article class="card cockpit-monitors-card hud-chassis reveal" style="--i:0">
-        <div class="card-head">
-          <div><h3 class="card-title">Cockpit Bio-Monitors</h3><p class="card-sub">Telemetry vs. personal baseline</p></div>
-        </div>
-        <div class="cockpit-monitors-grid" id="today-cockpit-monitors"></div>
-        <div style="margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center;">
-          <span class="muted small">Baseline Calibrated (D 1–14)</span>
-          <button class="btn btn-ghost btn-sm" id="btn-goto-signals">All Signals ↗</button>
-        </div>
+    <div class="deck-hero">
+      <!-- Left: Cockpit bio-monitor KPIs (design_mockups/13, 03) -->
+      <article class="card deck-panel kpi-panel reveal" style="--i:0">
+        <div class="deck-panel-head"><h3>Cockpit bio-monitor KPI</h3><button class="deck-link" id="btn-goto-signals">All signals ↗</button></div>
+        <div class="kpi-list" id="today-cockpit-monitors"></div>
+        <div class="deck-panel-foot"><span>14-day trend vs personal baseline (D 1–14)</span><span>ECG trace illustrative</span></div>
       </article>
 
-      <!-- Center Stage: 3D Holographic Bio-Bay -->
-      <div class="today-hero-center reveal" style="--i:1" id="today-3d-holder"></div>
+      <!-- Center: 3D holographic bio-twin (design_mockups/02) -->
+      <article class="card deck-panel pod-panel reveal" style="--i:1">
+        <div class="deck-panel-head"><h3>3D bio-twin scan</h3><span class="deck-meta">Crew: <b>Cmdr. A. Vance</b> · <span id="today-pod-clock">Day 040</span></span></div>
+        <div class="today-hero-center" id="today-3d-holder"></div>
+      </article>
 
-      <!-- Right Column: Readiness Gauge & Tactical Decision Engine -->
-      <div class="today-hero-right reveal" style="--i:2">
-        <article class="card readiness-card hud-chassis" id="readiness-card">
-          <div class="ring" aria-hidden="true">
-            <svg viewBox="0 0 132 132"><circle class="track" cx="66" cy="66" r="58" fill="none" stroke-width="10"/>
-              <circle class="bar" id="readiness-ring" cx="66" cy="66" r="58" fill="none" stroke-width="10" stroke-dasharray="${RING_C}" stroke-dashoffset="${RING_C}"/></svg>
-            <div class="ring-value"><div><b id="readiness-number">0</b><span>readiness</span></div></div>
+      <!-- Right: Mission readiness gauge (design_mockups/04) and DTN terminal (13) -->
+      <div class="deck-right reveal" style="--i:2">
+        <article class="card deck-panel readiness-card gauge-card" id="readiness-card">
+          <div class="gauge-tier" id="readiness-tier">Tier II · Elevated drift watch</div>
+          <div class="gauge-wrap">
+            ${gaugeSVG()}
+            <div class="gauge-center">
+              <span class="gauge-cap">Mission readiness index</span>
+              <b id="readiness-number">0</b>
+              <span class="gauge-sub" id="readiness-headline">On track for landing</span>
+            </div>
           </div>
-          <div class="readiness-text">
-            <span class="eyebrow">Landing-day outlook</span>
-            <h2 id="readiness-headline">On track for landing</h2>
-            <p id="readiness-detail"></p>
+          <div class="gauge-sides">
+            <div><span>Earth delay</span><b id="gauge-delay">--</b></div>
+            <div><span>Crew readiness</span><b id="gauge-crew">NOMINAL</b></div>
           </div>
+          <div class="gauge-dims">
+            <span class="gauge-dims-cap">Landing dimension status</span>
+            <div class="gauge-dims-row" id="gauge-dims"></div>
+          </div>
+          <p class="gauge-detail" id="readiness-detail"></p>
         </article>
 
-        <article class="card decision-card hud-chassis" id="decision-card">
-          <span class="eyebrow">Today's decision</span>
-          <div class="decision-main">
-            <div class="path-icon" id="decision-icon"></div>
-            <div class="decision-path" id="decision-path">Self-care</div>
-          </div>
-          <div class="decision-facts" id="decision-facts"></div>
-          <div class="why-grid">
-            <div><h4>Why</h4><ul class="why-list" id="decision-why"></ul></div>
-            <div><h4>What would change it</h4><ul class="why-list alt" id="decision-cf"></ul></div>
-          </div>
-          <div class="row" id="decision-actions"></div>
-        </article>
+        <article class="card deck-panel dtn-mini" id="today-dtn" data-goto="comms" role="button" tabindex="0" aria-label="Open the DTN packet queue"></article>
       </div>
     </div>
 
-    <!-- Career Progress & Adherence Streak Bar -->
-    <article class="card today-career-card reveal" style="--i:3" id="today-career-bar"></article>
+    <div class="deck-row2">
+      <!-- Tactical decision chassis (design_mockups/05) -->
+      <article class="card deck-chassis decision-card reveal" style="--i:3" id="decision-card">
+        <i class="chassis-corner tl"></i><i class="chassis-corner tr"></i><i class="chassis-corner bl"></i><i class="chassis-corner br"></i>
+        <div class="chassis-head">
+          <h3>Today's triage decision <span class="chassis-day" id="decision-day">· Day 040</span></h3>
+          <span class="chassis-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Telemetry lock</span>
+        </div>
+        <div class="chassis-top">
+          <div>
+            <span class="chassis-lbl">Routing badge</span>
+            <div class="decision-main"><div class="path-icon" id="decision-icon"></div><div class="decision-path" id="decision-path">Self-care</div></div>
+          </div>
+          <div class="chassis-delivery">
+            <span class="chassis-lbl">Delivery method</span>
+            <div class="delivery-box" id="decision-delivery">Logged on board</div>
+          </div>
+        </div>
+        <div class="chassis-sec"><span class="chassis-lbl">Latency facts</span><span class="delay-flag" id="decision-delay-flag">‹‹‹ Delay ›››</span></div>
+        <div class="decision-facts" id="decision-facts"></div>
+        <div class="why-grid">
+          <div><h4 class="chassis-lbl">Rationale breakdown</h4><ul class="why-list chassis-list" id="decision-why"></ul></div>
+          <div><h4 class="chassis-lbl">What would change it</h4><ul class="why-list alt chassis-list" id="decision-cf"></ul></div>
+        </div>
+        <div class="chassis-cta-row" id="decision-actions"></div>
+      </article>
 
-    <article class="card loop-card reveal" style="--i:4">
-      <div class="card-head">
-        <div><h3 class="card-title">The decision loop, for this day</h3><p class="card-sub">Each step feeds the next. Select a step to see the detail.</p></div>
-      </div>
-      <div class="loop" id="loop"></div>
+      <!-- Astronaut career standing (design_mockups/08) -->
+      <article class="card deck-panel career-panel reveal" style="--i:4" id="today-career-bar"></article>
+    </div>
+
+    <!-- Energy-conduit decision loop (design_mockups/06) -->
+    <article class="card deck-panel loop-card conduit-card reveal" style="--i:5">
+      <div class="deck-panel-head"><h3>Astrix / Landfall decision loop</h3><span class="deck-meta">Each module feeds the next · select one for detail</span></div>
+      <div class="loop conduit" id="loop"></div>
     </article>
 
     <div class="grid g-12 mt">
-      <article class="card span-5 reveal" style="--i:5">
-        <div class="card-head"><div><h3 class="card-title">Active alerts</h3><p class="card-sub">Drift from this astronaut's baseline, worst first</p></div></div>
+      <article class="card deck-panel span-5 reveal" style="--i:6">
+        <div class="deck-panel-head"><h3>Active alerts</h3><span class="deck-meta">Drift from personal baseline, worst first</span></div>
         <div class="alert-list" id="today-alerts"></div>
       </article>
-      <article class="card span-7 reveal" id="rules-card" style="--i:6">
-        <div class="card-head"><div><h3 class="card-title">How triage decided</h3><p class="card-sub">The rules as built today (<code>src/core/triage.js</code>). Thresholds are team assumptions.</p></div></div>
+      <article class="card deck-panel span-7 reveal" id="rules-card" style="--i:7">
+        <div class="deck-panel-head"><h3>How triage decided</h3><span class="deck-meta">Rules as built (<code>src/core/triage.js</code>) · thresholds are team assumptions</span></div>
         <div id="today-rules"></div>
       </article>
     </div>`;
@@ -122,98 +150,127 @@ export function mountToday() {
   });
 }
 
+/** The last HISTORY_DAYS of readings, oldest first (for sparklines). */
+function history(day) {
+  const out = [];
+  for (let d = Math.max(1, day - HISTORY_DAYS + 1); d <= day; d++) out.push(getReadings(d));
+  return out;
+}
+
+const pad3 = (n) => String(n).padStart(3, '0');
+const RING_WORD = { ok: 'STABLE', warn: 'AMBER', bad: 'ALERT' };
+
 export function renderToday() {
   const v = AppState.view;
   if (!v) return;
   const d = v.decision;
-  $('#today-eyebrow').textContent = `Day ${v.day} · Ares Flight Command Deck`;
+  $('#today-eyebrow').textContent = `Day ${pad3(v.day)} · Ares-VI flight command deck`;
+  const podClock = $('#today-pod-clock');
+  if (podClock) podClock.textContent = `Day ${pad3(v.day)}`;
 
-  // Host 3D viewport on Today Homepage
+  // Host 3D viewport on Today
   ensure3DInToday();
 
-  // ---- Cockpit Bio-Monitors
   const r = v.reading.vitals;
   const base = v.baseline;
   const c = v.reading.cabin;
   const alertBy = Object.fromEntries(v.alerts.map(a => [a.metric, a]));
-  
+  const toneOf = (metric) => { const a = alertBy[metric]; return a ? (a.severity >= 3 ? 'bad' : 'warn') : 'ok'; };
+  const sent = packetForToday(v.day);
+
+  // ---- System status strip
+  const worstTone = v.alerts.length ? (v.alerts[0].severity >= 3 ? 'bad' : 'warn') : 'ok';
+  $('#today-sysstat').innerHTML = `
+    <span class="sys-chip tone-${worstTone}">System status: <b>${worstTone === 'ok' ? 'Nominal' : worstTone === 'warn' ? 'Nominal / alert' : 'Alarm'}</b></span>
+    <span class="sys-chip">Crew: <b>Ares-VI · 4</b></span>`;
+
+  // ---- Cockpit bio-monitor KPIs
+  const hist = history(v.day);
+  const series = (fn) => hist.map(fn);
+  const dev = (cur, b) => Math.max(8, Math.min(100, 100 - Math.abs(cur - b) / (Math.abs(b) || 1) * 220));
+  const hrTone = r.hr_bpm > base.hr_bpm + 10 ? 'warn' : 'ok';
+  const bpTone = r.bp_sys >= 140 ? 'bad' : r.bp_sys >= 130 ? 'warn' : 'ok';
+  const tempTone = Math.abs(r.temp_c - base.temp_c) >= 0.8 ? 'warn' : 'ok';
+  const co2Tone = c.co2 >= CONFIG.co2HintPpm ? (alertBy['cabin_co2']?.severity >= 3 ? 'bad' : 'warn') : 'ok';
   const monitors = [
-    { label: 'Sleep Score', val: `${r.sleep_h} h`, base: `Base ${base.sleep_h} h`, tone: alertBy['sleep_h'] ? 'is-alert' : '', goto: 'signals' },
-    { label: 'Heart Rate', val: `${r.hr_bpm} bpm`, base: `Base ${base.hr_bpm} bpm`, tone: r.hr_bpm > 75 ? 'is-watch' : '', goto: 'signals' },
-    { label: 'Blood Press.', val: `${r.bp_sys}/${r.bp_dia}`, base: `Base ${base.bp_sys}/${base.bp_dia}`, tone: '', goto: 'signals' },
-    { label: 'Mood Index', val: `${r.mood} / 5`, base: `Base ${base.mood}`, tone: alertBy['mood'] ? 'is-watch' : '', goto: 'signals' },
-    { label: 'Cabin CO₂', val: `${c.co2.toLocaleString()} ppm`, base: `Limit ${CONFIG.co2HintPpm} ppm`, tone: c.co2 >= CONFIG.co2HintPpm ? 'is-alert' : '', goto: 'signals' },
-    { label: 'Core Temp', val: `${r.temp_c} °C`, base: `Base ${base.temp_c} °C`, tone: '', goto: 'signals' },
+    { label: 'Sleep score', val: `${r.sleep_h} h`, sub: `Base ${base.sleep_h} h`, tone: toneOf('sleep_h'),
+      spark: sparkSVG(series(x => x.vitals.sleep_h), { base: base.sleep_h, tone: toneOf('sleep_h') }), pct: dev(r.sleep_h, base.sleep_h) },
+    { label: 'Heart rate', val: `${r.hr_bpm} bpm`, sub: `Base ${base.hr_bpm} bpm`, tone: hrTone,
+      spark: ecgSVG(r.hr_bpm, { tone: hrTone === 'ok' ? 'go' : hrTone }), pct: dev(r.hr_bpm, base.hr_bpm) },
+    { label: 'Blood pressure', val: `${r.bp_sys}/${r.bp_dia} mmHg`, sub: `Base ${base.bp_sys}/${base.bp_dia}`, tone: bpTone,
+      spark: sparkSVG(series(x => x.vitals.bp_sys), { base: base.bp_sys, tone: bpTone }), pct: dev(r.bp_sys, base.bp_sys) },
+    { label: 'Mood index', val: `${r.mood} / 5`, sub: `Base ${base.mood}`, tone: toneOf('mood'),
+      spark: sparkSVG(series(x => x.vitals.mood), { base: base.mood, tone: toneOf('mood'), min: 1, max: 5 }), pct: (r.mood / 5) * 100 },
+    { label: 'Cabin CO₂', val: `${c.co2.toLocaleString()} ppm`, sub: `Limit ${CONFIG.co2HintPpm.toLocaleString()} ppm`, tone: co2Tone,
+      spark: sparkSVG(series(x => x.cabin.co2), { base: CONFIG.co2HintPpm, tone: co2Tone }), pct: Math.min(100, (c.co2 / 8000) * 100) },
+    { label: 'Core temp', val: `${r.temp_c} °C`, sub: `Base ${base.temp_c} °C`, tone: tempTone,
+      spark: sparkSVG(series(x => x.vitals.temp_c), { base: base.temp_c, tone: tempTone }), pct: dev(r.temp_c, base.temp_c) },
   ];
-  const monEl = $('#today-cockpit-monitors');
-  if (monEl) {
-    monEl.innerHTML = monitors.map(m => `
-      <div class="cockpit-monitor-tile ${m.tone}" data-goto="${m.goto}">
-        <div class="cockpit-tile-head"><span>${m.label}</span>${m.tone === 'is-alert' ? '<span class="shape-diamond" style="color:var(--bad)">●</span>' : m.tone === 'is-watch' ? '<span class="shape-triangle" style="color:var(--warn)">▲</span>' : '<span class="shape-circle" style="color:var(--ok)">●</span>'}</div>
-        <div class="cockpit-tile-value">${m.val}</div>
-        <div class="cockpit-tile-base">${m.base}</div>
+  $('#today-cockpit-monitors').innerHTML = monitors.map(m => `
+    <div class="kpi tone-${m.tone}" data-goto="signals" role="button" tabindex="0" aria-label="${esc(m.label)} ${esc(m.val)}, ${RING_WORD[m.tone]}">
+      <div class="kpi-text">
+        <span class="kpi-label">${esc(m.label)}: <b>${esc(m.val)}</b></span>
+        <div class="kpi-spark">${m.spark}</div>
+        <span class="kpi-sub"><span class="${m.tone === 'bad' ? 'shape-diamond' : m.tone === 'warn' ? 'shape-triangle' : 'shape-circle'}"></span>${m.tone === 'ok' ? esc(m.sub) : m.tone === 'warn' ? 'Moderate alert · ' + esc(m.sub) : 'Alert · ' + esc(m.sub)}</span>
       </div>
-    `).join('');
-  }
+      ${statusRing(m.pct, RING_WORD[m.tone], m.tone)}
+    </div>`).join('');
 
-  // ---- Career & Streak Bar
-  const careerEl = $('#today-career-bar');
-  if (careerEl && GameState) {
-    const rk = GameState.getRank();
-    const b = GameState.getBadgeStatus();
-    const unlocked = b.filter(x => x.unlocked).length;
-    careerEl.innerHTML = `
-      <div class="today-career-left">
-        <div class="game-level-badge" style="width:42px;height:42px;">
-          <span class="game-level-num" style="font-size:16px;">${rk.level}</span>
-          <span class="game-level-lbl" style="font-size:8px;">LVL</span>
-        </div>
-        <div>
-          <div style="font-family:var(--font-heading);font-size:14px;color:var(--text);font-weight:700;">${rk.title} · <span style="color:var(--accent);">${rk.xp} / ${rk.maxXP} XP</span></div>
-          <div class="game-xp-bar-outer" style="width:200px;height:6px;margin-top:5px;">
-            <div class="game-xp-bar-inner" style="width:${rk.progressPct}%;"></div>
-          </div>
-        </div>
-        <div class="game-streak-pill" style="margin-left:8px;" title="40-Day Flight Protocol Adherence">
-          <span class="game-streak-flame">🔥</span>
-          <span>${GameState.streak}d Streak</span>
-        </div>
-      </div>
-      <div class="today-career-badges">
-        <span style="font-size:12px;color:var(--text-3);margin-right:6px;">Badges: <b>${unlocked}/${b.length}</b></span>
-        ${b.slice(0, 5).map(x => `<span style="font-size:18px;opacity:${x.unlocked ? 1 : 0.25};" title="${x.name}">${x.icon}</span>`).join('')}
-        <button class="btn btn-ghost btn-sm" id="btn-goto-career" style="margin-left:12px;">View Ares-VI Standing ➔</button>
-      </div>
-    `;
-  }
-
-  // ---- Readiness
+  // ---- Readiness gauge
   const card = $('#readiness-card');
   card.dataset.level = v.readiness.level;
   countUp($('#readiness-number'), v.readiness.score, { suffix: '%' });
-  $('#readiness-ring').style.strokeDashoffset = RING_C * (1 - v.readiness.score / 100);
-  $('#readiness-headline').textContent = v.readiness.text;
   const counts = { nominal: 0, caution: 0, alarm: 0 };
   v.forecast.forEach(f => counts[f.status]++);
+  const outer = arcDash(134, v.readiness.score / 100);
+  const inner = arcDash(120, counts.nominal / Math.max(1, v.forecast.length));
+  $('#readiness-ring').style.strokeDasharray = `${outer.on.toFixed(1)} ${outer.C.toFixed(1)}`;
+  $('#readiness-ring-go').style.strokeDasharray = `${inner.on.toFixed(1)} ${inner.C.toFixed(1)}`;
+  $('#readiness-headline').textContent = v.readiness.text;
+  const xp = calculateCrewReadinessXP(v.forecast, AppState.whatIf, AppState.completedScansCount);
+  const tierEl = $('#readiness-tier');
+  tierEl.textContent = xp.tier.replace(' — ', ' · ').toLowerCase().replace(/^tier (i+)/, (m, n) => `Tier ${n.toUpperCase()}`);
+  tierEl.dataset.tone = xp.status === 'alarm' ? 'bad' : xp.status === 'caution' ? 'warn' : 'ok';
+  $('#gauge-delay').textContent = latencyClock(v.delayS);
+  const crew = v.readiness.level === 'ON_TRACK' ? 'NOMINAL' : v.readiness.level === 'WATCH' ? 'WATCH' : 'AT RISK';
+  const crewEl = $('#gauge-crew');
+  crewEl.textContent = crew;
+  crewEl.dataset.tone = READINESS[v.readiness.level]?.tone || 'ok';
+  const dimsBy = (st) => v.forecast.filter(f => f.status === st).map(f => f.dimension.split(' ')[0]).join(' & ') || (st === 'alarm' ? '0 active alerts' : '—');
+  $('#gauge-dims').innerHTML = [
+    ['ok', 'GO', counts.nominal, dimsBy('nominal')],
+    ['warn', 'WATCH', counts.caution, dimsBy('caution')],
+    ['bad', 'NO-GO', counts.alarm, dimsBy('alarm')],
+  ].map(([t, w, n, who]) => `
+    <button class="dim-chip tone-${t} ${n ? '' : 'is-zero'}" data-goto="forecast" title="${esc(who)}">
+      <b>${w}<small>${n}</small></b><span>${esc(who)}</span>
+    </button>`).join('');
   const why = v.readiness.worstSeverity >= 3 ? 'An alarm-level alert is active, so the outlook cannot be "on track" whatever the average says.' : '';
   $('#readiness-detail').innerHTML = `${counts.nominal} GO · ${counts.caution} WATCH · ${counts.alarm} NO-GO across six landing dimensions${v.alerts.length ? ` · ${v.alerts.length} active alert${v.alerts.length > 1 ? 's' : ''}` : ''}. ${why}`;
 
-  // ---- Decision
+  // ---- DTN terminal (design_mockups/13)
+  renderDTN(v);
+
+  // ---- Decision chassis
   const dc = $('#decision-card');
   const changed = dc.dataset.path !== d.path || dc.dataset.delivery !== d.delivery;
   dc.dataset.path = d.path; dc.dataset.delivery = d.delivery;
+  dc.dataset.tone = d.noAlert ? 'ok' : PATH[d.path].tone;
+  $('#decision-day').textContent = `· Day ${pad3(v.day)}`;
   $('#decision-icon').innerHTML = ICON[d.path];
-  $('#decision-path').innerHTML = `${esc(d.noAlert ? 'Routine self-monitoring' : PATH[d.path].short)}<small>${esc(d.noAlert ? 'No drift from baseline today; nothing to send' : `${PATH[d.path].long} · ${DELIVERY[d.delivery].short}`)}</small>`;
+  const title = d.noAlert ? 'Routine self-monitoring' : { SELF_CARE: 'Self-care protocol', CREW_MEDICAL_OFFICER: 'Crew medical officer review', FLIGHT_SURGEON: 'Flight surgeon intervention required' }[d.path];
+  $('#decision-path').innerHTML = `${esc(title)}<small>${esc(d.noAlert ? 'No drift from baseline today; nothing to send' : PATH[d.path].long)}</small>`;
+  $('#decision-delivery').textContent = DELIVERY[d.delivery].short;
   if (changed) flash(dc);
 
   const live = CONFIG.liveCallMaxOneWayS;
-  const delayTone = v.delayS < live ? 'ok' : 'warn';
-  $('#decision-facts').innerHTML = [
-    pill(delayTone, delayTone === 'ok' ? 'shape-circle' : 'shape-triangle', `Earth ${formatDelay(v.delayS)} away`),
-    pill('neutral', 'shape-circle', `Live-call limit ${live} s`),
-    pill(v.env.onboardSupport ? 'ok' : 'warn', v.env.onboardSupport ? 'shape-circle' : 'shape-triangle', v.env.onboardSupport ? 'CMO on board' : 'No CMO on board'),
-    pill(v.env.linkUp ? 'ok' : 'bad', v.env.linkUp ? 'shape-circle' : 'shape-diamond', v.env.linkUp ? 'Link up' : 'Link down'),
-  ].join('');
+  const delayed = v.delayS >= live;
+  $('#decision-delay-flag').hidden = !delayed;
+  $('#decision-facts').innerHTML = `
+    <span class="fact">Earth latency: <b>${latencyClock(v.delayS)}</b></span><i>·</i>
+    <span class="fact">Live-call threshold: <b>${live}s</b></span><i>·</i>
+    <span class="fact">${!v.env.linkUp ? '<b class="t-bad">Link down · queue until contact</b>' : delayed ? 'Packet transmission required' : '<b class="t-ok">Live call possible</b>'}</span><i>·</i>
+    <span class="fact">${v.env.onboardSupport ? 'CMO <b>on board</b>' : '<b class="t-warn">No CMO on board</b>'}</span>`;
 
   const reasons = [];
   if (d.noAlert) {
@@ -221,27 +278,32 @@ export function renderToday() {
   } else {
     const b = v.breakdown;
     reasons.push(`<b>${esc(METRIC[v.alert.metric] || v.alert.metric)}</b>: ${esc(v.alert.reason)}`);
-    reasons.push(`Score <b>${b.severity + b.persistence + b.worsening}</b> = severity ${b.severity} + persistence ${b.persistence} + worsening ${b.worsening}`);
+    reasons.push(`Severity <b>${b.severity}</b> · persistence <b>${v.alert.persisted_days} day${v.alert.persisted_days === 1 ? '' : 's'}</b> (+${b.persistence}) · worsening +${b.worsening} = score <b>${b.severity + b.persistence + b.worsening}</b>`);
     if (d.path !== 'SELF_CARE') {
       reasons.push(d.delivery === 'QUEUE_OFFLINE' ? 'The link is down, so the report waits in the queue.'
         : v.delayS < live ? `Earth is within ${live} s, close enough for a live call.`
         : `Earth is ${formatDelay(v.delayS)} away, above the ${live} s live-call limit: no live call.`);
     }
   }
-  $('#decision-why').innerHTML = reasons.map(r => `<li><span>${r}</span></li>`).join('');
+  $('#decision-why').innerHTML = reasons.map(x => `<li><span>${x}</span></li>`).join('');
   $('#decision-cf').innerHTML = v.counterfactuals.length
-    ? v.counterfactuals.map(c => `<li><span>${esc(c.label)}: <b>${esc(PATH[c.path].short)}</b>, ${esc(DELIVERY[c.delivery].short.toLowerCase())}</span></li>`).join('')
+    ? v.counterfactuals.map(cf => `<li><span>${esc(cf.label)}: <b>${esc(PATH[cf.path].short)}</b>, ${esc(DELIVERY[cf.delivery].short.toLowerCase())}</span></li>`).join('')
     : `<li><span>${d.noAlert ? 'A new alert would start the loop.' : 'Nothing in the current situation would change this.'}</span></li>`;
 
-  const sent = packetForToday(v.day);
+  const signal = `<svg class="cta-ico" viewBox="0 0 48 20" aria-hidden="true"><path d="M0 10h8l3-7 4 14 3-10 3 6h6" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="40" cy="10" r="2.4" fill="currentColor"/><path d="M35 4a8 8 0 0 0 0 12M45 4a8 8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>`;
   $('#decision-actions').innerHTML = needsPacket(d)
     ? (sent
-      ? `${pill(sent.packet.status === 'ACKNOWLEDGED' ? 'ok' : 'info', 'shape-circle', `${sent.packet.packet_id} ${sent.packet.status.toLowerCase()}`)}<button class="btn btn-sm" id="btn-today-queue">Open the queue</button>`
-      : `<button class="btn btn-primary" id="btn-today-send">${ICON.send} Send report to Earth</button><span class="muted small">Builds a checksummed packet${d.delivery === 'QUEUE_OFFLINE' ? ' and holds it until the link returns' : ''}.</span>`)
-    : (d.delivery === 'LIVE_CALL' ? `<span class="muted small">Live call: no packet needed. The flight surgeon joins in real time.</span>` : '');
+      ? `<div class="cta-bar is-done"><span class="cta-tag">DTN</span><span class="cta-text">${esc(sent.packet.packet_id)} · ${esc(sent.packet.status.toLowerCase())}</span><button class="btn btn-sm" id="btn-today-queue">Open the queue</button></div>`
+      : `<button class="cta-bar" id="btn-today-send"><span class="cta-tag">CTA</span><span class="cta-text">Build &amp; transmit checksummed report to Earth${d.delivery === 'QUEUE_OFFLINE' ? ' (held until link returns)' : ''}</span>${signal}</button>`)
+    : (d.delivery === 'LIVE_CALL'
+      ? `<div class="cta-bar is-done"><span class="cta-tag">LIVE</span><span class="cta-text">Live call: no packet needed. The flight surgeon joins in real time.</span></div>`
+      : `<div class="cta-bar is-done"><span class="cta-tag">LOG</span><span class="cta-text">Logged on board · nothing leaves the ship</span></div>`);
+
+  // ---- Career standing
+  renderCareer();
 
   // ---- Loop
-  renderLoop(v, sent);
+  renderLoop(v, sent, hist);
 
   // ---- Alerts
   $('#today-alerts').innerHTML = v.alerts.length
@@ -257,7 +319,70 @@ export function renderToday() {
   renderRules(v);
 }
 
-function renderLoop(v, sent) {
+/** Store-and-forward queue summary, checksum check and a live Earth-latency countdown. */
+let dtnTimer = null;
+function renderDTN(v) {
+  const el = $('#today-dtn');
+  if (!el) return;
+  const q = getQueue();
+  const pending = q.filter(e => e.packet.status !== 'ACKNOWLEDGED');
+  const acked = q.length - pending.length;
+  const failed = q.filter(e => e.packet.status === 'FAILED').length;
+  const allOk = q.every(e => verifyPacket(e.packet));
+  el.innerHTML = `
+    <div class="deck-panel-head"><h3>DTN packet terminal</h3><span class="deck-meta">${v.env.linkUp ? 'Link active' : '<b class="t-bad">Link down</b>'}</span></div>
+    <div class="dtn-grid">
+      <div class="dtn-cell"><span class="dtn-cap">Store-and-forward queue</span><b class="dtn-big">${pending.length}</b><span class="dtn-sub">${pending.length === 1 ? 'packet' : 'packets'} queued · ${acked} acked</span></div>
+      <div class="dtn-cell"><span class="dtn-cap">Checksum (FNV-1a)</span>
+        <div class="dtn-check ${allOk && !failed ? 'pass' : 'fail'}"><span>${q.length ? (allOk && !failed ? 'Active / pass' : `${failed} failed`) : 'Idle'}</span><b>${allOk && !failed ? 'Pass' : 'Retry'}</b></div>
+        <div class="dtn-bar"><i style="width:${q.length ? Math.round((acked / q.length) * 100) : 100}%"></i></div></div>
+      <div class="dtn-cell"><span class="dtn-cap">Earth latency countdown</span><b class="dtn-clock" id="dtn-clock">--:--</b><span class="dtn-sub">one-way · min : sec</span></div>
+    </div>`;
+  // Countdown from the one-way delay, restarting each time it reaches zero (a packet "arrives")
+  clearInterval(dtnTimer);
+  const total = Math.round(v.delayS);
+  const t0 = Date.now();
+  const tick = () => {
+    const c = document.getElementById('dtn-clock');
+    if (!c) { clearInterval(dtnTimer); return; }
+    const left = total - (Math.floor((Date.now() - t0) / 1000) % Math.max(1, total));
+    c.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+  };
+  tick();
+  dtnTimer = setInterval(tick, 1000);
+}
+
+/** Career standing, badges and crew table (design_mockups/08). Also used by the Digital twin tab. */
+export function renderCareer(el = $('#today-career-bar')) {
+  if (!el || !GameState) return;
+  const rk = GameState.getRank();
+  const badges = GameState.getBadgeStatus();
+  const pick = [['cardiac_guardian', 'bronze'], ['neuro_sharp', 'cyan'], ['dtn_specialist', 'silver'], ['iron_astronaut', 'steel']];
+  const crew = GameState.getLeaderboard();
+  el.innerHTML = `
+    <div class="career-head">
+      <h3>Astronaut career standing: <span>LVL ${rk.level} · ${esc(rk.title)}</span></h3>
+      <span class="streak-chip">🔥 ${GameState.streak}-day transit adherence streak</span>
+    </div>
+    <div class="career-xp"><div class="career-xp-bar"><i style="width:${rk.progressPct}%"></i></div>
+      <span><b>${rk.xp}</b> / ${rk.maxXP} XP to ${esc(rk.nextTitle)}</span></div>
+    <div class="career-badges">
+      ${pick.map(([id, metal]) => {
+        const b = badges.find(x => x.id === id) || { name: id, desc: '', unlocked: false };
+        return `<div class="career-badge ${b.unlocked ? '' : 'locked'}" title="${esc(b.desc)}">${hexBadge(id, metal, b.unlocked)}<span>${esc(b.name)}</span></div>`;
+      }).join('')}
+    </div>
+    <table class="crew-table">
+      <thead><tr><th>Ares-VI cooperative crew standing</th><th>Role</th><th>Readiness</th><th class="r">Score</th></tr></thead>
+      <tbody>${crew.map(c => `
+        <tr class="${c.active ? 'is-me' : ''}"><td>${esc(c.callsign)}</td><td><span class="role-chip">${esc(c.role)}</span></td>
+        <td><span class="ready-chip ${c.tier === 'Tier I' ? 'ok' : 'warn'}">${c.tier === 'Tier I' ? 'Ready' : 'Caution'}</span></td><td class="r num">${c.score} XP</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="career-foot"><span>Badges unlocked: <b>${badges.filter(x => x.unlocked).length}/${badges.length}</b></span>${el.id === 'today-career-bar' ? '<button class="deck-link" id="btn-goto-career">View Ares-VI standing ↗</button>' : ''}</div>`;
+}
+
+function renderLoop(v, sent, hist) {
   const r = v.reading.vitals;
   const b = v.baseline;
   const delta = (x, base, dec = 1, invert = false) => {
@@ -270,27 +395,36 @@ function renderLoop(v, sent) {
   v.forecast.forEach(f => counts[f.status]++);
   const d = v.decision;
   const deliverTone = d.delivery === 'QUEUE_OFFLINE' ? 'warn' : sent?.packet.status === 'ACKNOWLEDGED' ? 'ok' : '';
+  const cone = `<svg class="loop-cone" viewBox="0 0 90 40" aria-hidden="true"><path d="M6 28 L80 6 M6 28 L84 34" stroke="currentColor" stroke-width="1.2" fill="none"/><ellipse cx="82" cy="20" rx="5" ry="14" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6 28 L82 20" stroke="currentColor" stroke-dasharray="2 3" stroke-width="1"/><circle cx="6" cy="28" r="2.4" fill="currentColor"/></svg>`;
+  const branch = (a, b2) => `<div class="loop-branch"><svg viewBox="0 0 80 22" aria-hidden="true"><path d="M40 0 V8 M40 8 Q40 12 20 14 V22 M40 8 Q40 12 60 14 V22" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><span>${a}</span><span>${b2}</span></div>`;
 
   const steps = [
-    { n: 1, name: 'Read', goto: 'signals', tone: '', value: `Day ${v.day} telemetry`,
-      body: `<div class="loop-mini"><span>Sleep (h) ${delta(r.sleep_h, b.sleep_h)}</span><span>Resting HR ${delta(r.hr_bpm, b.hr_bpm, 0, true)}</span><span>Cabin CO₂ (ppm) <b>${v.reading.cabin.co2.toLocaleString()}</b></span></div>` },
+    { n: 1, name: 'Read', goto: 'signals', tone: '', value: `Day ${v.day}`, kicker: 'Telemetry stream',
+      body: `<div class="loop-spark">${sparkSVG(hist.map(x => x.vitals.sleep_h), { base: b.sleep_h, w: 140, h: 34 })}</div><div class="loop-mini"><span>Sleep ${delta(r.sleep_h, b.sleep_h)}</span><span>HR ${delta(r.hr_bpm, b.hr_bpm, 0, true)}</span></div>` },
     { n: 2, name: 'Detect', goto: 'signals', tone: worst ? (worst.severity >= 3 ? 'bad' : worst.severity === 2 ? 'warn' : 'ok') : 'ok',
-      value: worst ? `${v.alerts.length} alert${v.alerts.length > 1 ? 's' : ''}` : 'No drift',
-      body: `<div class="loop-note">${worst ? `${esc(METRIC[worst.metric] || worst.metric)}, ${worst.persisted_days} day${worst.persisted_days > 1 ? 's' : ''}${worst.worsening ? ', worsening' : ''}` : 'All signals within the personal baseline'}</div>` },
+      value: worst ? 'Drift' : 'No drift', kicker: 'From a personalised baseline',
+      body: `<div class="loop-alarm ${worst ? '' : 'is-clear'}">${worst ? `${ICON.alert}${esc(v.alerts.slice(0, 2).map(a => METRIC[a.metric] || a.metric).join(' & '))} ${v.alerts.length > 1 ? 'alarms' : 'alarm'}` : 'All signals in baseline'}</div>` },
     { n: 3, name: 'Forecast', goto: 'forecast', tone: counts.alarm ? 'bad' : counts.caution ? 'warn' : 'ok',
-      value: `Landing ${v.readiness.score}%`, body: `<div class="loop-note">${counts.nominal} GO · ${counts.caution} WATCH · ${counts.alarm} NO-GO</div>` },
+      value: `Day 180`, kicker: `Readiness ${v.readiness.score}% · 6 dimensions`,
+      body: `${cone}<div class="loop-note">${counts.nominal} GO · ${counts.caution} WATCH · ${counts.alarm} NO-GO</div>` },
     { n: 4, name: 'Decide', goto: 'rules', tone: PATH[d.path].tone,
-      value: d.noAlert ? 'Self-monitor' : PATH[d.path].short,
-      body: `<div class="loop-note">${d.noAlert ? 'No case to route' : `Score ${d.score} · Earth ${formatDelay(v.delayS)} · ${v.env.onboardSupport ? 'CMO on board' : 'no CMO'}`}</div>` },
+      value: d.noAlert ? 'Self-monitor' : PATH[d.path].short, kicker: 'Deterministic clinical triage',
+      body: d.noAlert ? `<div class="loop-note">No case to route</div>` : branch(v.env.onboardSupport ? 'CMO' : 'Flight surgeon', `Score ${d.score}`) },
     { n: 5, name: 'Deliver', goto: 'comms', tone: deliverTone,
-      value: DELIVERY[d.delivery].short,
-      body: `<div class="loop-note">${needsPacket(d) ? (sent ? `${sent.packet.packet_id}: ${sent.packet.status.toLowerCase()}` : 'Ready to send') : d.delivery === 'LIVE_CALL' ? 'Real-time consult' : 'Nothing leaves the ship'}</div>` },
+      value: d.delivery === 'LIVE_CALL' ? 'Live' : needsPacket(d) ? 'DTN' : 'Log', kicker: DELIVERY[d.delivery].short,
+      body: `<div class="loop-uplink">${needsPacket(d) ? (sent ? `${esc(sent.packet.packet_id)} · ${esc(sent.packet.status.toLowerCase())}` : '🌍 Earth uplink ready') : d.delivery === 'LIVE_CALL' ? 'Real-time consult' : 'Nothing leaves the ship'}</div>` },
   ];
-  $('#loop').innerHTML = steps.map(s => `
-    <button class="loop-step" data-goto="${s.goto}" data-tone="${s.tone}">
-      <span class="eyebrow"><span class="step-no">${s.n}</span>${s.name}</span>
-      <div class="loop-value">${esc(s.value)}</div>${s.body}
-    </button>`).join('');
+  // Hash routes used by the steps (smoke check): goto: 'forecast', goto: 'comms'
+  $('#loop').innerHTML = steps.map((s, i) => `
+    <div class="conduit-node ${i % 2 ? 'pipe-down' : 'pipe-up'}">
+      <span class="conduit-label"><b>${String(s.n).padStart(2, '0')}</b> ${s.name}</span>
+      <button class="loop-step" data-goto="${s.goto}" data-tone="${s.tone}">
+        <span class="sr-only">Step ${s.n}: ${s.name}.</span>
+        <div class="loop-value ${s.value.length > 12 ? 'is-long' : ''}">${esc(s.value)}</div>
+        <div class="loop-kicker">${esc(s.kicker)}</div>
+        ${s.body}
+      </button>
+    </div>${i < steps.length - 1 ? '<span class="conduit-link" aria-hidden="true"><i></i></span>' : ''}`).join('');
 }
 
 function renderRules(v) {

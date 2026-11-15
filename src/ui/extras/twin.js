@@ -9,7 +9,7 @@ import { AppState } from "../../app/state.js";
 import { getAlerts, getReadings } from "../../core/adapter.js";
 import { MICRO_DEFAULTS, showMicroReward, drawMicroLabCanvas } from "./micro-lab.js";
 import { BODY_REGIONS, TISSUE_LAYERS, getRegionIntegrity, getTissueIntegrity } from "./twin-model.js";
-import { init3DTwin, focusOnRegion, resetCamera, rotateTwin180, cycleViewMode, isWebGLAvailable } from "./twin-3d.js";
+import { init3DTwin, focusOnRegion, resetCamera, rotateTwin180, cycleViewMode, setViewMode3D, isWebGLAvailable } from "./twin-3d.js";
 import { GameState, renderGamificationHUD, playSound } from "./gamification.js";
 
 let is3DActive = true;
@@ -82,6 +82,9 @@ export function initTwinControls() {
   if (btnResetCam) btnResetCam.addEventListener('click', resetCamera);
   if (btnRotate180) btnRotate180.addEventListener('click', rotateTwin180);
   if (btn3DMode) btn3DMode.addEventListener('click', cycleViewMode);
+  document.querySelectorAll('[data-twin-mode]').forEach(b => {
+    b.addEventListener('click', () => setViewMode3D(b.dataset.twinMode));
+  });
 
   // Initialize 3D Twin if WebGL supported
   if (isWebGLAvailable()) {
