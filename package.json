@@ -8,6 +8,7 @@
     "serve": "python -m http.server 8080",
     "test": "node --test \"tests/unit/**/*.test.mjs\" \"tests/integration/**/*.test.mjs\"",
     "test:smoke": "node tests/smoke/ui-check.mjs",
+    "eval": "node eval/run-eval.mjs",
     "build:sw": "node scripts/build-sw-manifest.mjs",
     "check": "node scripts/build-sw-manifest.mjs --check && node scripts/check-links.mjs",
     "check:links": "node scripts/check-links.mjs"

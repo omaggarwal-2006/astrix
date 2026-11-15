@@ -1,0 +1,123 @@
+{
+  "run": {
+    "date": "2026-11-15",
+    "seeds": 200,
+    "generator_version": "2.0.0",
+    "crew_days_evaluated": 36000,
+    "non_event_days": 33805
+  },
+  "summary": {
+    "landfall": {
+      "detection_delay_days_median": 0,
+      "false_alarms_per_100_days": 0.56,
+      "missed_events": 5,
+      "triage_agreement_pct": 58.7
+    },
+    "fixed": {
+      "detection_delay_days_median": 0,
+      "false_alarms_per_100_days": 9.36,
+      "missed_events": 71
+    }
+  },
+  "by_scenario": [
+    {
+      "id": "A1",
+      "name": "Slow sleep slide",
+      "injected": 31,
+      "landfall_detected": 28,
+      "fixed_detected": 30,
+      "landfall_median_delay_days": 8,
+      "fixed_median_delay_days": 3
+    },
+    {
+      "id": "A2",
+      "name": "Acute sleep collapse",
+      "injected": 33,
+      "landfall_detected": 33,
+      "fixed_detected": 33,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A3",
+      "name": "Mood and stress drift",
+      "injected": 26,
+      "landfall_detected": 26,
+      "fixed_detected": 26,
+      "landfall_median_delay_days": 5,
+      "fixed_median_delay_days": 6.5
+    },
+    {
+      "id": "A4",
+      "name": "HR creep",
+      "injected": 28,
+      "landfall_detected": 27,
+      "fixed_detected": 10,
+      "landfall_median_delay_days": 7,
+      "fixed_median_delay_days": 2.5
+    },
+    {
+      "id": "A5",
+      "name": "CO2 plus headache",
+      "injected": 30,
+      "landfall_detected": 30,
+      "fixed_detected": 9,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A6",
+      "name": "Cardiac emergency",
+      "injected": 25,
+      "landfall_detected": 24,
+      "fixed_detected": 24,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A7",
+      "name": "Vision change (SANS)",
+      "injected": 29,
+      "landfall_detected": 29,
+      "fixed_detected": 29,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A8",
+      "name": "Solar particle event",
+      "injected": 19,
+      "landfall_detected": 19,
+      "fixed_detected": 19,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A9",
+      "name": "Missing telemetry data",
+      "injected": 30,
+      "landfall_detected": 30,
+      "fixed_detected": 0,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "A10",
+      "name": "Exercise drop",
+      "injected": 33,
+      "landfall_detected": 33,
+      "fixed_detected": 33,
+      "landfall_median_delay_days": 2,
+      "fixed_median_delay_days": 0
+    },
+    {
+      "id": "N0",
+      "name": "Nominal mission noise",
+      "injected": 0,
+      "landfall_detected": 0,
+      "fixed_detected": 0,
+      "landfall_median_delay_days": 0,
+      "fixed_median_delay_days": 0
+    }
+  ]
+}

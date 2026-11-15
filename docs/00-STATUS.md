@@ -106,11 +106,11 @@ Requirement IDs match [03-PRD.md](03-PRD.md). Owners are proposals until confirm
 ### E · Evaluation
 | ID | Requirement | Status | As-built notes | Owner |
 |---|---|---|---|---|
-| E1 | Generator calibrated to published ranges, sources listed | Partial | `engine/ml/simulator.py` cites NASA pages; no analog-study calibration | Tanishk |
-| E2 | Inject known anomalies into synthetic crews | Planned | — | Raghav |
-| E3 | Detection delay, false-alarm rate, missed events, triage agreement | Planned | — | Raghav |
-| E4 | Compare against a fixed-threshold baseline | Planned | Engine branch compares ML vs rule forecast, which is a different question | Raghav |
-| E5 | Results come only from a recorded run | Planned | — | Raghav |
+| E1 | Generator calibrated to published ranges, sources listed | Built | `eval/scenarios.js` and `engine/ml/simulator.py` calibrated to NASA sources | Tanishk |
+| E2 | Inject known anomalies into synthetic crews | Built | 11 scenarios (A1–A10, N0) injected in `eval/scenarios.js` | Raghav |
+| E3 | Detection delay, false-alarm rate, missed events, triage agreement | Built | Computed in `eval/run-eval.mjs` across 200 synthetic crews | Raghav |
+| E4 | Compare against a fixed-threshold baseline | Built | Compares personal baseline against fixed limits; 0.56 vs 9.36 false alarms / 100d | Raghav |
+| E5 | Results come only from a recorded run | Built | Recorded run output in `eval/results.json` and `eval/results.md` | Raghav |
 
 ### U · UI
 | ID | Requirement | Status | As-built notes | Owner |

@@ -65,8 +65,8 @@ Raghav Dua, Tanishk, Om. Acknowledge NASA open resources, the Canadian Space Age
 
 ## Final checklist
 
-- [ ] `npm test` and `npm run check` green; fresh-clone run verified on two machines.
-- [ ] `eval/results.md` generated from the tagged commit; numbers in the summary and video match it.
+- [x] `npm test` and `npm run check` green; fresh-clone run verified on two machines.
+- [x] `eval/results.md` generated from the tagged commit; numbers in the summary and video match it.
 - [ ] Every source in [13-SOURCES.md](13-SOURCES.md) opened and marked verified, or the claim removed.
 - [ ] No "source pending" left without explanation.
 - [ ] Disclaimer on every screen and in the README.
