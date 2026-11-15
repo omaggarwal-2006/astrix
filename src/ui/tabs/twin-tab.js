@@ -6,6 +6,7 @@
 
 import { AppState } from "../../app/state.js";
 import { renderTwin } from "../extras/twin.js";
+import { resize3DTwin } from "../extras/twin-3d.js";
 import { calculateCrewReadinessXP } from "../extras/twin-model.js";
 import { GameState, showUnlockToast } from "../extras/gamification.js";
 import { $, countUp } from "../dom.js";
@@ -14,6 +15,7 @@ export function renderTwinTab() {
   const v = AppState.view;
   if (!v) return;
   renderTwin(v.reading, v.alerts);
+  resize3DTwin();
   const day = document.getElementById('twin-profile-day');
   if (day) day.textContent = String(v.day);
   if (AppState.constellation) {

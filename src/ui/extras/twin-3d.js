@@ -528,6 +528,18 @@ function startRenderLoop() {
   animate();
 }
 
+export function resize3DTwin() {
+  const containerEl = document.getElementById('twin-3d-container');
+  if (!renderer || !camera || !containerEl) return;
+  const w = containerEl.clientWidth || 440;
+  const h = containerEl.clientHeight || 540;
+  if (w > 0 && h > 0) {
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+}
+
 export function stop3DTwin() {
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);

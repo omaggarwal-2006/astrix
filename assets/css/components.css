@@ -1,14 +1,25 @@
 /* LANDFALL · Components: cards, buttons, chips, status, controls, tables, modal, drawer, toast */
 
-/* ---------- Cards ---------- */
+/* ---------- Cards (Glassmorphism & Depth) ---------- */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 14px 36px -12px rgba(0, 0, 0, 0.8);
   padding: 20px;
   position: relative;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  transition: transform 240ms var(--ease), box-shadow 240ms var(--ease), border-color 240ms var(--ease);
+}
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 18px 44px -10px rgba(0, 0, 0, 0.9);
 }
 .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .card-title { font-size: var(--fs-lg); color: var(--text); }
@@ -25,33 +36,54 @@
 .small { font-size: var(--fs-sm); }
 .divider { height: 1px; background: var(--border); margin: 14px 0; border: 0; }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (Tactile Aerospace Neumorphism) ---------- */
 .btn, .chassis-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   font: 600 var(--fs-sm)/1 var(--font-body); letter-spacing: 0.01em;
-  color: var(--text); background: var(--surface-2); border: 1px solid var(--border-strong);
-  padding: 10px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap;
-  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), transform 120ms var(--ease), box-shadow var(--dur) var(--ease);
+  color: var(--text);
+  background: linear-gradient(145deg, #141f30, #0a111c);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 15px; border-radius: 12px; cursor: pointer; white-space: nowrap;
+  box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.05), 3px 3px 8px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 180ms var(--ease);
 }
-.btn:hover, .chassis-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.24); }
-.btn:active, .chassis-btn:active { transform: translateY(1px); }
+.btn:hover, .chassis-btn:hover {
+  background: linear-gradient(145deg, #1a2a42, #0d1726);
+  border-color: rgba(108, 180, 228, 0.3);
+  transform: translateY(-1.5px);
+  box-shadow: -3px -3px 8px rgba(255, 255, 255, 0.07), 4px 5px 12px rgba(0, 0, 0, 0.65);
+}
+.btn:active, .chassis-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.8), inset -1px -1px 3px rgba(255, 255, 255, 0.05);
+}
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-primary, .chassis-btn.primary {
-  background: linear-gradient(180deg, #7CC2F0, #4F9BD0); color: #04111C; border-color: transparent;
-  box-shadow: 0 8px 22px -10px rgba(108, 180, 228, 0.7);
+  background: linear-gradient(145deg, #7cc2f0, #388bc4) !important;
+  color: #04111c !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 6px 20px rgba(108, 180, 228, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
-.btn-primary:hover, .chassis-btn.primary:hover { background: linear-gradient(180deg, #8ECDF5, #5BA6DA); border-color: transparent; }
-.btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); }
-.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-primary:hover, .chassis-btn.primary:hover {
+  background: linear-gradient(145deg, #95d5ff, #479cd6) !important;
+  box-shadow: 0 8px 26px rgba(108, 180, 228, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+.btn-ghost { background: transparent; border-color: transparent; color: var(--text-2); box-shadow: none; }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); box-shadow: none; }
 .btn-danger { color: #FFD7D2; background: var(--bad-soft); border-color: rgba(238, 100, 88, 0.45); }
 .btn-danger:hover { background: rgba(238, 100, 88, 0.25); border-color: var(--bad); }
 .btn-sm { padding: 7px 10px; font-size: var(--fs-xs); border-radius: 8px; }
 .btn .ico { width: 16px; height: 16px; flex: none; }
 
-/* ---------- Chips ---------- */
+/* ---------- Chips (Frosted Glass Pills) ---------- */
 .chip {
-  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px;
-  border: 1px solid var(--border); background: var(--surface); border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 21, 34, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.3);
   font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap;
 }
 .chip b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
